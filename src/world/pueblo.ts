@@ -7,12 +7,13 @@ import {
   Shape,
   ExtrudeGeometry,
   ConeGeometry,
+  Float32BufferAttribute,
   type Material,
   type Object3D,
 } from 'three'
 import type { Valle } from '../core'
 import { materialDe } from './materiales'
-import { bordeSur, centroPlaza, DATOS_PUEBLO, type DatosPueblo } from './pueblo-datos'
+import { bordeSur, centroPlaza, DATOS_PUEBLO, puntosCamino, type DatosPueblo } from './pueblo-datos'
 import type { FuncionAltura } from './terreno/altura'
 
 /** Caja unitaria con la base en y = 0 (se escala por edificio). */
@@ -39,6 +40,44 @@ function malla(geometria: BufferGeometry, material: Material): Mesh {
   m.castShadow = true
   m.receiveShadow = true
   return m
+}
+
+/** Cinta de tierra que sigue el terreno a lo largo de la línea central del camino. */
+function crearCamino(
+  valle: Pick<Valle, 'parcelasPorLado' | 'casillasPorParcela'>,
+  altura: FuncionAltura,
+  datos: DatosPueblo,
+): Mesh {
+  const puntos = puntosCamino(valle, datos)
+  const medio = datos.camino.ancho / 2
+  const elevacion = 0.06
+  const posiciones: number[] = []
+  const indices: number[] = []
+  puntos.forEach((p, i) => {
+    const antes = puntos[Math.max(0, i - 1)] ?? p
+    const despues = puntos[Math.min(puntos.length - 1, i + 1)] ?? p
+    const largo = Math.hypot(despues.x - antes.x, despues.z - antes.z) || 1
+    // Normal en el plano del suelo (perpendicular a la tangente).
+    const nx = (despues.z - antes.z) / largo
+    const nz = -(despues.x - antes.x) / largo
+    for (const lado of [-1, 1]) {
+      const x = p.x + nx * medio * lado
+      const z = p.z + nz * medio * lado
+      posiciones.push(x, altura(x, z) + elevacion, z)
+    }
+    if (i > 0) {
+      const a = (i - 1) * 2
+      indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3)
+    }
+  })
+  const g = new BufferGeometry()
+  g.setAttribute('position', new Float32BufferAttribute(posiciones, 3))
+  g.setIndex(indices)
+  g.computeVertexNormals()
+  const camino = new Mesh(g, materialDe('tierra'))
+  camino.receiveShadow = true
+  camino.name = 'camino'
+  return camino
 }
 
 /**
@@ -101,6 +140,8 @@ export function crearPueblo(
   chapitel.position.y = k.alto + k.altoTejado / 2
   campanario.add(torre, chapitel)
   grupo.add(campanario)
+
+  grupo.add(crearCamino(valle, altura, datos))
 
   return grupo
 }
