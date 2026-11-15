@@ -21,7 +21,7 @@ import {
 } from '../../src/core'
 import { conTierraLabrable } from '../unit/fixtures/labranza'
 
-const base = crearEstadoInicial({ semilla: 42, dineroInicial: 100_000 })
+const base = crearEstadoInicial({ semilla: 1, dineroInicial: 100_000 })
 const LADO = ladoValle(base.valle)
 const limpio: EstadoJuego = { ...base, obstaculos: [] }
 const con = (e: EstadoJuego, p: Partial<EstadoJuego>): EstadoJuego => ({ ...e, ...p })

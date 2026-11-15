@@ -303,7 +303,9 @@ describe('M4-06 rompedor · economía', () => {
 
   it('redondeo: con lo pagado arbitrario (impares incluidos) demoler devuelve floor(p/2) y cancelar p', () => {
     const base = BASES[1]!
-    const s = SITIOS[1]!['cobertizo'][0]!
+    const s = SITIOS[1]!['cobertizo'].find(
+      (p) => aplicarComando(base, { tipo: 'Construir', tipoEdificio: 'cobertizo', ...p }).ok,
+    )!
     const obra = aplicarComando(base, { tipo: 'Construir', tipoEdificio: 'cobertizo', ...s })
     if (!obra.ok) throw new Error('no se pudo construir')
     const id = obra.estado.siguienteIdEdificio - 1
@@ -336,7 +338,9 @@ describe('M4-06 rompedor · economía', () => {
 
   it('`limite-de-recursos` aparece si y solo si alguna suma del reembolso deja de ser un entero seguro', () => {
     const base = BASES[1]!
-    const s = SITIOS[1]!['cobertizo'][0]!
+    const s = SITIOS[1]!['cobertizo'].find(
+      (p) => aplicarComando(base, { tipo: 'Construir', tipoEdificio: 'cobertizo', ...p }).ok,
+    )!
     const obra = aplicarComando(base, { tipo: 'Construir', tipoEdificio: 'cobertizo', ...s })
     if (!obra.ok) throw new Error('no se pudo construir')
     const id = obra.estado.siguienteIdEdificio - 1

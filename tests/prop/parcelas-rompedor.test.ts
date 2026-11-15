@@ -535,7 +535,7 @@ describe('caché de mapaTransitabilidad tras comprar', () => {
     const mover = (s: EstadoJuego) =>
       aplicarComando(s, { tipo: 'MoverPersonaje', dx: 1, dy: 0.3, ms: 400 }).estado.personaje
     let e = BASE
-    for (const i of [0, 1, 2, 6, 7]) e = ok(e, i)
+    for (const i of [0, 1, 2, N, N + 1]) e = ok(e, i)
     expect(mover(e)).toEqual(mover(BASE))
   })
 })

@@ -3,6 +3,7 @@ import {
   aplicarComando,
   colocacionValida,
   CONFIG_EDIFICIOS,
+  CONFIG_VALLE,
   crearEstadoInicial,
   ladoValle,
   type Comando,
@@ -114,7 +115,7 @@ describe('bloquea-paso con vados', () => {
     const base = abierto()
     const lado = ladoValle(base.valle)
     // Un solo cruce (el primer grupo de vados) para que el río parta el valle.
-    const vado = base.cauce.vados.slice(0, 8)
+    const vado = base.cauce.vados.slice(0, CONFIG_VALLE.anchoRio * CONFIG_VALLE.vados.grosor)
     const e0: EstadoJuego = { ...base, cauce: { ...base.cauce, vados: vado } }
     const sin = alcance(e0, [])
     const con = alcance(e0, vado)

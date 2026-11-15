@@ -19,7 +19,7 @@ import {
   type Obstaculo,
 } from './index'
 
-const base = crearEstadoInicial({ semilla: 42 })
+const base = crearEstadoInicial({ semilla: 1 })
 /** Valle despejado: todas las parcelas propias, sin obstáculos; personaje en (50, 50). */
 const limpio: EstadoJuego = {
   ...base,
