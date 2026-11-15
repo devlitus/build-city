@@ -16,13 +16,18 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { Obstaculo, Valle } from '../core'
 import {
+  celdasOcupadas,
+  clavesAgua,
   colocarObstaculos,
+  dispersarBosque,
   hash,
   tipoCopa,
   variacionDe,
   type Colocacion,
+  type EntornoDispersion,
   type Variacion,
 } from './dispersion'
+import { celdasAgua } from './agua'
 import { color } from './paleta'
 import type { FuncionAltura } from './terreno/altura'
 import { DATOS_VEGETACION, type DatosVegetacion } from './vegetacion-datos'
@@ -246,7 +251,27 @@ export function crearVegetacion(
     }
   }
 
+  const agua = clavesAgua(celdasAgua(valle, altura))
+  const entorno: EntornoDispersion = {
+    valle,
+    semilla,
+    altura,
+    agua,
+    ocupadas: celdasOcupadas(obstaculos),
+    datos,
+  }
+
+  // Bosque decorativo de las colinas: mismas piezas, sin sombras (queda lejos del juego).
+  const bosque = lotesArbol()
+  for (const c of dispersarBosque(entorno)) {
+    const v = variacionDe(c.variante, semilla, datos.bosqueColinas.escala)
+    añadirArbol(bosque, c, altura(c.x, c.z), v, semilla, datos.arbol)
+  }
+
   grupo.add(
+    bosque.tronco.crear('bosque-tronco', piezas.troncoGeo, piezas.troncoMat, false),
+    bosque.pino.crear('bosque-copa-pino', piezas.pinoGeo, piezas.pinoMat, false),
+    bosque.redondo.crear('bosque-copa-redonda', piezas.redondoGeo, piezas.redondoMat, false),
     arboles.tronco.crear('arboles-tronco', piezas.troncoGeo, piezas.troncoMat, true),
     arboles.pino.crear('arboles-copa-pino', piezas.pinoGeo, piezas.pinoMat, true),
     arboles.redondo.crear('arboles-copa-redonda', piezas.redondoGeo, piezas.redondoMat, true),
