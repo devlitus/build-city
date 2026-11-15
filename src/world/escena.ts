@@ -5,7 +5,6 @@ import {
   Fog,
   IcosahedronGeometry,
   Mesh,
-  MeshStandardMaterial,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
@@ -14,23 +13,17 @@ import {
   type BufferGeometry,
 } from 'three'
 import { añadirLuces } from './luces'
+import { materialDe } from './materiales'
+import { color } from './paleta'
 
-// Colores provisionales de la escena: se sustituyen por la paleta en M0-T06.
-const COLORES_PROVISIONALES = {
-  cielo: 0xbcdcec,
-  niebla: 0xbcdcec,
-  suelo: 0x8fbf5c,
-  caja: 0xc4553b,
-  cono: 0x6a9a4a,
-  icosaedro: 0x9a9583,
-} as const
-
-function material(color: number): MeshStandardMaterial {
-  return new MeshStandardMaterial({ color, flatShading: true, roughness: 1, metalness: 0 })
-}
-
-function objeto(geometria: BufferGeometry, color: number, x: number, y: number, z: number): Mesh {
-  const malla = new Mesh(geometria, material(color))
+function objeto(
+  geometria: BufferGeometry,
+  colorMaterial: string,
+  x: number,
+  y: number,
+  z: number,
+): Mesh {
+  const malla = new Mesh(geometria, materialDe(colorMaterial))
   malla.position.set(x, y, z)
   malla.castShadow = true
   malla.receiveShadow = true
@@ -57,18 +50,18 @@ export function crearEscena(contenedor: HTMLElement): Escena {
   contenedor.append(renderer.domElement)
 
   const escena = new Scene()
-  escena.background = new Color(COLORES_PROVISIONALES.cielo)
-  escena.fog = new Fog(COLORES_PROVISIONALES.niebla, 40, 120)
+  escena.background = new Color(color('cielo'))
+  escena.fog = new Fog(color('niebla'), 40, 120)
   añadirLuces(escena)
 
-  const suelo = new Mesh(new PlaneGeometry(80, 80), material(COLORES_PROVISIONALES.suelo))
+  const suelo = new Mesh(new PlaneGeometry(80, 80), materialDe('prado'))
   suelo.rotation.x = -Math.PI / 2
   suelo.receiveShadow = true
   escena.add(suelo)
 
-  escena.add(objeto(new BoxGeometry(3, 3, 3), COLORES_PROVISIONALES.caja, -5, 1.5, 0))
-  escena.add(objeto(new ConeGeometry(2, 4, 6), COLORES_PROVISIONALES.cono, 0, 2, 0))
-  escena.add(objeto(new IcosahedronGeometry(1.8, 0), COLORES_PROVISIONALES.icosaedro, 5, 1.8, 0))
+  escena.add(objeto(new BoxGeometry(3, 3, 3), 'teja', -5, 1.5, 0))
+  escena.add(objeto(new ConeGeometry(2, 4, 6), 'bosque', 0, 2, 0))
+  escena.add(objeto(new IcosahedronGeometry(1.8, 0), 'roca', 5, 1.8, 0))
 
   const camara = new PerspectiveCamera(50, 1, 0.3, 300)
   camara.position.set(0, 9, 18)
