@@ -9,5 +9,13 @@
     "amplitudRuido": 3,
     "longitudOnda": 18,
     "alturaMinima": 6
+  },
+  "malla": { "radioColinas": 100 },
+  "colores": {
+    "alturaArena": 0.25,
+    "alturaRoca": 9,
+    "alturaNieve": 15,
+    "pendienteRoca": 0.9,
+    "variacion": 0.06
   }
 }

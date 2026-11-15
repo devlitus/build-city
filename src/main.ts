@@ -9,8 +9,8 @@ const SEMILLA_PROVISIONAL = 1
 const contenedor = document.getElementById('juego')
 if (contenedor) {
   Object.assign(contenedor.style, { position: 'fixed', inset: '0' })
-  const { dibujar, camara, renderer } = crearEscena(contenedor)
   const almacen = crearAlmacen(crearEstadoInicial({ semilla: SEMILLA_PROVISIONAL }))
+  const { dibujar, camara, renderer } = crearEscena(contenedor, almacen)
 
   let contarFps: (() => void) | undefined
   if (import.meta.env.DEV) {

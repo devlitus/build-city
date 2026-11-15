@@ -22,7 +22,27 @@ export const esquemaTerreno = v.pipe(
       longitudOnda: estrictoPositivo,
       alturaMinima: positivo,
     }),
+    malla: v.object({
+      /** Metros de colinas dibujados más allá del borde del valle (se redondea a trozos enteros). */
+      radioColinas: positivo,
+    }),
+    colores: v.object({
+      /** Por debajo de esta altura (m) la cara es arena de orilla. */
+      alturaArena: v.number(),
+      /** Por encima de esta altura (m) la roca sustituye al verde en las colinas. */
+      alturaRoca: positivo,
+      /** Por encima de esta altura (m) hay nieve. */
+      alturaNieve: positivo,
+      /** Pendiente (desnivel/avance) a partir de la cual la cara es roca. */
+      pendienteRoca: estrictoPositivo,
+      /** Margen relativo de variación del brillo por cara (0,06 = ±6 %). */
+      variacion: v.pipe(v.number(), v.minValue(0), v.maxValue(0.5)),
+    }),
   }),
+  v.check(
+    (t) => t.colores.alturaRoca < t.colores.alturaNieve,
+    'alturaRoca debe ser menor que alturaNieve',
+  ),
   v.check(
     (t) => t.colinas.altura * 0.6 - t.colinas.amplitudRuido > t.colinas.alturaMinima,
     'Las colinas deben superar alturaMinima: altura*0,6 - amplitudRuido > alturaMinima',
