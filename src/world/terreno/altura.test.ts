@@ -4,7 +4,7 @@ import { alturaTerreno, crearAltura } from './altura'
 import { casillaAMetros, ladoMetros } from './coordenadas'
 import { PARAMETROS_TERRENO } from './parametros'
 
-const { nivelAgua, cauce, colinas } = PARAMETROS_TERRENO
+const { nivelAgua, colinas } = PARAMETROS_TERRENO
 
 function valleDe(semilla: number): Valle {
   return crearEstadoInicial({ semilla }).valle
@@ -22,10 +22,16 @@ describe('alturaTerreno', () => {
       const altura = crearAltura(valle, semilla)
       const mitad = ladoMetros(valle) / 2
       const rio = centrosRio(valle)
-      // Se excluyen las casillas del río y su orilla (fondo plano + pendiente + 1 m de margen).
-      const exclusion = cauce.mesetaRadio + cauce.anchoTransicion + 1.5
+      // Se excluyen solo las casillas del río y 1 m de orilla medido desde su BORDE
+      // (distancia del punto al cuadrado de la casilla de río).
       const cercaDelRio = (x: number, z: number): boolean =>
-        rio.some((c) => Math.hypot(c.x - x, c.z - z) < exclusion)
+        rio.some(
+          (c) =>
+            Math.hypot(
+              Math.max(Math.abs(c.x - x) - 0.5, 0),
+              Math.max(Math.abs(c.z - z) - 0.5, 0),
+            ) <= 1,
+        )
       let comprobados = 0
       let maxima = 0
       for (let x = -mitad; x <= mitad - 1; x += 0.9) {
@@ -38,6 +44,25 @@ describe('alturaTerreno', () => {
       }
       expect(comprobados).toBeGreaterThan(1000)
       expect(maxima).toBeLessThanOrEqual(0.15)
+    }
+  })
+
+  it('ninguna casilla de tierra queda bajo el agua', () => {
+    for (const semilla of [1, 7, 12345]) {
+      const valle = valleDe(semilla)
+      const altura = crearAltura(valle, semilla)
+      const lado = ladoMetros(valle)
+      const rio = new Set(casillasRio(valle).map((c) => c.y * lado + c.x))
+      let comprobadas = 0
+      for (let y = 0; y < lado; y++) {
+        for (let x = 0; x < lado; x++) {
+          if (rio.has(y * lado + x)) continue
+          const c = casillaAMetros(x, y, valle)
+          expect(altura(c.x, c.z)).toBeGreaterThan(nivelAgua + 0.3)
+          comprobadas++
+        }
+      }
+      expect(comprobadas).toBeGreaterThan(lado * lado * 0.5)
     }
   })
 
@@ -77,7 +102,8 @@ describe('alturaTerreno', () => {
         )
       }
     }
-    expect(maxima).toBeLessThan(0.25)
+    // La orilla del cauce es un talud de 0,3 m (hasta ~4 m/m); el resto es suave.
+    expect(maxima).toBeLessThan(0.5)
   })
 
   it('misma semilla -> mismas alturas', () => {

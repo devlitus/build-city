@@ -11,13 +11,10 @@ function suavizar(t: number): number {
   return c * c * (3 - 2 * c)
 }
 
-/**
- * Distancia (en casillas, entre centros) de cada casilla a la casilla de río más cercana,
- * con una pasada doble de chamfer. Índice = y * lado + x.
- */
-function campoDistancias(valle: Valle, lado: number): Float32Array {
-  const d = new Float32Array(lado * lado).fill(1e9)
-  for (const c of casillasRio(valle)) d[c.y * lado + c.x] = 0
+/** Distancia (chamfer de dos pasadas, en casillas) de cada casilla a la fuente más cercana. */
+function distanciaAFuentes(esFuente: Uint8Array, lado: number): Float32Array {
+  const d = new Float32Array(lado * lado)
+  for (let i = 0; i < d.length; i++) d[i] = esFuente[i] ? 0 : 1e9
   const relajar = (x: number, y: number, dx: number, dy: number, coste: number): void => {
     const nx = x + dx
     const ny = y + dy
@@ -44,8 +41,36 @@ function campoDistancias(valle: Valle, lado: number): Float32Array {
 }
 
 /**
- * Crea la función de altura del terreno para un valle y una semilla. Precalcula un campo de
- * distancias al río (por casilla) y lo interpola de forma bilineal, así el cauce es continuo.
+ * Distancia con signo al borde del río sobre la rejilla de VÉRTICES de casilla, de lado + 1
+ * por lado (índice = j * (lado + 1) + i, vértice i en x = i - lado/2). Un vértice es borde
+ * (0) si lo tocan casillas de río y de tierra, interior (negativo) si solo de río y exterior
+ * (positivo) si solo de tierra; fuera del valle se repite la casilla más cercana. Así todo
+ * punto dentro de una casilla de río (sus 4 vértices son borde o interior) tiene signo <= 0.
+ */
+function campoSigno(valle: Valle, lado: number): Float32Array {
+  const rio = new Uint8Array(lado * lado)
+  for (const c of casillasRio(valle)) rio[c.y * lado + c.x] = 1
+  const n = lado + 1
+  const esRio = (x: number, y: number): number =>
+    rio[Math.min(lado - 1, Math.max(0, y)) * lado + Math.min(lado - 1, Math.max(0, x))] ?? 0
+  const borde = new Uint8Array(n * n)
+  const dentro = new Uint8Array(n * n)
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const cuenta = esRio(i - 1, j - 1) + esRio(i, j - 1) + esRio(i - 1, j) + esRio(i, j)
+      borde[j * n + i] = cuenta > 0 && cuenta < 4 ? 1 : 0
+      dentro[j * n + i] = cuenta === 4 ? 1 : 0
+    }
+  const dist = distanciaAFuentes(borde, n)
+  const sd = new Float32Array(n * n)
+  for (let k = 0; k < sd.length; k++) sd[k] = dentro[k] ? -(dist[k] ?? 0) : (dist[k] ?? 0)
+  return sd
+}
+
+/**
+ * Crea la función de altura del terreno para un valle y una semilla. Precalcula la distancia
+ * con signo al borde del río (por vértice de casilla) y la interpola de forma bilineal, así el
+ * cauce es continuo y la bajada ocurre dentro del río y en la orilla inmediata (`anchoOrilla`).
  * Valle central casi llano con ruido suave, cauce hundido bajo `nivelAgua` y colinas que suben
  * desde el borde del valle. Pura y determinista (misma semilla -> mismas alturas).
  */
@@ -56,42 +81,46 @@ export function crearAltura(
 ): FuncionAltura {
   const lado = Math.round(ladoMetros(valle))
   const mitad = lado / 2
-  const dist = campoDistancias(valle, lado)
+  const sdCampo = campoSigno(valle, lado)
   const { alturaBase, ruidoParcela, cauce, colinas } = parametros
   const semillaColinas = (semilla ^ 0x5bd1e995) | 0
   const semillaMacro = (semilla ^ 0x1b873593) | 0
   const onda3 = colinas.longitudOnda * 3
 
-  const distanciaRio = (x: number, z: number): number => {
-    // Coordenadas continuas de rejilla: el centro de la casilla i está en i.
-    const gx = Math.min(lado - 1, Math.max(0, x + mitad - 0.5))
-    const gz = Math.min(lado - 1, Math.max(0, z + mitad - 0.5))
-    const x0 = Math.min(lado - 2, Math.floor(gx))
-    const z0 = Math.min(lado - 2, Math.floor(gz))
+  const distanciaConSigno = (x: number, z: number): number => {
+    // Coordenadas continuas en la rejilla de vértices (n = lado + 1 por lado).
+    const gx = Math.min(lado, Math.max(0, x + mitad))
+    const gz = Math.min(lado, Math.max(0, z + mitad))
+    const x0 = Math.min(lado - 1, Math.floor(gx))
+    const z0 = Math.min(lado - 1, Math.floor(gz))
     const fx = gx - x0
     const fz = gz - z0
-    const i = z0 * lado + x0
-    const d00 = dist[i] ?? 0
-    const d10 = dist[i + 1] ?? 0
-    const d01 = dist[i + lado] ?? 0
-    const d11 = dist[i + lado + 1] ?? 0
+    const n = lado + 1
+    const i = z0 * n + x0
+    const d00 = sdCampo[i] ?? 0
+    const d10 = sdCampo[i + 1] ?? 0
+    const d01 = sdCampo[i + n] ?? 0
+    const d11 = sdCampo[i + n + 1] ?? 0
     const a = d00 + (d10 - d00) * fx
     const b = d01 + (d11 - d01) * fx
     return a + (b - a) * fz
   }
 
   return (x, z) => {
-    // Distancia al cuadrado del valle (0 dentro): base de las colinas.
-    const fuera = Math.hypot(Math.max(Math.abs(x) - mitad, 0), Math.max(Math.abs(z) - mitad, 0))
-    const s = suavizar(fuera / colinas.anchoSubida)
+    const dx = Math.max(Math.abs(x) - mitad, 0)
+    const dz = Math.max(Math.abs(z) - mitad, 0)
+    // Dentro del valle s = 0: no hay colinas (se evitan hypot y ruidos).
+    const s = dx === 0 && dz === 0 ? 0 : suavizar(Math.hypot(dx, dz) / colinas.anchoSubida)
 
     const suelo =
       alturaBase +
       ruidoParcela.amplitud *
         ruidoValor(x / ruidoParcela.longitudOnda, z / ruidoParcela.longitudOnda, semilla)
 
-    const orilla = suavizar((distanciaRio(x, z) - cauce.mesetaRadio) / cauce.anchoTransicion)
+    // A fondo hasta `bordeFondo` m dentro del río; sube hasta cero en `anchoOrilla` m.
+    const orilla = suavizar((distanciaConSigno(x, z) + cauce.bordeFondo) / cauce.anchoOrilla)
     const hundimiento = cauce.profundidad * (1 - orilla)
+    if (s === 0) return suelo - hundimiento
 
     const macro = (ruidoValor(x / onda3, z / onda3, semillaMacro) + 1) / 2
     const detalle = ruidoValor(x / colinas.longitudOnda, z / colinas.longitudOnda, semillaColinas)

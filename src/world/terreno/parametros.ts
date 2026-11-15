@@ -12,8 +12,8 @@ export const esquemaTerreno = v.pipe(
     ruidoParcela: v.object({ amplitud: positivo, longitudOnda: estrictoPositivo }),
     cauce: v.object({
       profundidad: estrictoPositivo,
-      mesetaRadio: positivo,
-      anchoTransicion: estrictoPositivo,
+      bordeFondo: positivo,
+      anchoOrilla: estrictoPositivo,
     }),
     colinas: v.object({
       altura: positivo,
@@ -23,6 +23,14 @@ export const esquemaTerreno = v.pipe(
       alturaMinima: positivo,
     }),
   }),
+  v.check(
+    (t) => t.colinas.altura * 0.6 - t.colinas.amplitudRuido > t.colinas.alturaMinima,
+    'Las colinas deben superar alturaMinima: altura*0,6 - amplitudRuido > alturaMinima',
+  ),
+  v.check(
+    (t) => t.cauce.anchoOrilla - t.cauce.bordeFondo <= 1,
+    'La orilla en tierra (anchoOrilla - bordeFondo) no debe pasar de 1 m',
+  ),
   v.check(
     (t) => t.alturaBase + t.ruidoParcela.amplitud - t.cauce.profundidad < t.nivelAgua,
     'El fondo del cauce debe quedar por debajo del nivel del agua',
