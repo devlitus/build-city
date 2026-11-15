@@ -2,6 +2,7 @@
 
 > **Versión:** 0.1 · 2026-11-15
 > Referencia de diseño: [GDD.md](GDD.md) · Material visual: [borrador/](borrador/)
+> **Plan detallado por hito:** [docs/plan/](docs/plan/) · **Cómo se trabaja:** [docs/PROCESO.md](docs/PROCESO.md)
 > Basado en el ROADMAP de [Raíces 2D](../build-frame/ROADMAP.md), adaptado a three.js y a las decisiones del GDD §12.
 
 ## Principios
@@ -35,7 +36,7 @@ Transversal              Arte, audio, rendimiento, accesibilidad
 - Repositorio Git y estructura: `src/core/`, `src/world/` (three.js), `src/ui/` (Preact), `src/save/`, `data/`, `assets-src/`.
 - Vite + TypeScript estricto + three.js + Preact.
 - **Copia del núcleo de Raíces** (`src/core`, `data/*.json`) con sus tests pasando tal cual.
-- ESLint, Prettier, Vitest y Playwright configurados. CI en GitHub Actions: lint → formato → tipos → tests → build.
+- ESLint, Prettier y Vitest configurados (sin e2e por ahora, PROCESO §7). CI en GitHub Actions: lint → formato → tipos → tests → build.
 - Escena mínima: suelo, luz de sol y de hemisferio, cielo, niebla, contador de fps en desarrollo.
 - **Prueba de estilo visual:** la misma escena de muestra en *low-poly* plano, *toon* y pintado; se elige uno y se registra en un ADR.
 - ADRs iniciales: three.js como motor, copia del núcleo, estilo visual, pipeline de arte (Blender → `.glb`).
@@ -161,7 +162,7 @@ Música ambiental por estación y efectos por herramienta, de librerías CC0/CC-
 
 ### Rendimiento
 - Presupuesto orientativo: < 300 llamadas de dibujo y < 500.000 triángulos en pantalla.
-- Medición en cada hito con el contador de fps y una escena de estrés en Playwright.
+- Medición en cada hito con el contador de fps y una escena de estrés de desarrollo (M7-T06).
 - Calidad gráfica ajustable (sombras, distancia de dibujo, densidad de hierba) desde M8.
 
 ### Accesibilidad
@@ -174,7 +175,7 @@ Teclas reasignables, sensibilidad e inversión del ratón, tamaño de texto de l
 | Riesgo | Mitigación |
 |---|---|
 | El núcleo 2D no encaja en algún punto con el mundo 3D (alturas, colisiones) | La lógica sigue en la cuadrícula de 1 m; la altura y la colisión son solo de la vista. Revisarlo en M1–M2 |
-| Rendimiento con mucha vegetación | `InstancedMesh`, LOD y chunks desde M1; escena de estrés en la CI |
+| Rendimiento con mucha vegetación | `InstancedMesh`, LOD y chunks desde M1; escena de estrés de desarrollo (M7-T06) |
 | Arte 3D lento de producir | *Placeholders* siempre; estilo sencillo; modelos generados por script en Blender |
 | La cámara libre marea o molesta al construir | El Modo Plano tiene su propia cámara; probar con jugadores en M4 |
 | El estilo visual elegido no convence tras el MVP | La prueba de estilo de M0 se hace antes de producir arte final |

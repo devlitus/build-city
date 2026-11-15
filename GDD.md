@@ -222,7 +222,7 @@ Igual que Raíces: mercado con precios dinámicos suaves, caja de envío, proces
 | Mundo | Chunks de 20×20 m (= parcela), LOD de árboles, `InstancedMesh` para vegetación y cultivos | 60 fps en un PC medio con gráfica integrada reciente |
 | Sombras | Cascaded Shadow Maps (`three/addons/csm`) solo cerca de la cámara | Coste controlado |
 | Guardado | IndexedDB (ADR 0001 de Raíces) | Reutilizar |
-| Tests | Vitest para el núcleo, Playwright para e2e | Igual que Raíces |
+| Tests | Vitest, solo tests unitarios de lógica (sin e2e por ahora) | Decidido el 2026-11-15, ver PROCESO §7 |
 
 **Decidido:** proyecto nuevo e independiente (`build-city`) que **copia** el núcleo de Raíces en lugar de compartirlo. Los dos juegos pueden evolucionar por separado; si más adelante conviene, se puede extraer un paquete común.
 
