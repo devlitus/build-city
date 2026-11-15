@@ -1,7 +1,7 @@
 # GDD — Borrador del juego de granja 3D
 
 > **Título provisional:** *Raíces 3D* (hermano en 3D de [build-frame / Raíces](../build-frame/GDD.md))
-> **Versión:** 0.2 · 2026-11-15 (preguntas abiertas cerradas, ver §12) · **Estado:** borrador antes de escribir código
+> **Versión:** 0.3 · 2026-11-15 (estilo visual y pipeline de arte decididos, ver §9 y ADR 0003/0005) · **Estado:** borrador antes de escribir código
 > **Material visual:** [borrador/](borrador/) — arte conceptual (ComfyUI) y bocetos 3D (Blender)
 
 ---
@@ -14,7 +14,7 @@
 | **Plataforma** | Solo web: navegador de escritorio con teclado y ratón. Móvil fuera del alcance por ahora |
 | **Motor** | three.js + TypeScript + Vite |
 | **Perspectiva** | 3D: tercera persona (Modo Vida) y cámara cenital orbital (Modo Plano) |
-| **Estilo** | *Low-poly* estilizado, sombreado plano, paleta cálida (salvia, ocre, terracota, crema) |
+| **Estilo** | **PBR estilizado** con texturas propias (ComfyUI), paleta cálida (salvia, ocre, terracota, crema) como tinte y gradación de color ([ADR 0003](docs/adr/0003-estilo-visual.md)) |
 | **Modo** | Un jugador; online por fases (igual que Raíces) |
 
 **Pitch:** llegas a un valle vacío con una mochila, una tienda de campaña y tus ahorros. Talas, recoges piedra, compras tu primera parcela y, temporada a temporada, conviertes un prado salvaje en la granja que se ve desde lo alto de la colina.
@@ -165,7 +165,8 @@ Gallinas, vacas, ovejas, cerdos y abejas, con IA sencilla de deambular dentro de
 ### 7.8 Personaje
 - Energía y **bienestar** (mecánica distintiva de Raíces).
 - **3D añade:** el bienestar sube al sentarse en un banco con vistas, al visitar un mirador o al ver el atardecer.
-- Personalización básica: piel, pelo, sombrero, ropa (ver `concept/06-granjero.png`).
+- Modelo: «Farmer» de Grab3D (CC0), adulto con sombrero de paja, peto vaquero, camisa de cuadros y pañuelo (ver ADR 0003 y `borrador/prueba-estilo/modelos/granjero.glb`). Sustituye al concepto `concept/06-granjero.png`.
+- Personalización básica (piel, pelo, sombrero, ropa): pendiente; con un modelo cerrado hay que estudiar cómo hacerla (cambiar texturas o piezas).
 
 ### 7.9 Economía, pueblo y vecinos
 Igual que Raíces: mercado con precios dinámicos suaves, caja de envío, procesado, 8–12 vecinos, **proyectos del pueblo** (reparar el puente, reabrir la panadería, la feria). En 3D los proyectos **cambian el pueblo físicamente** (el puente roto del día 1 se repara; ver `concept/01-dia-uno.png`).
@@ -192,21 +193,32 @@ Igual que Raíces: mercado con precios dinámicos suaves, caja de envío, proces
 ## 9. Arte y pipeline
 
 ### 9.1 Estilo
-- **Low-poly estilizado con sombreado plano**, proporciones "de juguete", contornos limpios, sin texturas fotográficas.
-- **Paleta en una sola textura** (atlas de colores de 256×1 px): todos los modelos comparten un material → menos *draw calls* y paleta coherente.
-- Iluminación: sol direccional cálido + luz de hemisferio (cielo/suelo) + niebla de distancia. Postproceso suave (SSAO ligero, *bloom* solo de noche).
+> Decidido con la prueba de estilo de M0 ([`borrador/prueba-estilo/`](borrador/prueba-estilo/), estilo 4). Detalle en [ADR 0003](docs/adr/0003-estilo-visual.md).
+
+- **PBR estilizado:** materiales físicos (color, normales, rugosidad), proporciones algo exageradas y bordes biselados; nada de aristas de caja perfectas.
+- **Texturas propias** generadas con ComfyUI con una receta común (mismo prompt base y paleta, semilla fija por textura). **Poly Haven** (CC0) solo para piedra, roca y corteza, teñidas hacia la paleta.
+- **Paleta en datos** (`data/`), usada como **tinte de materiales y gradación de color** (cielo, niebla, luz), no como atlas de un solo material.
+- **Iluminación:** cielo físico que también ilumina la escena, sol con sombras suaves en cascada, mapeo de tonos ACES, niebla suave y oclusión ambiental (GTAO) como opción de calidad.
+- **Vegetación con volumen:** hierba densa instanciada, copas con tarjetas de hojas y cultivos en tarjetas, todo con viento por *shader*.
+- **Coste:** más caro que el *low-poly*; densidad de hierba, oclusión ambiental y resolución de sombras son opciones de calidad (M8).
 
 ### 9.2 Pipeline
+> Detalle en [ADR 0005](docs/adr/0005-pipeline-arte.md). Lista de lo que falta: [docs/arte/inventario.md](docs/arte/inventario.md).
+
 | Recurso | Herramienta | Salida |
 |---|---|---|
 | Arte conceptual, *moodboard* | ComfyUI (Qwen-Image 2512, el mismo workflow que Raíces) | PNG + ficha con prompt y semilla |
-| Edificios, props, cultivos | **Blender** (modelado low-poly por script o a mano) | `.glb` con compresión meshopt/Draco |
-| Personaje | Blender (rig sencillo + animaciones: andar, correr, golpear, regar, sentarse) | `.glb` con animaciones |
-| Modelos rápidos desde concepto | ComfyUI + Hunyuan3D 2.1 (ya instalado) para prototipar y luego retopología en Blender | `.glb` |
-| Terreno | Heightmap generado + pintura de vértices | En tiempo de ejecución |
+| **Texturas de material** | ComfyUI con la receta `borrador/workflows/texturas/recetas.json` → `hacer_repetible.py` (repetible + normales + rugosidad) | `_diff`, `_nor_gl`, `_rough` → KTX2 |
+| Texturas con relieve escaneado | Poly Haven (CC0), 1K, teñidas | Igual que arriba |
+| Edificios, props, cultivos | **Blender** (por script o a mano), bordes biselados y UV en metros | `.glb` con meshopt |
+| **Personaje** | «Farmer» de Grab3D (CC0) preparado con `borrador/blender/preparar_granjero_grab3d.py` | `.glb` con Reposo, Andar y Correr |
+| Animaciones nuevas (golpear, regar, sentarse) | Bibliotecas gratuitas compatibles con su esqueleto + Blender | Dentro del `.glb` del personaje |
+| Terreno | Heightmap generado + mezcla de texturas por tipo de suelo | En tiempo de ejecución |
 | Iconos de UI | ComfyUI | PNG/WebP |
 
-**Regla (heredada):** todo recurso tiene una ficha (prompt, semilla, modelo o `.blend`) para poder regenerarlo. Los workflows usados en este borrador están en `borrador/workflows/`.
+**Probado y descartado para el personaje:** modelarlo por piezas en Blender (aspecto de muñeco) y generarlo con Hunyuan3D 2.1 desde el concepto pintándolo por proyección (manchas y zonas sin pintar). Ver ADR 0005.
+
+**Regla (heredada):** todo recurso tiene una ficha (prompt, semilla, identificador de Poly Haven, modelo o `.blend`) para poder regenerarlo. Los workflows usados están en `borrador/workflows/`.
 
 ---
 
@@ -253,6 +265,8 @@ Igual que Raíces: mercado con precios dinámicos suaves, caja de envío, proces
 | Construcción en el MVP | **Edificios prefabricados con niveles + vallas y caminos** dibujados a mano |
 | Montura | **No en el MVP**; carro en una fase posterior |
 | Nombre provisional | **Raíces 3D** |
+| Estilo visual | **PBR estilizado con texturas propias de ComfyUI** (ADR 0003) |
+| Personaje | **«Farmer» de Grab3D (CC0)**, preparado en Blender (ADR 0005) |
 
 ### Preguntas que siguen abiertas
 - Nombre definitivo del valle (Raíces usa «Valle Sereno» de forma provisional).
