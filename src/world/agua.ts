@@ -137,8 +137,7 @@ export function crearAgua(
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying vec2 vPlano;\nuniform float uTiempo;\nuniform float uAmplitud;\nuniform float uFrecuencia;
-uniform vec4 uForma;',
+        '#include <common>\nvarying vec2 vPlano;\nuniform float uTiempo;\nuniform float uAmplitud;\nuniform float uFrecuencia;\nuniform vec4 uForma;',
       )
       .replace(
         '#include <color_fragment>',
