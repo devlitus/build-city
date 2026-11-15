@@ -1,7 +1,21 @@
-// Punto de entrada mínimo. La escena 3D llega en M0-T04.
+import { crearEscena } from './world/escena'
+
 const contenedor = document.getElementById('juego')
 if (contenedor) {
-  const titulo = document.createElement('h1')
-  titulo.textContent = 'Raíces 3D'
-  contenedor.append(titulo)
+  Object.assign(contenedor.style, { position: 'fixed', inset: '0' })
+  const { dibujar } = crearEscena(contenedor)
+
+  let contarFps: (() => void) | undefined
+  if (import.meta.env.DEV) {
+    void import('./world/contador-fps').then((m) => {
+      contarFps = m.crearContadorFps(contenedor)
+    })
+  }
+
+  const bucle = (): void => {
+    dibujar()
+    contarFps?.()
+    requestAnimationFrame(bucle)
+  }
+  requestAnimationFrame(bucle)
 }
