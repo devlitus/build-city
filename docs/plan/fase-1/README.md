@@ -11,7 +11,7 @@ Un jugador abre el juego en el navegador de escritorio, recorre el valle en terc
 | Hito | Plan | Depende de | Tareas | Críticas | Se puede adelantar |
 |---|---|---|---|---|---|
 | **M0 — Cimientos** | [M0-cimientos.md](M0-cimientos.md) | — | 7 | — | — |
-| **M1 — El valle 3D** | [M1-valle.md](M1-valle.md) | M0 | 8 | T01 | — |
+| **M1 — El valle 3D** | [M1-valle.md](M1-valle.md) | M0 | 9 | T01 | — |
 | **M2 — Personaje y tiempo** | [M2-personaje-tiempo.md](M2-personaje-tiempo.md) | M1 | 8 | — | — |
 | **M3 — Recolección** | [M3-recoleccion.md](M3-recoleccion.md) | M2 | 7 | T03 | — |
 | **M4 — Parcelas y Modo Plano** | [M4-parcelas-modo-plano.md](M4-parcelas-modo-plano.md) | M2 | 7 | T05 | Puede ir en paralelo con M3 |

@@ -78,6 +78,8 @@ El proyecto existe, se construye y se testea solo, contiene el núcleo lógico d
 ---
 
 ### M0-T04 · Escena 3D mínima
+
+> **Nota (2026-11-15):** M0-T04 se implementó en *low-poly* plano antes del ADR 0003. Las subtareas revisadas T04.2 y T04.3 se implementan en [M1-T09](M1-valle.md#m1-t09--escena-y-terreno-al-estilo-pbr-adr-0003).
 - **Objetivo:** tener el lienzo three.js con la iluminación base del juego, sobre la que se construirán todos los hitos.
 - **Depende de:** T01 · **Archivos:** `src/world/escena.ts`, `src/world/luces.ts`, `src/main.ts` · **Crítico:** no
 
@@ -119,6 +121,8 @@ El proyecto existe, se construye y se testea solo, contiene el núcleo lógico d
 ---
 
 ### M0-T06 · Paleta y materiales
+
+> **Nota (2026-11-15):** M0-T06 se implementó como paleta de colores planos antes del ADR 0003. Las subtareas revisadas T06.3 y T06.4 se implementan en [M1-T09](M1-valle.md#m1-t09--escena-y-terreno-al-estilo-pbr-adr-0003).
 - **Objetivo:** fijar en datos los colores del juego y el catálogo de materiales PBR (texturas, metros por repetición y tinte), para que todo combine.
 - **Depende de:** T04 · **Archivos:** `data/paleta.json`, `src/world/materiales.ts` · **Crítico:** no
 
