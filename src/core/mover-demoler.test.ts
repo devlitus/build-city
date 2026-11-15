@@ -6,6 +6,8 @@ import {
   comprobarMover,
   crearEstadoInicial,
   CONFIG_EDIFICIOS,
+  casillaBloqueada,
+  mapaTransitabilidad,
   defEdificio,
   ladoValle,
   personajeAlDespertar,
@@ -17,7 +19,7 @@ import {
 } from './index'
 
 /** Plano con todas las parcelas propias que no son río, vivienda a la izquierda y almacén a la derecha. */
-function preparar(semilla = 42, dinero = 10_000): EstadoJuego {
+function preparar(semilla = 42, dinero = 5_000_000): EstadoJuego {
   let e = crearEstadoInicial({ semilla, dineroInicial: dinero })
   const paso = (c: Comando): void => {
     const r = aplicarComando(e, c)
@@ -430,8 +432,20 @@ describe('mover la casa (D9)', () => {
     const p0 = puertaDe(def, t.x, t.y)
     expect(Math.floor(antes.x)).toBe(p0.x)
     expect(Math.floor(antes.y)).toBe(p0.y)
-    const destino = sitio({ ...t.e, edificios: [] }, 'casa', -1)
-    const movida = ok(t.e, { tipo: 'MoverEdificio', id: t.id, ...destino })
+    // Un destino lejano cuya puerta quede libre (en el último sitio, pegado al borde sur, la puerta cae fuera del valle y
+    // el despertar se desplaza; ese caso lo cubre otro test de este archivo).
+    let k = -3 * ladoValle(t.e.valle) // unas filas por encima del borde sur, donde la puerta cae fuera del valle
+    let destino = sitio({ ...t.e, edificios: [] }, 'casa', k)
+    let movida = ok(t.e, { tipo: 'MoverEdificio', id: t.id, ...destino })
+    const puertaLibre = (e: EstadoJuego, d: { x: number; y: number }) => {
+      const p = puertaDe(def, d.x, d.y)
+      return !casillaBloqueada(mapaTransitabilidad(e), p.x, p.y)
+    }
+    while (!puertaLibre(movida, destino)) {
+      k -= 7
+      destino = sitio({ ...t.e, edificios: [] }, 'casa', k)
+      movida = ok(t.e, { tipo: 'MoverEdificio', id: t.id, ...destino })
+    }
     const despues = personajeAlDespertar(movida)
     const p1 = puertaDe(def, destino.x, destino.y)
     expect(Math.floor(despues.x)).toBe(p1.x)
