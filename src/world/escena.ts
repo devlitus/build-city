@@ -3,10 +3,11 @@ import type { LectorEstado } from '../juego/almacen'
 import { crearHorizonte } from './horizonte'
 import { PARAMETROS_HORIZONTE } from './horizonte-parametros'
 import { añadirLuces } from './luces'
+import { crearAgua } from './agua'
 import { color } from './paleta'
-import { ladoMetros } from './terreno/coordenadas'
 import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
+import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 
 export interface Escena {
@@ -45,7 +46,10 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
   escena.add(crearTerreno(valle, semilla))
   escena.add(horizonte.objeto)
-  escena.add(crearPueblo(valle, crearAltura(valle, semilla)))
+  const altura = crearAltura(valle, semilla)
+  escena.add(crearPueblo(valle, altura))
+  const agua = crearAgua(valle, altura)
+  escena.add(agua)
 
   const camara = new PerspectiveCamera(
     50,
@@ -75,7 +79,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     renderer,
     dibujar: () => {
       const ahora = performance.now()
-      horizonte.actualizar(Math.min(0.1, (ahora - instanteAnterior) / 1000))
+      const dt = Math.min(0.1, (ahora - instanteAnterior) / 1000)
+      horizonte.actualizar(dt)
+      agua.actualizar(dt)
       instanteAnterior = ahora
       renderer.render(escena, camara)
     },
