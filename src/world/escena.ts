@@ -63,7 +63,7 @@ export function crearEscena(contenedor: HTMLElement): Escena {
   escena.add(objeto(new ConeGeometry(2, 4, 6), 'bosque', 0, 2, 0))
   escena.add(objeto(new IcosahedronGeometry(1.8, 0), 'roca', 5, 1.8, 0))
 
-  const camara = new PerspectiveCamera(50, 1, 0.3, 300)
+  const camara = new PerspectiveCamera(50, 1, 0.3, 600)
   camara.position.set(0, 9, 18)
   camara.lookAt(0, 1.5, 0)
 
