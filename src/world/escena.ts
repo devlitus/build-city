@@ -3,6 +3,8 @@ import type { LectorEstado } from '../juego/almacen'
 import { añadirLuces } from './luces'
 import { color } from './paleta'
 import { ladoMetros } from './terreno/coordenadas'
+import { crearPueblo } from './pueblo'
+import { crearAltura } from './terreno/altura'
 import { crearTerreno } from './terreno/malla'
 
 export interface Escena {
@@ -35,6 +37,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
 
   // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
   escena.add(crearTerreno(valle, semilla))
+  escena.add(crearPueblo(valle, crearAltura(valle, semilla)))
 
   const camara = new PerspectiveCamera(50, 1, 0.3, lado * 6)
   // Vista inicial: desde el sur y en alto, mirando al centro del valle.
