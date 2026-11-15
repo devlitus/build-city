@@ -6,6 +6,7 @@ import {
   parcelaComprable,
   precioParcela,
   type EstadoJuego,
+  CONFIG_ECONOMIA,
 } from './index'
 
 const base = crearEstadoInicial({ semilla: 42, dineroInicial: 100000 })
@@ -148,5 +149,37 @@ describe('parcelaComprable', () => {
       motivo: 'no-adyacente',
     })
     expect(parcelaComprable(e, -1)).toMatchObject({ motivo: 'parametro-invalido' })
+  })
+})
+
+describe('precio con 64 parcelas', () => {
+  // Los parámetros de precio viven en data/economia.json (precioBase, factores, subidaPorCompra
+  // y factorMaximoSubida), no en valle.json; el test los lee de ahí (CONFIG_ECONOMIA).
+  it('el precio sube con cada compra según economia.json', () => {
+    const c = CONFIG_ECONOMIA
+    const p = base.valle.parcelas[centro]!
+    const factores =
+      c.factorTerreno[p.terreno] * c.factorFertilidad[p.fertilidad] * c.factorAgua[p.agua]
+    const tope = c.factorMaximoSubida ?? Infinity
+    let anterior = 0
+    let subidas = 0
+    for (let n = 0; n < base.valle.parcelas.length; n++) {
+      const precio = precioParcela({ ...base, comprasHechas: n }, centro) as number
+      const esperado = c.precioBase * factores * Math.min((1 + c.subidaPorCompra) ** n, tope)
+      expect(Math.abs(precio - esperado)).toBeLessThanOrEqual(10)
+      expect(precio).toBeGreaterThanOrEqual(anterior)
+      if (precio > anterior) subidas++
+      anterior = precio
+    }
+    expect(subidas).toBeGreaterThan(5)
+    // Y con compras reales: cada una cuesta lo que marca la fórmula y suma una compra.
+    let e = base
+    for (const i of [centro, idx(2, 3), idx(2, 4), idx(3, 4)]) {
+      const precio = precioParcela(e, i) as number
+      const dinero = e.dinero
+      e = ok(e, i)
+      expect(e.dinero).toBe(dinero - precio)
+    }
+    expect(e.comprasHechas).toBe(4)
   })
 })

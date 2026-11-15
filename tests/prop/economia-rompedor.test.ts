@@ -62,6 +62,20 @@ function valorExacto(t: Terreno, f: Fertilidad, a: Agua, n: number): { num: bigi
     centesimas(c.factorAgua[a]) *
     factorSubida ** BigInt(n)
   const den = 1_000_000n * 100n ** BigInt(n)
+  // M1-T01: el factor (1 + subida)^n no pasa de `factorMaximoSubida` (si los datos lo traen).
+  if (c.factorMaximoSubida !== undefined) {
+    const tope = centesimas(c.factorMaximoSubida)
+    const sinFactor =
+      BigInt(c.precioBase) *
+      centesimas(c.factorTerreno[t]) *
+      centesimas(c.factorFertilidad[f]) *
+      centesimas(c.factorAgua[a])
+    const topeNum = sinFactor * tope
+    // num/den > sinFactor/1e6 × tope/100  ⇔  factor sin tope > tope
+    if (num * 100n > topeNum * (den / 1_000_000n)) {
+      return { num: topeNum, den: 1_000_000n * 100n }
+    }
+  }
   return { num, den }
 }
 

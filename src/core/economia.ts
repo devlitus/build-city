@@ -5,6 +5,8 @@ import type { EstadoJuego } from './estado'
 const PRECIO_MINIMO = 10n
 /** Con subida > 0, más compras que esto desbordan cualquier entero seguro. */
 const TOPE_COMPRAS = 10_000
+/** Con `factorMaximoSubida`, más compras que esto no puede ser un estado válido (el valle tiene 64 parcelas). */
+const MAX_COMPRAS_CON_TOPE = 1_000
 /** Tope de dígitos del cálculo exacto (anti-abuso con decimales absurdos): da `undefined`. */
 const TOPE_DIGITOS = 100_000
 
@@ -54,9 +56,20 @@ export function precioParcela(
   const s = decimalDe(config.subidaPorCompra)
   // Con subida 0 el factor es 1 sea cual sea el número de compras.
   const n = s.n === 0n ? 0 : compras
+  // Con tope del factor no hay desbordamiento, pero más compras que parcelas posibles es estado corrupto.
+  if (config.factorMaximoSubida !== undefined && compras > MAX_COMPRAS_CON_TOPE) return undefined
   if (n > TOPE_COMPRAS || s.d.toString().length * n > TOPE_DIGITOS) return undefined
   let num = BigInt(config.precioBase) * (s.d + s.n) ** BigInt(n)
   let den = s.d ** BigInt(n)
+  if (config.factorMaximoSubida !== undefined) {
+    // Tope del factor acumulado: si (1 + subida)^n > tope, el factor vale el tope.
+    const tope = decimalDe(config.factorMaximoSubida)
+    const base = BigInt(config.precioBase)
+    if (num * tope.d > tope.n * base * den) {
+      num = base * tope.n
+      den = tope.d
+    }
+  }
   for (const f of factores) {
     num *= f.n
     den *= f.d

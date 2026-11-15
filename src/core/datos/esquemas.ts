@@ -136,6 +136,14 @@ export const EsquemaConfigEconomia = v.strictObject({
   factorAgua: factores(AGUAS),
   /** Subida fraccionaria del precio por cada compra hecha (0.25 = +25 %). */
   subidaPorCompra: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(10)),
+  /**
+   * Tope del factor acumulado `(1 + subida)^compras` (opcional; sin él, crece sin límite). Con 64
+   * parcelas el crecimiento exponencial puro daría precios absurdos: a partir de aquí el precio
+   * deja de subir.
+   */
+  factorMaximoSubida: v.optional(
+    v.pipe(v.number(), v.finite(), v.minValue(1), v.maxValue(100_000)),
+  ),
 })
 
 export type ConfigEconomia = v.InferOutput<typeof EsquemaConfigEconomia>

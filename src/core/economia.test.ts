@@ -107,6 +107,19 @@ describe('precioParcela', () => {
       expect(precioParcela(e, i)).toBeUndefined()
   })
 
+  it('el factor de subida no pasa de factorMaximoSubida (M1-T01, 64 parcelas)', () => {
+    const cfg = { ...CONFIG_ECONOMIA, precioBase: 1000, factorMaximoSubida: 3 }
+    const e = conParcela('prado', 'media', 'seca', 0)
+    const en = (n: number) => precioParcela({ ...e, comprasHechas: n }, 0, cfg) as number
+    expect(en(1)).toBe(
+      precioParcela({ ...e, comprasHechas: 1 }, 0, { ...cfg, factorMaximoSubida: undefined }),
+    )
+    // 1000 × 0,9 × 3 = 2700 en cuanto 1,4^n supera 3, y se queda ahí.
+    expect(en(10)).toBe(2700)
+    expect(en(60)).toBe(2700)
+    expect(precioParcela({ ...e, comprasHechas: 1001 }, 0, cfg)).toBeUndefined()
+  })
+
   it('se mantiene un mínimo de 10 con factores minúsculos', () => {
     const cfg = { ...CONFIG_ECONOMIA, precioBase: 1 }
     expect(precioParcela(crearEstadoInicial({ semilla: 1 }), 0, cfg)).toBe(10)
