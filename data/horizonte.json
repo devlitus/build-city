@@ -1,5 +1,5 @@
 {
-  "radioInterior": 120,
+  "margenRadio": 20,
   "anchoAnillo": 320,
   "profundidadBase": 4,
   "segmentosAngulo": 120,

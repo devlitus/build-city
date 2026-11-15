@@ -8,7 +8,7 @@ const entero = v.pipe(v.number(), v.integer(), v.minValue(3))
 /** Esquema de `data/horizonte.json`. Medidas en metros. */
 export const esquemaHorizonte = v.pipe(
   v.object({
-    radioInterior: estrictoPositivo,
+    margenRadio: positivo,
     anchoAnillo: estrictoPositivo,
     profundidadBase: positivo,
     segmentosAngulo: entero,

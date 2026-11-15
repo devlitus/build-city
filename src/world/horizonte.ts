@@ -58,8 +58,7 @@ function crearAnillo(radioInterior: number, p: ParametrosHorizonte): Mesh {
     for (let i = 0; i < na; i++) {
       const a = (i / na) * Math.PI * 2
       // Pequeño desplazamiento determinista para que no parezca una rejilla perfecta.
-      const jr =
-        j === 0 || j === nr ? 0 : (hashEnteros(i, j, 5) - 0.5) * (p.anchoAnillo / nr) * 0.5
+      const jr = j === 0 || j === nr ? 0 : (hashEnteros(i, j, 5) - 0.5) * (p.anchoAnillo / nr) * 0.5
       const r = radioInterior + (j / nr) * p.anchoAnillo + jr
       const k = j * na + i
       pos[k * 3] = Math.cos(a) * r
@@ -109,7 +108,10 @@ function crearAnillo(radioInterior: number, p: ParametrosHorizonte): Mesh {
 }
 
 /** Nubes: una `InstancedMesh` cuyas instancias avanzan hacia +x y reaparecen por el otro lado. */
-function crearNubes(p: ParametrosHorizonte): { malla: InstancedMesh; actualizar(dt: number): void } {
+function crearNubes(p: ParametrosHorizonte): {
+  malla: InstancedMesh
+  actualizar(dt: number): void
+} {
   const n = p.nubes
   const material = new MeshStandardMaterial({
     color: color('nube'),
@@ -166,15 +168,24 @@ export interface Horizonte {
   destruir(): void
 }
 
+/** Radio (m) donde arranca el anillo: circunscrito al valle más `margenRadio`. */
+export function radioInteriorHorizonte(
+  ladoValle: number,
+  p: ParametrosHorizonte = PARAMETROS_HORIZONTE,
+): number {
+  return (ladoValle / 2) * Math.SQRT2 + p.margenRadio
+}
+
 /**
- * Crea el horizonte que rodea el valle. `radioInterior` es el radio (m, desde el centro) donde
- * arranca el anillo, por debajo del terreno exterior; las montañas suben más allá de las colinas
+ * Crea el horizonte que rodea el valle de lado `ladoValle` (m). El anillo arranca en
+ * `radioInteriorHorizonte` (m, desde el centro), por debajo del terreno exterior; las montañas suben más allá de las colinas
  * y cierran el horizonte en los 360 grados.
  */
 export function crearHorizonte(
-  radioInterior: number = PARAMETROS_HORIZONTE.radioInterior,
+  ladoValle: number,
   p: ParametrosHorizonte = PARAMETROS_HORIZONTE,
 ): Horizonte {
+  const radioInterior = radioInteriorHorizonte(ladoValle, p)
   const grupo = new Group()
   grupo.name = 'horizonte'
   const anillo = crearAnillo(radioInterior, p)
