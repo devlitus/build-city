@@ -7,6 +7,7 @@ import {
   precioParcela,
   type EstadoJuego,
   CONFIG_ECONOMIA,
+  type Parcela,
 } from './index'
 
 const base = crearEstadoInicial({ semilla: 42, dineroInicial: 100000 })
@@ -157,7 +158,7 @@ describe('precio con 64 parcelas', () => {
   // y factorMaximoSubida), no en valle.json; el test los lee de ahí (CONFIG_ECONOMIA).
   it('el precio sube con cada compra según economia.json', () => {
     const c = CONFIG_ECONOMIA
-    const p = base.valle.parcelas[centro]!
+    const p = base.valle.parcelas[centro] as Parcela
     const factores =
       c.factorTerreno[p.terreno] * c.factorFertilidad[p.fertilidad] * c.factorAgua[p.agua]
     const tope = c.factorMaximoSubida ?? Infinity

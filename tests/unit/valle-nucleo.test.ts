@@ -50,7 +50,8 @@ describe('río y decoración en el núcleo (M2-02)', () => {
       const claves = new Set(casillasRio(e.valle).map((c) => claveCasilla(lado, c.x, c.y)))
       const crudos = decorarValle(e.valle, semilla, claves)
       const guardados = new Set(e.obstaculos.map((o) => h(o)))
-      expect(e.obstaculos.every((o) => crudos.some((c) => h(c) === h(o)))).toBe(true)
+      const hashesCrudos = new Set(crudos.map((c) => h(c)))
+      expect(e.obstaculos.every((o) => hashesCrudos.has(h(o)))).toBe(true)
       expect(guardados.size).toBe(e.obstaculos.length)
       expect(crudos.length - e.obstaculos.length).toBeLessThan(crudos.length * 0.05)
     }
