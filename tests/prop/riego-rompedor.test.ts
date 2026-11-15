@@ -24,7 +24,7 @@ import { crecerPlantas } from '../../src/core/riego'
 import { empezarDiaSiguiente } from '../../src/core/obras'
 import { conTierraLabrable } from '../unit/fixtures/labranza'
 
-const base = crearEstadoInicial({ semilla: 42, dineroInicial: 100_000 })
+const base = crearEstadoInicial({ semilla: 1, dineroInicial: 100_000 })
 const LADO = ladoValle(base.valle)
 const cas = (x: number, y: number) => y * LADO + x
 const campo: EstadoJuego = {

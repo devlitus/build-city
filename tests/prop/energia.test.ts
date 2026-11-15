@@ -16,7 +16,7 @@ import { conTierraLabrable } from '../unit/fixtures/labranza'
 
 const inicial = crearEstadoInicial({ semilla: 7 })
 const labrable = conTierraLabrable(
-  { ...crearEstadoInicial({ semilla: 42 }), personaje: { x: 50.5, y: 50.5, orientacion: 'sur' } },
+  { ...crearEstadoInicial({ semilla: 1 }), personaje: { x: 50.5, y: 50.5, orientacion: 'sur' } },
   50,
   50,
 )

@@ -50,18 +50,37 @@ function centesimas(x: number): bigint {
   return BigInt(c)
 }
 
-/** Valor exacto (racional num/den) de base × factores × (1 + subida)^n con los datos reales. */
+/**
+ * Valor exacto (racional num/den) de base × factores × Π_{i<n} (1 + max(mín, subida · atenuación^i))
+ * con los datos reales (M1-T01.3). Todo en centésimas: el paso i vale
+ * 1 + max(M/100, S·A^i / 100^(i+1)), con S, A y M los datos × 100. Cálculo propio, sin el del núcleo.
+ */
 function valorExacto(t: Terreno, f: Fertilidad, a: Agua, n: number): { num: bigint; den: bigint } {
   const c = CONFIG_ECONOMIA
-  // (1 + subida) = (100 + s) / 100, con s la subida en centésimas (0,4 → 140/100).
-  const factorSubida = 100n + centesimas(c.subidaPorCompra)
+  const S = centesimas(c.subidaPorCompra)
+  const A = centesimas(c.atenuacionSubida ?? 1)
+  const M = centesimas(c.subidaMinima ?? 0)
+  let numSubida = 1n
+  let denSubida = 1n
+  for (let i = 0; i < n; i++) {
+    const rn = S * A ** BigInt(i)
+    const rd = 100n ** BigInt(i + 1)
+    // ¿La subida atenuada supera al mínimo M/100?  rn/rd > M/100
+    if (rn * 100n > M * rd) {
+      numSubida *= rd + rn
+      denSubida *= rd
+    } else {
+      numSubida *= 100n + M
+      denSubida *= 100n
+    }
+  }
   const num =
     BigInt(c.precioBase) *
     centesimas(c.factorTerreno[t]) *
     centesimas(c.factorFertilidad[f]) *
     centesimas(c.factorAgua[a]) *
-    factorSubida ** BigInt(n)
-  const den = 1_000_000n * 100n ** BigInt(n)
+    numSubida
+  const den = 1_000_000n * denSubida
   return { num, den }
 }
 
@@ -167,10 +186,10 @@ describe('balance con los valores reales (GDD §6.2: «alcanza para 1 o 2 parcel
     }
   })
 
-  it('umbral teórico: las tres más baratas posibles cuestan 260 + 360 + 510 = 1130 > ahorros', () => {
+  it('umbral teórico: las tres más baratas posibles cuestan 260 + 360 + 490 = 1110 > ahorros', () => {
     const p = (n: number) => precioParcela(conParcela('rocoso', 'baja', 'seca', n), 0)
-    expect([p(0), p(1), p(2)]).toEqual([260, 360, 510])
-    expect(260 + 360 + 510).toBeGreaterThan(CONFIG_ECONOMIA.dineroInicial)
+    expect([p(0), p(1), p(2)]).toEqual([260, 360, 490])
+    expect(260 + 360 + 490).toBeGreaterThan(CONFIG_ECONOMIA.dineroInicial)
   })
 
   it('la más cara (1010) cabe sola, pero no con una segunda barata (1010 + 360 > ahorros)', () => {
@@ -272,17 +291,22 @@ describe('redondeo y precisión', () => {
       subidaPorCompra: fc.double({ min: 0, max: 10, noNaN: true }),
     })
     fc.assert(
-      fc.property(config, fc.integer({ min: 0, max: 5000 }), fc.nat(35), (cfg, n, i) => {
-        expect(valido(cfg)).toBe(true)
-        const c = cfg as ConfigEconomia
-        const p = precioParcela({ valle: BASE.valle, comprasHechas: n }, i, c)
-        if (p !== undefined) {
-          expect(Number.isSafeInteger(p)).toBe(true)
-          expect(p % 10).toBe(0)
-          expect(p).toBeGreaterThanOrEqual(10)
-        }
-        expect(precioParcela({ valle: BASE.valle, comprasHechas: 0 }, i, c)).toBeDefined()
-      }),
+      fc.property(
+        config,
+        fc.integer({ min: 0, max: 5000 }),
+        fc.nat(BASE.valle.parcelas.length - 1),
+        (cfg, n, i) => {
+          expect(valido(cfg)).toBe(true)
+          const c = cfg as ConfigEconomia
+          const p = precioParcela({ valle: BASE.valle, comprasHechas: n }, i, c)
+          if (p !== undefined) {
+            expect(Number.isSafeInteger(p)).toBe(true)
+            expect(p % 10).toBe(0)
+            expect(p).toBeGreaterThanOrEqual(10)
+          }
+          expect(precioParcela({ valle: BASE.valle, comprasHechas: 0 }, i, c)).toBeDefined()
+        },
+      ),
       { numRuns: 1000 },
     )
   })
@@ -333,23 +357,30 @@ describe('redondeo y precisión', () => {
     })
     // Hasta 20 compras: 1e5 × 5³ × 2^21 ≈ 2,6e13 sigue siendo entero seguro (con más, undefined es legítimo).
     fc.assert(
-      fc.property(config, fc.integer({ min: 0, max: 20 }), fc.nat(35), (cfg, n, i) => {
-        expect(valido(cfg)).toBe(true)
-        const c = cfg as ConfigEconomia
-        const e = { valle: BASE.valle, comprasHechas: n }
-        const p = precioParcela(e, i, c) ?? Number.NaN
-        const q = precioParcela({ ...e, comprasHechas: n + 1 }, i, c) ?? Number.NaN
-        expect(Number.isSafeInteger(p)).toBe(true)
-        expect(p % 10).toBe(0)
-        expect(p).toBeGreaterThanOrEqual(10)
-        expect(q).toBeGreaterThanOrEqual(p)
-      }),
+      fc.property(
+        config,
+        fc.integer({ min: 0, max: 20 }),
+        fc.nat(BASE.valle.parcelas.length - 1),
+        (cfg, n, i) => {
+          expect(valido(cfg)).toBe(true)
+          const c = cfg as ConfigEconomia
+          const e = { valle: BASE.valle, comprasHechas: n }
+          const p = precioParcela(e, i, c) ?? Number.NaN
+          const q = precioParcela({ ...e, comprasHechas: n + 1 }, i, c) ?? Number.NaN
+          expect(Number.isSafeInteger(p)).toBe(true)
+          expect(p % 10).toBe(0)
+          expect(p).toBeGreaterThanOrEqual(10)
+          expect(q).toBeGreaterThanOrEqual(p)
+        },
+      ),
       { numRuns: 500 },
     )
   })
 
-  it('con 35 compras (máximo en un valle 6×6) el precio sigue siendo un entero seguro', () => {
-    const p = precioParcela(conParcela('prado', 'alta', 'rio', 35), 0) ?? Number.NaN
+  it('con el máximo de compras del valle (parcelas - 1) el precio sigue siendo un entero seguro', () => {
+    const p =
+      precioParcela(conParcela('prado', 'alta', 'rio', BASE.valle.parcelas.length - 1), 0) ??
+      Number.NaN
     expect(Number.isSafeInteger(p)).toBe(true)
   })
 

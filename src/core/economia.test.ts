@@ -107,6 +107,34 @@ describe('precioParcela', () => {
       expect(precioParcela(e, i)).toBeUndefined()
   })
 
+  it('la subida se atenúa con cada compra pero nunca baja del mínimo (M1-T01.3)', () => {
+    // Subidas por paso: 0,5 · 0,25 · 0,125 y desde ahí el mínimo 0,1.
+    const cfg = {
+      ...CONFIG_ECONOMIA,
+      precioBase: 10_000,
+      subidaPorCompra: 0.5,
+      atenuacionSubida: 0.5,
+      subidaMinima: 0.1,
+    }
+    const e = conParcela('prado', 'media', 'seca', 0) // factores 1 × 1 × 0,9
+    const en = (n: number) => precioParcela({ ...e, comprasHechas: n }, 0, cfg)
+    // 9000 × 1,5 · 1,25 · 1,125 · 1,1 · 1,1 …
+    expect(en(0)).toBe(9000)
+    expect(en(1)).toBe(13500)
+    expect(en(2)).toBe(16880) // 16875, mitad hacia arriba
+    expect(en(3)).toBe(18980) // 18984,375
+    expect(en(4)).toBe(20880) // 20882,8125
+    expect(en(5)).toBe(22970) // 22971,09…
+  })
+
+  it('sin atenuación ni mínimo es el (1 + subida)^n de siempre', () => {
+    const cfg = { ...CONFIG_ECONOMIA, precioBase: 1000, subidaPorCompra: 0.5 }
+    delete (cfg as { atenuacionSubida?: number }).atenuacionSubida
+    delete (cfg as { subidaMinima?: number }).subidaMinima
+    const e = conParcela('prado', 'media', 'seca', 0)
+    expect(precioParcela({ ...e, comprasHechas: 3 }, 0, cfg)).toBe(3040) // 900 × 1,5³ = 3037,5
+  })
+
   it('se mantiene un mínimo de 10 con factores minúsculos', () => {
     const cfg = { ...CONFIG_ECONOMIA, precioBase: 1 }
     expect(precioParcela(crearEstadoInicial({ semilla: 1 }), 0, cfg)).toBe(10)

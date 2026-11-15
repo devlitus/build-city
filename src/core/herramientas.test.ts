@@ -12,7 +12,7 @@ import {
   type EstadoJuego,
 } from './index'
 
-const base = crearEstadoInicial({ semilla: 42 })
+const base = crearEstadoInicial({ semilla: 1 })
 /** Personaje en el centro de la casilla (50, 50): lejos de cualquier borde del valle. */
 const e0: EstadoJuego = conTierraLabrable(
   { ...base, personaje: { x: 50.5, y: 50.5, orientacion: 'sur' } },

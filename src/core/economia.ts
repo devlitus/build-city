@@ -29,11 +29,53 @@ function decimalDe(x: number): Decimal {
 }
 
 /**
+ * Factor de subida tras `n` compras como fracción exacta: `Π_{i<n} (1 + max(subidaMinima,
+ * subida · atenuacion^i))`. Sin atenuación ni mínimo (los valores por omisión: 1 y 0) es el
+ * `(1 + subida)^n` de siempre. Devuelve `undefined` si el cálculo exacto excede `TOPE_DIGITOS`.
+ */
+function factorSubida(
+  config: Pick<ConfigEconomia, 'subidaPorCompra' | 'atenuacionSubida' | 'subidaMinima'>,
+  n: number,
+): Decimal | undefined {
+  const s = decimalDe(config.subidaPorCompra)
+  const a = decimalDe(config.atenuacionSubida ?? 1)
+  const m = decimalDe(config.subidaMinima ?? 0)
+  let num = 1n
+  let den = 1n
+  let digitos = 0
+  let rn = s.n
+  let rd = s.d
+  // Sin atenuación la subida es constante: max(subida, mínimo) elevado a n.
+  if (a.n === a.d) {
+    const r = rn * m.d >= m.n * rd ? { n: rn, d: rd } : m
+    if (r.d.toString().length * n > TOPE_DIGITOS) return undefined
+    return { n: (r.d + r.n) ** BigInt(n), d: r.d ** BigInt(n) }
+  }
+  for (let i = 0; i < n; i++) {
+    // Subida de este paso: rn/rd = subida · atenuacion^i; si no supera el mínimo, el resto usa el mínimo.
+    if (rn * m.d <= m.n * rd) {
+      const restantes = n - i
+      if (m.d.toString().length * restantes > TOPE_DIGITOS) return undefined
+      return { n: num * (m.d + m.n) ** BigInt(restantes), d: den * m.d ** BigInt(restantes) }
+    }
+    num *= rd + rn
+    den *= rd
+    digitos += rd.toString().length
+    if (digitos > TOPE_DIGITOS) return undefined
+    rn *= a.n
+    rd *= a.d
+  }
+  return { n: num, d: den }
+}
+
+/**
  * Precio de la parcela `indice` (índice en `estado.valle.parcelas`) con las compras hechas.
- * `base × factores × (1 + subida)^comprasHechas`, calculado en aritmética exacta (BigInt sobre
- * los decimales de los datos) y redondeado a la decena más cercana (mitades hacia arriba), nunca
- * menor que 10. Devuelve `undefined` si el índice no es un entero dentro del valle, si
- * `comprasHechas` no es un entero seguro ≥ 0 o si el resultado no es un entero seguro.
+ * `base × factores × Π_{i<compras} (1 + max(subidaMinima, subidaPorCompra · atenuacionSubida^i))`,
+ * calculado en aritmética exacta (BigInt sobre los decimales de los datos) y redondeado a la
+ * decena más cercana (mitades hacia arriba), nunca menor que 10. La subida de cada compra se
+ * atenúa con las anteriores pero nunca baja del mínimo, así el precio sube en todas las compras.
+ * Devuelve `undefined` si el índice no es un entero dentro del valle, si `comprasHechas` no es un
+ * entero seguro ≥ 0 o si el resultado no es un entero seguro.
  * El estado de la parcela (en venta o propia) no influye: decidir si se puede comprar es
  * cosa del comando de compra.
  */
@@ -51,12 +93,14 @@ export function precioParcela(
     decimalDe(config.factorFertilidad[parcela.fertilidad]),
     decimalDe(config.factorAgua[parcela.agua]),
   ]
-  const s = decimalDe(config.subidaPorCompra)
-  // Con subida 0 el factor es 1 sea cual sea el número de compras.
-  const n = s.n === 0n ? 0 : compras
-  if (n > TOPE_COMPRAS || s.d.toString().length * n > TOPE_DIGITOS) return undefined
-  let num = BigInt(config.precioBase) * (s.d + s.n) ** BigInt(n)
-  let den = s.d ** BigInt(n)
+  // Sin subida ni mínimo el factor es 1 sea cual sea el número de compras.
+  const sinSubida = config.subidaPorCompra === 0 && !config.subidaMinima
+  const n = sinSubida ? 0 : compras
+  if (n > TOPE_COMPRAS) return undefined
+  const factor = factorSubida(config, n)
+  if (factor === undefined) return undefined
+  let num = BigInt(config.precioBase) * factor.n
+  let den = factor.d
   for (const f of factores) {
     num *= f.n
     den *= f.d

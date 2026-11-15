@@ -135,7 +135,7 @@ describe('conectividad del valle', () => {
       }),
       { numRuns: 80 },
     )
-  }, 30_000)
+  }, 120_000)
 })
 
 describe('determinismo del movimiento', () => {

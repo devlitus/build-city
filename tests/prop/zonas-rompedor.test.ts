@@ -418,7 +418,8 @@ describe('coste', () => {
     for (let i = 0; i < 1000; i++) {
       e = pintar(e, 0, 0, LADO - 1, LADO - 1, i % 2 ? 'cultivo' : 'huerto').estado
     }
-    expect(performance.now() - t).toBeLessThan(3000)
+    // 3 s era el presupuesto para 96×96 casillas (M1-T01: 160×160): crece con el área.
+    expect(performance.now() - t).toBeLessThan(3000 * (LADO / 96) ** 2)
   })
   it('1000 comandos de UNA casilla en menos de 1 s (recalcula el río entero cada vez)', () => {
     let e = todo

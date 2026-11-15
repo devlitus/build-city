@@ -23,7 +23,7 @@ import {
 import { EsquemaConfigCultivos } from './datos/esquemas'
 import { aguaDe } from './zonas'
 
-const base = crearEstadoInicial({ semilla: 42 })
+const base = crearEstadoInicial({ semilla: 1 })
 const lado = ladoValle(base.valle)
 const e0: EstadoJuego = conTierraLabrable(
   { ...base, personaje: { x: 50.5, y: 50.5, orientacion: 'sur' } },

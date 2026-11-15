@@ -136,6 +136,13 @@ export const EsquemaConfigEconomia = v.strictObject({
   factorAgua: factores(AGUAS),
   /** Subida fraccionaria del precio por cada compra hecha (0.25 = +25 %). */
   subidaPorCompra: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(10)),
+  /**
+   * Atenuación de la subida (opcional, por omisión 1 = sin atenuar): la subida de la compra i es
+   * `subidaPorCompra · atenuacionSubida^i`, pero nunca menos que `subidaMinima`.
+   */
+  atenuacionSubida: v.optional(v.pipe(v.number(), v.finite(), v.gtValue(0), v.maxValue(1))),
+  /** Subida mínima por compra (opcional, por omisión 0): el precio sube en todas las compras. */
+  subidaMinima: v.optional(v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(10))),
 })
 
 export type ConfigEconomia = v.InferOutput<typeof EsquemaConfigEconomia>
