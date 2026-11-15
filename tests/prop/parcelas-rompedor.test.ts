@@ -309,7 +309,8 @@ describe('comando y parcelaComprable no discrepan nunca', () => {
       ),
       { numRuns: 3000 },
     )
-  })
+    // Con el valle de 64 parcelas (M1-T01) cada estado es mayor: más que el tiempo por defecto.
+  }, 90_000)
 
   it('parcelaComprable es pura: misma entrada, misma salida; no muta nada', () => {
     fc.assert(

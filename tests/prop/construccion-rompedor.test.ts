@@ -229,6 +229,13 @@ function base(i: number): EstadoJuego {
 const LADO = ladoValle(base(0).valle)
 const C = base(0).valle.casillasPorParcela
 const PARCELAS = base(0).valle.parcelas.length
+/** La parcela de la aparición y las vecinas (antes 32, 33, 26, 27, 31 en el valle de 6×6). */
+const PARCELAS_APARICION = (() => {
+  const e = base(0)
+  const n = e.valle.parcelasPorLado
+  const ap = Math.floor(e.aparicion.y / C) * n + Math.floor(e.aparicion.x / C)
+  return [ap, ap + 1, ap - 1, ap - n, ap - n + 1].filter((i) => i >= 0 && i < PARCELAS)
+})()
 
 /** Base sin obstáculos, toda pintada de `zona` y con el personaje lejos (esquina 0.5,0.5 si no es agua). */
 function limpio(i: number, zona: Zona): EstadoJuego {
@@ -1082,7 +1089,7 @@ function comandoLargo(lado: number, c: number): fc.Arbitrary<unknown[]> {
           tipo: fc.constant('ComprarParcela'),
           indice: fc.oneof(
             fc.integer({ min: 0, max: PARCELAS - 1 }),
-            fc.constantFrom(32, 33, 26, 27, 31),
+            fc.constantFrom(...PARCELAS_APARICION),
           ),
         }),
       ),
