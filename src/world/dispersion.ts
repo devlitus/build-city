@@ -3,7 +3,13 @@ import { huellasPueblo, zonasLlanasPueblo } from './pueblo-datos'
 import type { FuncionAltura } from './terreno/altura'
 import { casillaAMetros, ladoMetros, type PuntoMetros } from './terreno/coordenadas'
 import { PARAMETROS_TERRENO } from './terreno/parametros'
-import { anilloDeTrozos, casillaDeTrozo, todosLosTrozos, type Trozo } from './terreno/trozos'
+import {
+  anilloDeTrozos,
+  casillaDeTrozo,
+  todosLosTrozos,
+  type RangoMetros,
+  type Trozo,
+} from './terreno/trozos'
 import type { DatosVegetacion } from './vegetacion-datos'
 
 /*
@@ -220,6 +226,22 @@ export function matasDeTrozo(trozo: Trozo, entorno: EntornoDispersion): Colocaci
       }
     }
   return salida
+}
+
+/**
+ * ¿Hay que dibujar un trozo de hierba? Sí si el punto más cercano de su caja (rango en el suelo,
+ * de 0 a `alto` m de altura) queda a `radio` m o menos de la cámara.
+ */
+export function trozoCercano(
+  rango: RangoMetros,
+  camara: { readonly x: number; readonly y: number; readonly z: number },
+  radio: number,
+  alto: number,
+): boolean {
+  const dx = Math.max(rango.xMin - camara.x, 0, camara.x - rango.xMax)
+  const dz = Math.max(rango.zMin - camara.z, 0, camara.z - rango.zMax)
+  const dy = Math.max(-camara.y, 0, camara.y - alto)
+  return dx * dx + dy * dy + dz * dz <= radio * radio
 }
 
 /**

@@ -23,6 +23,7 @@ import {
   colocarObstaculos,
   dispersarBosque,
   matasDeTrozo,
+  trozoCercano,
   trozosDeHierba,
   hash,
   tipoCopa,
@@ -346,6 +347,7 @@ function crearHierba(
       )
     }
     const malla = lote.crear(`hierba-${trozo.cx}-${trozo.cz}`, geometria, material, false, false)
+    malla.visible = false
     // El viento desplaza las puntas: se ensancha la esfera para que no se corten en el borde.
     if (malla.boundingSphere) malla.boundingSphere.radius += h.viento.amplitud * 2
     trozos.push({ malla, rango: rangoDeTrozo(trozo, valle) })
@@ -426,11 +428,22 @@ export function crearVegetacion(
   const materialDeHierba = materialHierba(uniformes)
   const hierba = crearHierba(entorno, geometriaHierba, materialDeHierba)
   for (const t of hierba) grupo.add(t.malla)
+  const posicionCamara = new Vector3()
+  const alturaMaximaHierba = datos.hierba.alturaMaxima + datos.hierba.alto.max
 
   return {
     objeto: grupo,
-    actualizar: (dt) => {
+    actualizar: (dt, camara) => {
       uniformes.uTiempo.value += dt
+      // Solo se dibujan los trozos de hierba cercanos a la cámara (unas 100 comprobaciones baratas).
+      camara.getWorldPosition(posicionCamara)
+      for (const t of hierba)
+        t.malla.visible = trozoCercano(
+          t.rango,
+          posicionCamara,
+          datos.hierba.radioDibujo,
+          alturaMaximaHierba,
+        )
     },
     destruir: () => {
       geometriaHierba.dispose()
