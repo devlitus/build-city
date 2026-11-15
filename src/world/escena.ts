@@ -1,5 +1,7 @@
 import { Color, Fog, PCFShadowMap, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
 import type { LectorEstado } from '../juego/almacen'
+import { crearHorizonte } from './horizonte'
+import { PARAMETROS_HORIZONTE } from './horizonte-parametros'
 import { añadirLuces } from './luces'
 import { color } from './paleta'
 import { ladoMetros } from './terreno/coordenadas'
@@ -31,15 +33,26 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
 
   const escena = new Scene()
   escena.background = new Color(color('cielo'))
-  // Provisional (T06 la afina): el valle entero queda por delante de la niebla.
-  escena.fog = new Fog(color('niebla'), lado * 1.6, lado * 4.5)
+  escena.fog = new Fog(
+    color('niebla'),
+    PARAMETROS_HORIZONTE.niebla.cerca,
+    PARAMETROS_HORIZONTE.niebla.lejos,
+  )
   añadirLuces(escena, lado / 2)
+  const horizonte = crearHorizonte(lado)
+  let instanteAnterior = performance.now()
 
   // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
   escena.add(crearTerreno(valle, semilla))
+  escena.add(horizonte.objeto)
   escena.add(crearPueblo(valle, crearAltura(valle, semilla)))
 
-  const camara = new PerspectiveCamera(50, 1, 0.3, lado * 6)
+  const camara = new PerspectiveCamera(
+    50,
+    1,
+    0.3,
+    Math.max(lado * 6, PARAMETROS_HORIZONTE.niebla.lejos),
+  )
   // Vista inicial: desde el sur y en alto, mirando al centro del valle.
   camara.position.set(0, lado * 0.44, lado * 0.875)
   camara.lookAt(0, 0, 0)
@@ -61,10 +74,14 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     camara,
     renderer,
     dibujar: () => {
+      const ahora = performance.now()
+      horizonte.actualizar(Math.min(0.1, (ahora - instanteAnterior) / 1000))
+      instanteAnterior = ahora
       renderer.render(escena, camara)
     },
     destruir: () => {
       observador.disconnect()
+      horizonte.destruir()
       renderer.dispose()
       renderer.domElement.remove()
     },
