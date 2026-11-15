@@ -27,7 +27,7 @@ describe('avanzarAcumulador', () => {
 })
 
 describe('minutosDelPaso', () => {
-  const base = { pausado: false, modo: 'normal', velocidad: 1 } as const
+  const base = { pausado: false, modo: 'vida', velocidad: 1 } as const
 
   it('convierte tiempo real en minutos de juego y conserva la fracción', () => {
     // 1200 min de juego en 15 min reales: 80 min de juego por minuto real.

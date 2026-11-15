@@ -50,5 +50,36 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // La escena y la UI solo leen el estado y envían comandos con `despachar`: nunca lo aplican ni
+    // lo crean (ADR 0004). El almacén se crea en `juego/` / `main.ts` y se les pasa como lector.
+    files: ['src/world/**/*.ts', 'src/ui/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '../core',
+              importNames: ['aplicarComando', 'aplicarComandos'],
+              message: 'La escena y la UI envían comandos con despachar(); no los aplican.',
+            },
+            {
+              name: '../juego/almacen',
+              importNames: ['Almacen', 'crearAlmacen'],
+              message: 'La escena y la UI no crean el almacén; reciben un LectorEstado.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/core/comandos'],
+              importNames: ['aplicarComando', 'aplicarComandos'],
+              message: 'La escena y la UI envían comandos con despachar(); no los aplican.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 )
