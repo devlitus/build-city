@@ -11,9 +11,10 @@ Ver y recorrer el valle completo: terreno con relieve, parcelas, río, árboles,
 - [ ] Con la misma semilla, el valle es idéntico en dos cargas.
 - [ ] Se recorre entero con la cámara libre a 60 fps con todos los árboles y rocas visibles.
 - [ ] La distribución se parece al boceto `borrador/blender/valle.png` (prado, bosque, rocoso, río, pueblo al sur).
+- [ ] La escena sigue el estilo del ADR 0003 (M1-T09): cielo físico, mapeo de tonos y terreno con textura.
 
 ## Paralelismo
-`T01` y `T02` primero (en paralelo). Luego `T03`, `T04` y `T05` en paralelo. `T06`, `T07` y `T08` en paralelo en cualquier momento tras `T02`.
+`T01` y `T02` primero (en paralelo). Luego `T03`, `T04` y `T05` en paralelo. `T06`, `T07` y `T08` en paralelo en cualquier momento tras `T02`. `T09` al final, tras `T03`, `T05` y `T06`.
 
 ---
 
@@ -156,3 +157,29 @@ Ver y recorrer el valle completo: terreno con relieve, parcelas, río, árboles,
 - [ ] No existe en la build de producción.
 
 **Tests unitarios:** sin tests.
+
+---
+
+### M1-T09 · Escena y terreno al estilo PBR (ADR 0003)
+- **Objetivo:** pasar al estilo visual aprobado (PBR estilizado con texturas propias) lo que M0 y M1 hicieron en *low-poly* plano: cielo que ilumina, mapeo de tonos, catálogo de materiales en datos y terreno con textura. Incluye las subtareas revisadas de M0-T04 y M0-T06 que quedaron sin implementar.
+- **Depende de:** T03, T05, T06 · **Archivos:** `src/world/escena.ts`, `src/world/luces.ts`, `src/world/materiales.ts`, `src/world/terreno/`, `src/world/horizonte.ts`, `data/materiales.json`, `public/texturas/` · **Crítico:** no
+- **Referencia:** `borrador/prueba-estilo/` (estilo 4), `docs/adr/0003-estilo-visual.md`, `docs/arte/inventario.md`
+
+**Subtareas**
+- M1-T09.1 Cielo físico (`Sky`) que también ilumina la escena mediante un entorno PMREM, con el sol de la escena en la misma dirección; mapeo de tonos ACES y niebla suave con el color del cielo (M0-T04.2 revisado).
+- M1-T09.2 `data/materiales.json` con esquema: por material, sus texturas (`_diff`, `_nor_gl`, `_rough`), metros por repetición y tinte de la paleta, con los valores de `docs/arte/inventario.md`. Fábrica de materiales `MeshStandardMaterial` con caché por nombre (M0-T06.3 y T06.4 revisados).
+- M1-T09.3 Copiar a `public/texturas/` las texturas que usa el terreno (`hierba`, `surcos`, `camino`) desde `borrador/prueba-estilo/texturas-comfy/`. JPG por ahora; la conversión a KTX2 queda para cuando haya más texturas.
+- M1-T09.4 Terreno con UV en metros, continuas entre trozos, y material por tipo de parcela: `hierba` con el tinte del tipo (prado, bosque, rocoso) hasta que existan sus texturas propias (pendientes en el inventario); arena de orilla, roca y nieve de las colinas con el tinte de la paleta.
+- M1-T09.5 Quitar el sombreado plano de la escena de muestra, el terreno, el horizonte y el pueblo; los objetos que sigan siendo provisionales usan materiales del catálogo.
+- M1-T09.6 Medir los fps con el valle completo a la vista y anotarlos en la PR.
+
+**Criterios de aceptación**
+- [ ] La escena usa cielo físico que ilumina y mapeo de tonos ACES; no queda `flatShading` en el terreno, el horizonte, el pueblo ni la escena de muestra.
+- [ ] Ningún color, textura ni escala de textura está escrito a mano en `src/world/`: salen de `data/paleta.json` y `data/materiales.json`.
+- [ ] No se ven costuras de textura entre trozos del terreno.
+- [ ] Cada tipo de parcela se sigue distinguiendo a simple vista.
+- [ ] Con el valle completo a la vista, 60 fps en el equipo de desarrollo. Si no se llega, se abre un issue `deuda` con la medida y las opciones de calidad propuestas (hierba, sombras, oclusión), y la tarea no se bloquea.
+
+**Tests unitarios**
+- `materiales.test.ts`: "el catálogo cumple el esquema", "todo tinte existe en la paleta", "los metros por repetición son positivos", "pedir dos veces el mismo material devuelve el mismo objeto", "la escala de repetición es 1 / metros".
+- `uv-terreno.test.ts`: "la UV de un punto es la misma calculada desde dos trozos vecinos", "UV = metros / metros por repetición".
