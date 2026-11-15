@@ -5,6 +5,8 @@ import {
   CylinderGeometry,
   Group,
   IcosahedronGeometry,
+  DoubleSide,
+  Float32BufferAttribute,
   InstancedMesh,
   Matrix4,
   MeshStandardMaterial,
@@ -20,6 +22,8 @@ import {
   clavesAgua,
   colocarObstaculos,
   dispersarBosque,
+  matasDeTrozo,
+  trozosDeHierba,
   hash,
   tipoCopa,
   variacionDe,
@@ -30,6 +34,7 @@ import {
 import { celdasAgua } from './agua'
 import { color } from './paleta'
 import type { FuncionAltura } from './terreno/altura'
+import { rangoDeTrozo, type RangoMetros } from './terreno/trozos'
 import { DATOS_VEGETACION, type DatosVegetacion } from './vegetacion-datos'
 
 /** Resultado de `crearVegetacion`: el objeto a añadir a la escena y su ciclo de vida. */
@@ -170,6 +175,7 @@ class Lote {
     geo: BufferGeometry,
     mat: MeshStandardMaterial,
     sombras: boolean,
+    recibir = sombras,
   ): InstancedMesh {
     const malla = new InstancedMesh(geo, mat, Math.max(1, this.matrices.length))
     malla.name = nombre
@@ -181,7 +187,7 @@ class Lote {
     malla.instanceMatrix.needsUpdate = true
     if (malla.instanceColor) malla.instanceColor.needsUpdate = true
     malla.castShadow = sombras
-    malla.receiveShadow = sombras
+    malla.receiveShadow = recibir
     malla.frustumCulled = true
     malla.computeBoundingSphere()
     malla.computeBoundingBox()
@@ -214,6 +220,137 @@ function añadirArbol(
   lotes.tronco.añadir(matriz(c.x, y, c.z, v.giro, s), tono)
   const copa = tipoCopa(c.variante, semilla, datos) === 'pino' ? lotes.pino : lotes.redondo
   copa.añadir(matriz(c.x, y, c.z, v.giro, s), tono)
+}
+
+/**
+ * Mata de hierba de altura 1: `brotes` hojas triangulares repartidas en círculo, inclinadas hacia
+ * fuera, con color por vértice (base oscura, punta clara). Las normales apuntan arriba.
+ */
+function geometriaMata(datos: DatosVegetacion['hierba']): BufferGeometry {
+  const base = new Color(color('hierba'))
+  const punta = new Color(color('hierbaPunta'))
+  const posiciones: number[] = []
+  const colores: number[] = []
+  const normales: number[] = []
+  for (let i = 0; i < datos.brotes; i++) {
+    const a = (i / datos.brotes) * Math.PI * 2 + hash(3, i, 1) * 0.6
+    const cx = Math.cos(a)
+    const cz = Math.sin(a)
+    const radio = 0.06 + hash(3, i, 2) * 0.06
+    const inclinacion = 0.12 + hash(3, i, 3) * 0.2
+    const mitad = datos.ancho / 2
+    // Base: dos vértices a lo ancho de la tangente; punta: desplazada hacia fuera.
+    posiciones.push(
+      cx * radio - cz * mitad,
+      0,
+      cz * radio + cx * mitad,
+      cx * radio + cz * mitad,
+      0,
+      cz * radio - cx * mitad,
+      cx * (radio + inclinacion),
+      1,
+      cz * (radio + inclinacion),
+    )
+    colores.push(base.r, base.g, base.b, base.r, base.g, base.b, punta.r, punta.g, punta.b)
+    normales.push(0, 1, 0, 0, 1, 0, 0, 1, 0)
+  }
+  const g = new BufferGeometry()
+  g.setAttribute('position', new Float32BufferAttribute(posiciones, 3))
+  g.setAttribute('color', new Float32BufferAttribute(colores, 3))
+  g.setAttribute('normal', new Float32BufferAttribute(normales, 3))
+  g.computeBoundingSphere()
+  return g
+}
+
+/** Uniformes del viento compartidos por todos los trozos de hierba. */
+interface UniformesViento {
+  uTiempo: { value: number }
+  uAmplitud: { value: number }
+  uFrecuencia: { value: number }
+  uVelocidad: { value: number }
+}
+
+/**
+ * Material de la hierba: estándar con color por vértice, de doble cara, con la punta de cada
+ * hoja mecida por el viento en el *vertex shader* (la fase depende de la posición de la mata) y
+ * la normal fija hacia arriba para que ambas caras reciban la misma luz.
+ */
+function materialHierba(uniformes: UniformesViento): MeshStandardMaterial {
+  const mat = new MeshStandardMaterial({
+    vertexColors: true,
+    side: DoubleSide,
+    roughness: 1,
+    metalness: 0,
+  })
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniformes)
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+uniform float uTiempo;
+uniform float uAmplitud;
+uniform float uFrecuencia;
+uniform float uVelocidad;`,
+      )
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  vec3 centroMata = vec3( instanceMatrix[ 3 ] );
+  float peso = clamp( position.y, 0.0, 1.0 );
+  peso *= peso;
+  float fase = ( centroMata.x + centroMata.z * 0.7 ) * uFrecuencia + uTiempo * uVelocidad;
+  transformed.x += ( sin( fase ) + 0.5 * sin( fase * 2.3 + centroMata.z * 0.5 ) ) * uAmplitud * peso;
+  transformed.z += cos( fase * 0.8 ) * uAmplitud * 0.6 * peso;
+#endif`,
+      )
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <normal_fragment_begin>',
+      `#include <normal_fragment_begin>
+  normal = normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz );`,
+    )
+  }
+  mat.customProgramCacheKey = () => 'hierba-viento'
+  return mat
+}
+
+/** Un trozo de hierba: su malla instanciada y el rectángulo que ocupa (para ocultarlo). */
+interface TrozoHierba {
+  readonly malla: InstancedMesh
+  readonly rango: RangoMetros
+}
+
+/**
+ * Hierba: un `InstancedMesh` por trozo, con bounding sphere correcta (frustum culling de three.js).
+ * Los trozos sin matas no se crean.
+ */
+function crearHierba(
+  entorno: EntornoDispersion,
+  geometria: BufferGeometry,
+  material: MeshStandardMaterial,
+): TrozoHierba[] {
+  const { valle, semilla, altura, datos } = entorno
+  const h = datos.hierba
+  const trozos: TrozoHierba[] = []
+  for (const trozo of trozosDeHierba(valle, datos)) {
+    const matas = matasDeTrozo(trozo, entorno)
+    if (matas.length === 0) continue
+    const lote = new Lote()
+    for (const m of matas) {
+      const v = variacionDe(m.variante, semilla, h.alto)
+      const ancho = 0.8 + hash(semilla, m.variante * 1e6, 31) * 0.5
+      lote.añadir(
+        matriz(m.x, altura(m.x, m.z) - 0.03, m.z, v.giro, ancho, v.escala, ancho),
+        sombra(v.tono, h.variacionTono),
+      )
+    }
+    const malla = lote.crear(`hierba-${trozo.cx}-${trozo.cz}`, geometria, material, false, false)
+    // El viento desplaza las puntas: se ensancha la esfera para que no se corten en el borde.
+    if (malla.boundingSphere) malla.boundingSphere.radius += h.viento.amplitud * 2
+    trozos.push({ malla, rango: rangoDeTrozo(trozo, valle) })
+  }
+  return trozos
 }
 
 /**
@@ -278,10 +415,26 @@ export function crearVegetacion(
     rocas.crear('rocas', piezas.rocaGeo, piezas.rocaMat, true),
   )
 
+  const viento = datos.hierba.viento
+  const uniformes: UniformesViento = {
+    uTiempo: { value: 0 },
+    uAmplitud: { value: viento.amplitud },
+    uFrecuencia: { value: viento.frecuencia },
+    uVelocidad: { value: viento.velocidad },
+  }
+  const geometriaHierba = geometriaMata(datos.hierba)
+  const materialDeHierba = materialHierba(uniformes)
+  const hierba = crearHierba(entorno, geometriaHierba, materialDeHierba)
+  for (const t of hierba) grupo.add(t.malla)
+
   return {
     objeto: grupo,
-    actualizar: () => {},
+    actualizar: (dt) => {
+      uniformes.uTiempo.value += dt
+    },
     destruir: () => {
+      geometriaHierba.dispose()
+      materialDeHierba.dispose()
       for (const hijo of grupo.children) (hijo as InstancedMesh).dispose()
       for (const g of [piezas.troncoGeo, piezas.pinoGeo, piezas.redondoGeo, piezas.rocaGeo])
         g.dispose()

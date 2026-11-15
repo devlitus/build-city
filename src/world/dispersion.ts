@@ -3,6 +3,7 @@ import { huellasPueblo, zonasLlanasPueblo } from './pueblo-datos'
 import type { FuncionAltura } from './terreno/altura'
 import { casillaAMetros, ladoMetros, type PuntoMetros } from './terreno/coordenadas'
 import { PARAMETROS_TERRENO } from './terreno/parametros'
+import { anilloDeTrozos, casillaDeTrozo, todosLosTrozos, type Trozo } from './terreno/trozos'
 import type { DatosVegetacion } from './vegetacion-datos'
 
 /*
@@ -168,6 +169,57 @@ export interface EntornoDispersion {
   readonly datos: DatosVegetacion
   /** Cota del agua (m); por defecto la de `data/terreno.json`. */
   readonly nivelAgua?: number
+}
+
+/** Trozos que cubre la hierba: el valle y el anillo de `anilloMetros` alrededor. */
+export function trozosDeHierba(valle: Medidas, datos: DatosVegetacion): Trozo[] {
+  return todosLosTrozos(valle, anilloDeTrozos(valle, datos.hierba.anilloMetros))
+}
+
+/**
+ * Matas de hierba de un trozo. Por casilla se sortean `matasPorCasilla` × el peso de su terreno
+ * matas con jitter dentro de la casilla; la hash depende solo de la casilla y la semilla, así el
+ * resultado no cambia con el trozo que la contiene. Nunca sobre casillas ocupadas por obstáculos,
+ * ni cerca del agua, ni en el pueblo, ni por encima de `alturaMaxima`.
+ */
+export function matasDeTrozo(trozo: Trozo, entorno: EntornoDispersion): Colocacion[] {
+  const { valle, semilla, altura, agua, ocupadas, datos } = entorno
+  const h = datos.hierba
+  const nivel = entorno.nivelAgua ?? PARAMETROS_TERRENO.nivelAgua
+  const mitad = ladoMetros(valle) / 2
+  const c = valle.casillasPorParcela
+  const lado = valle.parcelasPorLado * c
+  const enPueblo = crearFiltroPueblo(valle, h.margenPueblo)
+  const s = semilla ^ 0x2c1b3c6d
+  const origen = casillaDeTrozo(trozo, valle)
+  const salida: Colocacion[] = []
+  for (let gy = origen.y; gy < origen.y + c; gy++)
+    for (let gx = origen.x; gx < origen.x + c; gx++) {
+      if (ocupadas.has(claveCelda(gx, gy))) continue
+      const centro = casillaAMetros(gx, gy, valle)
+      if (
+        Math.abs(centro.x) > mitad + h.anilloMetros ||
+        Math.abs(centro.z) > mitad + h.anilloMetros
+      )
+        continue
+      const dentro = gx >= 0 && gy >= 0 && gx < lado && gy < lado
+      const terreno = dentro
+        ? valle.parcelas[Math.floor(gy / c) * valle.parcelasPorLado + Math.floor(gx / c)]?.terreno
+        : undefined
+      const peso = terreno ? h.pesoTerreno[terreno] : h.pesoFuera
+      const esperado = h.matasPorCasilla * peso
+      const cuantas = Math.floor(esperado) + (hash(s, gx, gy, 0) < esperado % 1 ? 1 : 0)
+      for (let k = 0; k < cuantas; k++) {
+        const x = centro.x - 0.5 + hash(s, gx, gy, 1 + k * 3)
+        const z = centro.z - 0.5 + hash(s, gx, gy, 2 + k * 3)
+        const y = altura(x, z)
+        if (y > h.alturaMaxima || y <= nivel) continue
+        if (hayAguaCerca(x, z, valle, agua, h.margenAgua)) continue
+        if (enPueblo(x, z)) continue
+        salida.push({ x, z, variante: hash(s, gx, gy, 3 + k * 3) })
+      }
+    }
+  return salida
 }
 
 /**

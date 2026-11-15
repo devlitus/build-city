@@ -8,7 +8,9 @@ import {
   crearFiltroPueblo,
   dispersarBosque,
   hash,
+  matasDeTrozo,
   posicionObstaculo,
+  trozosDeHierba,
   tipoCopa,
   variacionDe,
   type EntornoDispersion,
@@ -137,6 +139,67 @@ describe('bosque de las colinas', () => {
     // El pueblo quita una pequeña parte del anillo sur.
     expect(n / celdas).toBeGreaterThan(d.densidad * 0.9)
     expect(n / celdas).toBeLessThan(d.densidad * 1.05)
+  })
+})
+
+describe('hierba decorativa', () => {
+  const entorno = entornoDe(1)
+  const todas = (e: EntornoDispersion) =>
+    trozosDeHierba(e.valle, e.datos).flatMap((t) => matasDeTrozo(t, e))
+
+  it('misma semilla, mismas matas; otra semilla, otras', () => {
+    const a = todas(entorno)
+    expect(a.length).toBeGreaterThan(5000)
+    expect(todas(entornoDe(1))).toEqual(a)
+    expect(todas(entornoDe(2))).not.toEqual(a)
+  })
+
+  it('no hay hierba en el río, ni encima de obstáculos, ni en el pueblo', () => {
+    const { valle: v, obstaculos: obs } = estado
+    const aguas = new Set(celdasAgua(v, entorno.altura).map((c) => `${c.x},${c.y}`))
+    const ocupadas = new Set(obs.map((o) => `${o.x},${o.y}`))
+    const enPueblo = crearFiltroPueblo(v, 0)
+    for (const m of todas(entorno)) {
+      const c = metrosACasilla(m.x, m.z, v)
+      expect(aguas.has(`${c.x},${c.y}`)).toBe(false)
+      expect(ocupadas.has(`${c.x},${c.y}`)).toBe(false)
+      expect(enPueblo(m.x, m.z)).toBe(false)
+    }
+  })
+
+  it('el pueblo queda sin hierba aunque la hierba cubra su zona', () => {
+    // Con un anillo amplio la hierba llega al pueblo: el filtro tiene que quitarla.
+    const ancho = {
+      ...entorno,
+      datos: {
+        ...DATOS_VEGETACION,
+        hierba: { ...DATOS_VEGETACION.hierba, anilloMetros: 60, alturaMaxima: 99 },
+      },
+    }
+    const enPueblo = crearFiltroPueblo(valle, 0)
+    const matas = todas(ancho)
+    const sur = matas.filter((m) => m.z > ladoCasillas(valle) / 2)
+    expect(sur.length).toBeGreaterThan(100)
+    for (const m of sur) expect(enPueblo(m.x, m.z)).toBe(false)
+  })
+
+  it('respeta la densidad de datos por terreno dentro de un margen', () => {
+    const plano: EntornoDispersion = {
+      ...entorno,
+      altura: () => 1,
+      agua: new Set(),
+      ocupadas: new Set(),
+    }
+    const h = DATOS_VEGETACION.hierba
+    const c = valle.casillasPorParcela
+    const mitad = ladoCasillas(valle) / 2
+    const esperado = valle.parcelas.reduce(
+      (a, p) => a + h.matasPorCasilla * h.pesoTerreno[p.terreno] * c * c,
+      0,
+    )
+    const enValle = todas(plano).filter((m) => Math.abs(m.x) < mitad && Math.abs(m.z) < mitad)
+    expect(enValle.length / esperado).toBeGreaterThan(0.97)
+    expect(enValle.length / esperado).toBeLessThan(1.03)
   })
 })
 
