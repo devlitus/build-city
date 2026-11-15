@@ -4,7 +4,7 @@
 > Fase: [Fase 1](README.md) · Proceso: [PROCESO](../../PROCESO.md)
 
 ## Objetivo
-El proyecto existe, se construye y se testea solo, contiene el núcleo lógico de Raíces funcionando y pinta una escena 3D mínima con el estilo low-poly de la paleta del juego.
+El proyecto existe, se construye y se testea solo, contiene el núcleo lógico de Raíces funcionando y pinta una escena 3D mínima con el estilo PBR estilizado decidido en la prueba de estilo ([ADR 0003](../../adr/0003-estilo-visual.md)).
 
 ## Criterios de aceptación del hito
 - [ ] `npm run check` pasa en local y la CI pasa en verde en la PR del hito.
@@ -78,18 +78,20 @@ El proyecto existe, se construye y se testea solo, contiene el núcleo lógico d
 ---
 
 ### M0-T04 · Escena 3D mínima
+
+> **Nota (2026-11-15):** M0-T04 se implementó en *low-poly* plano antes del ADR 0003. Las subtareas revisadas T04.2 y T04.3 se implementan en [M1-T09](M1-valle.md#m1-t09--escena-y-terreno-al-estilo-pbr-adr-0003).
 - **Objetivo:** tener el lienzo three.js con la iluminación base del juego, sobre la que se construirán todos los hitos.
 - **Depende de:** T01 · **Archivos:** `src/world/escena.ts`, `src/world/luces.ts`, `src/main.ts` · **Crítico:** no
 
 **Subtareas**
 - M0-T04.1 `WebGLRenderer` con antialias, sombras `PCFSoftShadowMap` y *pixel ratio* limitado a 2.
-- M0-T04.2 Luz de sol direccional con sombras, luz de hemisferio (cielo/suelo), color de cielo y niebla.
-- M0-T04.3 Suelo de prueba y unos objetos low-poly (caja, cono, icosaedro) para ver el sombreado plano.
+- M0-T04.2 Cielo físico (`Sky`) que también ilumina la escena (PMREM), sol direccional con sombras, mapeo de tonos ACES y niebla suave.
+- M0-T04.3 Suelo de prueba con la textura `hierba` y unos objetos con bordes biselados y materiales PBR (referencia: `borrador/prueba-estilo/`, estilo 4).
 - M0-T04.4 Redimensionado con `ResizeObserver`.
 - M0-T04.5 Contador de fps visible solo en desarrollo.
 
 **Criterios de aceptación**
-- [ ] La escena se ve con sombreado plano y sombras suaves, sin errores en la consola.
+- [ ] La escena se ve con materiales PBR, cielo físico y sombras suaves, sin errores en la consola.
 - [ ] Al redimensionar la ventana la imagen no se deforma.
 - [ ] 60 fps en un PC medio.
 - [ ] El contador de fps no aparece en `npm run build`.
@@ -118,22 +120,25 @@ El proyecto existe, se construye y se testea solo, contiene el núcleo lógico d
 
 ---
 
-### M0-T06 · Paleta y material compartido
-- **Objetivo:** fijar los colores del juego en datos y un único material low-poly, para que todo combine y se dibuje rápido.
+### M0-T06 · Paleta y materiales
+
+> **Nota (2026-11-15):** M0-T06 se implementó como paleta de colores planos antes del ADR 0003. Las subtareas revisadas T06.3 y T06.4 se implementan en [M1-T09](M1-valle.md#m1-t09--escena-y-terreno-al-estilo-pbr-adr-0003).
+- **Objetivo:** fijar en datos los colores del juego y el catálogo de materiales PBR (texturas, metros por repetición y tinte), para que todo combine.
 - **Depende de:** T04 · **Archivos:** `data/paleta.json`, `src/world/materiales.ts` · **Crítico:** no
 
 **Subtareas**
 - M0-T06.1 `data/paleta.json` con los colores con nombre (prado, bosque, roca, nieve, arena, tierra, madera, teja, granero, crema, piedra, agua…) tomados del visor (`borrador/visor/`).
 - M0-T06.2 Esquema de validación de la paleta.
-- M0-T06.3 Fábrica de materiales con caché: sombreado plano, sin brillo, por nombre de color.
-- M0-T06.4 La escena de muestra usa solo colores de la paleta.
+- M0-T06.3 `data/materiales.json`: por material, sus texturas, metros por repetición y tinte (de la paleta). Valores de partida: los de la prueba de estilo (`docs/arte/inventario.md`).
+- M0-T06.4 Fábrica de materiales PBR con caché por nombre; la escena de muestra solo usa materiales y colores del catálogo.
 
 **Criterios de aceptación**
-- [ ] Ningún color de la escena está escrito a mano en `src/world/`: todos salen de la paleta.
-- [ ] Pedir dos veces el mismo color devuelve el mismo material (caché).
+- [ ] Ningún color ni escala de textura está escrito a mano en `src/world/`: salen de la paleta y del catálogo.
+- [ ] Pedir dos veces el mismo material devuelve el mismo objeto (caché).
 
 **Tests unitarios**
 - `paleta.test.ts`: "la paleta cumple el esquema", "todos los colores son hexadecimales válidos", "un nombre inexistente lanza un error claro".
+- `materiales.test.ts`: "el catálogo cumple el esquema", "todo tinte existe en la paleta", "los metros por repetición son positivos".
 
 ---
 
@@ -144,9 +149,9 @@ El proyecto existe, se construye y se testea solo, contiene el núcleo lógico d
 **Subtareas**
 - M0-T07.1 ADR 0001 — three.js como motor (solo web de escritorio).
 - M0-T07.2 ADR 0002 — Copia del núcleo de Raíces en lugar de paquete compartido.
-- M0-T07.3 ADR 0003 — Estilo low-poly con sombreado plano y paleta en datos.
+- M0-T07.3 ~~ADR 0003~~ **Escrito** en la prueba de estilo: PBR estilizado con texturas propias ([0003](../../adr/0003-estilo-visual.md)).
 - M0-T07.4 ADR 0004 — Arquitectura `core` / `juego` / `world` / `ui` dirigida por comandos.
-- M0-T07.5 ADR 0005 — Pipeline de arte: Blender → `.glb` con meshopt; formas por código mientras tanto.
+- M0-T07.5 ~~ADR 0005~~ **Escrito** en la prueba de estilo: texturas con ComfyUI, modelos en Blender, `.glb` + KTX2 ([0005](../../adr/0005-pipeline-arte.md)).
 
 **Criterios de aceptación**
 - [ ] Cada ADR tiene contexto, decisión, alternativas descartadas y consecuencias.
