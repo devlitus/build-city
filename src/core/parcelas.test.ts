@@ -154,25 +154,25 @@ describe('parcelaComprable', () => {
 })
 
 describe('precio con 64 parcelas', () => {
-  // Los parámetros de precio viven en data/economia.json (precioBase, factores, subidaPorCompra
-  // y factorMaximoSubida), no en valle.json; el test los lee de ahí (CONFIG_ECONOMIA).
+  // Los parámetros de precio viven en data/economia.json (precioBase, factores, subidaPorCompra,
+  // atenuacionSubida y subidaMinima), no en valle.json; el test los lee de ahí (CONFIG_ECONOMIA).
   it('el precio sube con cada compra según economia.json', () => {
     const c = CONFIG_ECONOMIA
     const p = base.valle.parcelas[centro] as Parcela
     const factores =
       c.factorTerreno[p.terreno] * c.factorFertilidad[p.fertilidad] * c.factorAgua[p.agua]
-    const tope = c.factorMaximoSubida ?? Infinity
+    let factor = 1
     let anterior = 0
-    let subidas = 0
     for (let n = 0; n < base.valle.parcelas.length; n++) {
       const precio = precioParcela({ ...base, comprasHechas: n }, centro) as number
-      const esperado = c.precioBase * factores * Math.min((1 + c.subidaPorCompra) ** n, tope)
-      expect(Math.abs(precio - esperado)).toBeLessThanOrEqual(10)
-      expect(precio).toBeGreaterThanOrEqual(anterior)
-      if (precio > anterior) subidas++
+      // Aproximación en coma flotante de base × factores × Π (1 + max(mín, subida · atenuación^i)).
+      expect(Math.abs(precio - c.precioBase * factores * factor)).toBeLessThanOrEqual(10)
+      // Sube en todas las compras: no hay meseta (n = 0 .. parcelas - 1).
+      if (n > 0) expect(precio).toBeGreaterThan(anterior)
       anterior = precio
+      factor *=
+        1 + Math.max(c.subidaMinima ?? 0, c.subidaPorCompra * (c.atenuacionSubida ?? 1) ** n)
     }
-    expect(subidas).toBeGreaterThan(5)
     // Y con compras reales: cada una cuesta lo que marca la fórmula y suma una compra.
     let e = base
     for (const i of [centro, idx(2, 3), idx(2, 4), idx(3, 4)]) {
