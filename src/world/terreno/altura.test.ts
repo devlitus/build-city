@@ -3,6 +3,7 @@ import { casillasRio, crearEstadoInicial, type Valle } from '../../core'
 import { alturaTerreno, crearAltura } from './altura'
 import { casillaAMetros, ladoMetros } from './coordenadas'
 import { PARAMETROS_TERRENO } from './parametros'
+import { DATOS_PUEBLO, centroPlaza } from '../pueblo-datos'
 
 const { nivelAgua, colinas } = PARAMETROS_TERRENO
 
@@ -131,6 +132,12 @@ describe('alturaTerreno', () => {
       const altura = crearAltura(valle, semilla)
       const mitad = ladoMetros(valle) / 2
       const d = colinas.anchoSubida
+      // En el lado sur, la explanada del pueblo aplana a propósito la franja de la plaza y el
+      // camino: se omite solo ese tramo (plaza.radio + margen + mezcla desde la x de la plaza);
+      // el resto del lado sur y los otros tres lados se miden igual que antes.
+      const { plaza, explanada } = DATOS_PUEBLO
+      const franja = plaza.radio + explanada.margenPlaza + explanada.anchoMezcla
+      let medidosSur = 0
       for (let t = -mitad; t <= mitad; t += 5) {
         for (const [x, z] of [
           [t, -mitad - d],
@@ -138,9 +145,39 @@ describe('alturaTerreno', () => {
           [-mitad - d, t],
           [mitad + d, t],
         ] as const) {
+          if (z === mitad + d && Math.abs(x - centroPlaza(valle).x) < franja) continue
+          if (z === mitad + d) medidosSur++
           expect(altura(x, z)).toBeGreaterThan(colinas.alturaMinima)
         }
       }
+      expect(medidosSur).toBeGreaterThan(0)
+    }
+  })
+
+  it('la zona del pueblo (plaza y camino) queda casi llana, a la cota de las parcelas', () => {
+    for (const semilla of [1, 7, 12345]) {
+      const valle = valleDe(semilla)
+      const altura = crearAltura(valle, semilla)
+      const mitad = ladoMetros(valle) / 2
+      const c = centroPlaza(valle)
+      const { plaza, explanada } = DATOS_PUEBLO
+      const llano = plaza.radio + explanada.margenPlaza
+      let comprobados = 0
+      for (let a = 0; a < 2 * Math.PI; a += 0.4) {
+        for (let r = 0; r <= llano; r += 3) {
+          const h = altura(c.x + r * Math.cos(a), c.z + r * Math.sin(a))
+          expect(Math.abs(h - PARAMETROS_TERRENO.alturaBase)).toBeLessThan(0.2)
+          comprobados++
+        }
+      }
+      // Camino: de 4 m del borde (ya fuera del valle) a la plaza.
+      for (let z = mitad + 4; z <= c.z; z += 2) {
+        for (const dx of [-explanada.semiAnchoCamino, 0, explanada.semiAnchoCamino]) {
+          expect(Math.abs(altura(c.x + dx, z) - PARAMETROS_TERRENO.alturaBase)).toBeLessThan(0.2)
+          comprobados++
+        }
+      }
+      expect(comprobados).toBeGreaterThan(100)
     }
   })
 })

@@ -2,9 +2,24 @@ import { casillasRio, type Valle } from '../../core'
 import { ladoMetros } from './coordenadas'
 import { PARAMETROS_TERRENO, type ParametrosTerreno } from './parametros'
 import { ruidoValor } from './ruido'
+import { zonasLlanasPueblo } from '../pueblo-datos'
 
 /** Altura (metros) del terreno en el punto (x, z) en metros. */
 export type FuncionAltura = (x: number, z: number) => number
+
+/**
+ * Zona que el terreno aplana hacia una `cota`: cápsula alrededor del segmento (a, b), llana a
+ * `radioLlano` m del segmento y mezclada con suavidad hasta `radioLlano + anchoMezcla`.
+ */
+export interface ZonaLlana {
+  readonly ax: number
+  readonly az: number
+  readonly bx: number
+  readonly bz: number
+  readonly radioLlano: number
+  readonly anchoMezcla: number
+  readonly cota: number
+}
 
 function suavizar(t: number): number {
   const c = Math.min(1, Math.max(0, t))
@@ -78,6 +93,7 @@ export function crearAltura(
   valle: Valle,
   semilla: number,
   parametros: ParametrosTerreno = PARAMETROS_TERRENO,
+  zonasLlanas: readonly ZonaLlana[] = zonasLlanasPueblo(valle),
 ): FuncionAltura {
   const lado = Math.round(ladoMetros(valle))
   const mitad = lado / 2
@@ -106,7 +122,31 @@ export function crearAltura(
     return a + (b - a) * fz
   }
 
-  return (x, z) => {
+  /** Peso (0..1) del aplanado en (x, z) y su cota; solo fuera del valle (entra en 3 m). */
+  const aplanado = (x: number, z: number): { peso: number; cota: number } => {
+    const entrada = suavizar((z - mitad) / 3)
+    let peso = 0
+    let cota = 0
+    if (entrada === 0) return { peso, cota }
+    for (const zona of zonasLlanas) {
+      const ex = zona.bx - zona.ax
+      const ez = zona.bz - zona.az
+      const largo2 = ex * ex + ez * ez
+      const t =
+        largo2 === 0
+          ? 0
+          : Math.min(1, Math.max(0, ((x - zona.ax) * ex + (z - zona.az) * ez) / largo2))
+      const d = Math.hypot(x - (zona.ax + ex * t), z - (zona.az + ez * t))
+      const w = (1 - suavizar((d - zona.radioLlano) / zona.anchoMezcla)) * entrada
+      if (w > peso) {
+        peso = w
+        cota = zona.cota
+      }
+    }
+    return { peso, cota }
+  }
+
+  const alturaNatural: FuncionAltura = (x, z) => {
     const dx = Math.max(Math.abs(x) - mitad, 0)
     const dz = Math.max(Math.abs(z) - mitad, 0)
     // Dentro del valle s = 0: no hay colinas (se evitan hypot y ruidos).
@@ -128,6 +168,12 @@ export function crearAltura(
       s * (colinas.altura * (0.6 + 0.4 * macro) + colinas.amplitudRuido * detalle)
 
     return suelo - hundimiento * (1 - s) + sobreColinas
+  }
+
+  return (x, z) => {
+    const h = alturaNatural(x, z)
+    const { peso, cota } = aplanado(x, z)
+    return peso === 0 ? h : h + (cota - h) * peso
   }
 }
 
