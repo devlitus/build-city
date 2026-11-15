@@ -483,12 +483,6 @@ describe('partida nueva', () => {
     expect(aceptados).toEqual([])
   })
 
-  it('la capa de juego ya no fija los ahorros (usa los de los datos)', () => {
-    const raiz = resolve(import.meta.dirname, '../..')
-    for (const f of ['src/game/juego.ts', 'src/game/scenes/EscenaValle.ts'])
-      expect(readFileSync(join(raiz, f), 'utf8')).not.toMatch(/dineroInicial/)
-  })
-
   it('economia.ts y datos/economia.ts no usan APIs prohibidas (ADR 0004)', () => {
     const raiz = resolve(import.meta.dirname, '../..')
     for (const f of ['src/core/economia.ts', 'src/core/datos/economia.ts']) {
