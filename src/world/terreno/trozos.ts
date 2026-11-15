@@ -81,5 +81,9 @@ export function trozosVisibles(rango: RangoMetros, valle: Medidas, anillo: numbe
 /** Todos los trozos del valle y su anillo de colinas. */
 export function todosLosTrozos(valle: Medidas, anillo: number): Trozo[] {
   const mitad = ladoMetros(valle) / 2 + anillo * ladoTrozo(valle)
-  return trozosVisibles({ xMin: -mitad, xMax: mitad - 1e-6, zMin: -mitad, zMax: mitad - 1e-6 }, valle, anillo)
+  return trozosVisibles(
+    { xMin: -mitad, xMax: mitad - 1e-6, zMin: -mitad, zMax: mitad - 1e-6 },
+    valle,
+    anillo,
+  )
 }

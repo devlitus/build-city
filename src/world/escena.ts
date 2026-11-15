@@ -1,34 +1,9 @@
-import {
-  BoxGeometry,
-  Color,
-  ConeGeometry,
-  Fog,
-  IcosahedronGeometry,
-  Mesh,
-  PCFShadowMap,
-  PerspectiveCamera,
-  PlaneGeometry,
-  Scene,
-  WebGLRenderer,
-  type BufferGeometry,
-} from 'three'
+import { Color, Fog, PCFShadowMap, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import type { LectorEstado } from '../juego/almacen'
 import { añadirLuces } from './luces'
-import { materialDe } from './materiales'
 import { color } from './paleta'
-
-function objeto(
-  geometria: BufferGeometry,
-  colorMaterial: string,
-  x: number,
-  y: number,
-  z: number,
-): Mesh {
-  const malla = new Mesh(geometria, materialDe(colorMaterial))
-  malla.position.set(x, y, z)
-  malla.castShadow = true
-  malla.receiveShadow = true
-  return malla
-}
+import { ladoMetros } from './terreno/coordenadas'
+import { crearTerreno } from './terreno/malla'
 
 export interface Escena {
   escena: Scene
@@ -39,8 +14,11 @@ export interface Escena {
   destruir(): void
 }
 
-/** Crea el lienzo three.js dentro del contenedor, con luces, objetos de prueba y redimensionado. */
-export function crearEscena(contenedor: HTMLElement): Escena {
+/** Crea el lienzo three.js dentro del contenedor, con luces, terreno y redimensionado. */
+export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Escena {
+  const { valle, semilla } = lector.estado
+  const lado = ladoMetros(valle)
+
   const renderer = new WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
@@ -51,21 +29,17 @@ export function crearEscena(contenedor: HTMLElement): Escena {
 
   const escena = new Scene()
   escena.background = new Color(color('cielo'))
-  escena.fog = new Fog(color('niebla'), 40, 120)
-  añadirLuces(escena)
+  // Provisional (T06 la afina): el valle entero queda por delante de la niebla.
+  escena.fog = new Fog(color('niebla'), lado * 1.6, lado * 4.5)
+  añadirLuces(escena, lado / 2)
 
-  const suelo = new Mesh(new PlaneGeometry(80, 80), materialDe('prado'))
-  suelo.rotation.x = -Math.PI / 2
-  suelo.receiveShadow = true
-  escena.add(suelo)
+  // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
+  escena.add(crearTerreno(valle, semilla))
 
-  escena.add(objeto(new BoxGeometry(3, 3, 3), 'teja', -5, 1.5, 0))
-  escena.add(objeto(new ConeGeometry(2, 4, 6), 'bosque', 0, 2, 0))
-  escena.add(objeto(new IcosahedronGeometry(1.8, 0), 'roca', 5, 1.8, 0))
-
-  const camara = new PerspectiveCamera(50, 1, 0.3, 600)
-  camara.position.set(0, 9, 18)
-  camara.lookAt(0, 1.5, 0)
+  const camara = new PerspectiveCamera(50, 1, 0.3, lado * 6)
+  // Vista inicial: desde el sur y en alto, mirando al centro del valle.
+  camara.position.set(0, lado * 0.44, lado * 0.875)
+  camara.lookAt(0, 0, 0)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
