@@ -26,6 +26,27 @@ export const esquemaTerreno = v.pipe(
       /** Metros de colinas dibujados más allá del borde del valle (se redondea a trozos enteros). */
       radioColinas: positivo,
     }),
+    agua: v.object({
+      /** Opacidad de la superficie (0 a 1). */
+      opacidad: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+      /** Intensidad de la emisión que da el brillo suave (0 a 1). */
+      brillo: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+      rugosidad: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+      /** Metros que la superficie sobresale de las casillas de río hacia la orilla (bajo el talud). */
+      margen: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+      /** Ondulación: variación relativa de brillo, longitud de onda (m) y velocidad (ciclos/s). */
+      onda: v.object({
+        amplitud: v.pipe(v.number(), v.minValue(0), v.maxValue(0.5)),
+        longitudOnda: estrictoPositivo,
+        velocidad: positivo,
+        /** Forma de la onda: factor de frecuencia en z, y frecuencia y velocidad del armónico diagonal. */
+        estiramientoZ: estrictoPositivo,
+        armonicoFrecuencia: estrictoPositivo,
+        armonicoVelocidad: positivo,
+        /** Velocidad (relativa a la principal) de la onda en z, que avanza al revés. */
+        cruzadaVelocidad: positivo,
+      }),
+    }),
     colores: v.object({
       /** Por debajo de esta altura (m) la cara es arena de orilla. */
       alturaArena: v.number(),
