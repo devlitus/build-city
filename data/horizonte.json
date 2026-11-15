@@ -1,0 +1,22 @@
+{
+  "radioInterior": 120,
+  "anchoAnillo": 320,
+  "profundidadBase": 4,
+  "segmentosAngulo": 120,
+  "anillosRadiales": 16,
+  "fraccionCresta": 0.4,
+  "alturaMinima": 32,
+  "alturaPicos": 95,
+  "longitudOndaPicos": 2.6,
+  "umbralNieve": 0.62,
+  "niebla": { "cerca": 220, "lejos": 560 },
+  "nubes": {
+    "cantidad": 24,
+    "alturaMin": 110,
+    "alturaMax": 170,
+    "radioMax": 380,
+    "tamanoMin": 14,
+    "tamanoMax": 34,
+    "velocidad": 2.5
+  }
+}
