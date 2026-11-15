@@ -1,0 +1,13 @@
+{
+  "nivelAgua": 0,
+  "alturaBase": 0.5,
+  "ruidoParcela": { "amplitud": 0.08, "longitudOnda": 14 },
+  "cauce": { "profundidad": 0.8, "bordeFondo": 0, "anchoOrilla": 0.3 },
+  "colinas": {
+    "altura": 16,
+    "anchoSubida": 40,
+    "amplitudRuido": 3,
+    "longitudOnda": 18,
+    "alturaMinima": 6
+  }
+}
