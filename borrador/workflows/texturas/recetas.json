@@ -1,0 +1,118 @@
+{
+  "_nota": "Receta común de texturas de Raíces 3D. Cada textura: prompt propio + base común, semilla fija, metros que cubre una repetición y ajustes del script hacer_repetible.py.",
+  "modelo": "Qwen-Image 2512 fp8 + LoRA Lightning 4 pasos, 1024x1024, euler/simple, cfg 1, shift 3.1",
+  "base": "Seamless tileable game texture, orthographic view straight on, perfectly flat surface filling the whole frame, even soft overcast diffuse lighting, no cast shadows, no perspective, no vignette, high detail, photorealistic PBR albedo, warm rustic farm palette of sage, ochre, terracotta and cream. ",
+  "negativo": "perspective, horizon, vignette, strong shadows, text, watermark, logo, frame, border, objects, people, blur, depth of field, lens distortion",
+  "texturas": {
+    "madera": {
+      "semilla": 101,
+      "metros": 1.6,
+      "relieve": 7,
+      "rug": [
+        0.62,
+        0.9
+      ],
+      "prompt": "Weathered horizontal wooden plank siding wall of an old farmhouse, long boards running left to right, warm honey brown oak with grey sun-bleached patches, visible wood grain, small knots and rusty nail heads, thin dark gaps between boards."
+    },
+    "tejas": {
+      "semilla": 202,
+      "metros": 4,
+      "relieve": 8,
+      "rug": [
+        0.55,
+        0.85
+      ],
+      "prompt": "Old terracotta clay roof tiles, regular rows of overlapping curved barrel tiles running across the image, warm terracotta and ochre tones with slight colour variation, a little lichen and dust."
+    },
+    "hierba": {
+      "semilla": 304,
+      "metros": 2.5,
+      "relieve": 5,
+      "rug": [
+        0.8,
+        0.95
+      ],
+      "prompt": "Uniform short mown meadow lawn seen from directly above, evenly distributed fine grass blades with no clumps and no bare patches, sage green and soft yellow-green tones, a few tiny clover leaves scattered evenly."
+    },
+    "camino": {
+      "semilla": 415,
+      "metros": 2.5,
+      "relieve": 6,
+      "rug": [
+        0.75,
+        0.95
+      ],
+      "prompt": "Top-down macro photo of a uniform packed dirt ground surface, flat compacted light ochre and warm beige earth evenly covered with fine gravel and small pebbles, no tracks, no grass edges, same texture everywhere edge to edge."
+    },
+    "surcos": {
+      "semilla": 516,
+      "metros": 2.5,
+      "relieve": 9,
+      "rug": [
+        0.8,
+        0.97
+      ],
+      "prompt": "Top-down view looking straight down at flat ploughed farm soil, evenly spaced parallel furrow lines running horizontally from left edge to right edge, rich dark brown moist earth with lighter crumbs on the ridges, small clods, no horizon, no vanishing point, no sky."
+    },
+    "maderaOsc": {
+      "semilla": 607,
+      "metros": 2,
+      "relieve": 7,
+      "rug": [
+        0.6,
+        0.88
+      ],
+      "prompt": "Old dark stained wooden deck boards running left to right, deep walnut brown with worn lighter edges, visible grain, iron nails, narrow dark gaps between boards."
+    },
+    "tejasGris": {
+      "semilla": 708,
+      "metros": 3,
+      "relieve": 8,
+      "rug": [
+        0.6,
+        0.9
+      ],
+      "prompt": "Weathered grey cedar wood shingle roof, overlapping rows of small rectangular shingles running across the image, silver grey and muted brown tones, slight moss and lichen."
+    },
+    "rojo": {
+      "semilla": 809,
+      "metros": 2.2,
+      "relieve": 6,
+      "rug": [
+        0.55,
+        0.85
+      ],
+      "prompt": "Old barn wall of vertical wooden boards painted barn red, boards running top to bottom, faded and slightly peeling red paint showing bare wood in places, warm terracotta red tones, narrow dark gaps between boards."
+    },
+    "blanco": {
+      "semilla": 921,
+      "metros": 1.2,
+      "relieve": 4,
+      "rug": [
+        0.5,
+        0.8
+      ],
+      "prompt": "Close-up of vertical wooden boards painted cream white, continuous boards running from the top edge to the bottom edge, subtle wood grain showing through slightly worn and chipped paint, warm off-white cream tone, no frame, no border, no crossbar."
+    },
+    "postigo": {
+      "semilla": 1011,
+      "metros": 1.5,
+      "relieve": 6,
+      "rug": [
+        0.5,
+        0.82
+      ],
+      "prompt": "Rustic window shutter wood of vertical boards painted sage green, boards running top to bottom, slightly weathered and chipped paint with bare wood showing at the edges, soft muted sage green."
+    },
+    "valla": {
+      "semilla": 1112,
+      "metros": 1.8,
+      "relieve": 7,
+      "rug": [
+        0.7,
+        0.92
+      ],
+      "prompt": "Rough sawn weathered fence timber, long grain running left to right, silver grey and warm brown aged wood, cracks and splinters, a few lichen spots."
+    }
+  }
+}
