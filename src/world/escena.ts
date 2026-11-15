@@ -6,7 +6,7 @@ import {
   IcosahedronGeometry,
   Mesh,
   MeshStandardMaterial,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -51,7 +51,8 @@ export function crearEscena(contenedor: HTMLElement): Escena {
   const renderer = new WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = PCFSoftShadowMap
+  // three 0.187 retiró PCFSoftShadowMap; PCFShadowMap ya filtra suave.
+  renderer.shadowMap.type = PCFShadowMap
   renderer.domElement.style.display = 'block'
   contenedor.append(renderer.domElement)
 
