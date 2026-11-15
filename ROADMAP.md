@@ -1,6 +1,6 @@
 # ROADMAP — Raíces 3D
 
-> **Versión:** 0.1 · 2026-11-15
+> **Versión:** 0.2 · 2026-11-15 (estilo visual decidido: ADR 0003)
 > Referencia de diseño: [GDD.md](GDD.md) · Material visual: [borrador/](borrador/)
 > **Plan detallado por hito:** [docs/plan/](docs/plan/) · **Cómo se trabaja:** [docs/PROCESO.md](docs/PROCESO.md)
 > Basado en el ROADMAP de [Raíces 2D](../build-frame/ROADMAP.md), adaptado a three.js y a las decisiones del GDD §12.
@@ -9,7 +9,7 @@
 
 - **Incremental:** cada hito termina en algo **jugable** en el navegador.
 - **Vertical:** mejor un sistema pequeño completo (lógica + escena 3D + UI + tests) que muchos a medias.
-- **Primero los *placeholders*:** cajas, conos y colores planos (como los bocetos de Blender). El arte final nunca bloquea un hito.
+- **Primero los *placeholders*:** cajas, conos y colores de la paleta. El arte final nunca bloquea un hito; se conecta cuando está listo (lista en [docs/arte/inventario.md](docs/arte/inventario.md)).
 - **El núcleo manda:** toda regla de juego vive en `src/core` (copiado de Raíces), puro y determinista. La escena 3D solo dibuja el estado y envía comandos.
 - **Definición de "hecho" (DoD)**, válida para todos los hitos:
   1. Los criterios de aceptación del hito se cumplen.
@@ -37,9 +37,9 @@ Transversal              Arte, audio, rendimiento, accesibilidad
 - Vite + TypeScript estricto + three.js + Preact.
 - **Copia del núcleo de Raíces** (`src/core`, `data/*.json`) con sus tests pasando tal cual.
 - ESLint, Prettier y Vitest configurados (sin e2e por ahora, PROCESO §7). CI en GitHub Actions: lint → formato → tipos → tests → build.
-- Escena mínima: suelo, luz de sol y de hemisferio, cielo, niebla, contador de fps en desarrollo.
-- **Prueba de estilo visual:** la misma escena de muestra en *low-poly* plano, *toon* y pintado; se elige uno y se registra en un ADR.
-- ADRs iniciales: three.js como motor, copia del núcleo, estilo visual, pipeline de arte (Blender → `.glb`).
+- Escena mínima: suelo, cielo físico que ilumina, sol con sombras, mapeo de tonos, niebla, contador de fps en desarrollo.
+- ~~**Prueba de estilo visual**~~ **hecha** ([`borrador/prueba-estilo/`](borrador/prueba-estilo/)): se compararon *low-poly* plano, pintado a mano, PBR con Poly Haven y PBR con texturas propias de ComfyUI; gana el último ([ADR 0003](docs/adr/0003-estilo-visual.md)).
+- ADRs iniciales: three.js como motor, copia del núcleo, estilo visual (0003, escrito), pipeline de arte (0005, escrito).
 
 **Aceptación:** la CI pasa en verde, los tests del núcleo copiado siguen en verde y la escena de muestra se ve a 60 fps.
 
@@ -56,7 +56,7 @@ Transversal              Arte, audio, rendimiento, accesibilidad
 
 ### M2 — Personaje y tiempo
 **Objetivo:** el mundo vive y el jugador está en él.
-- Granjero *placeholder* (cápsula con sombrero) a escala de 1,75 m.
+- Granjero con el modelo elegido (Grab3D «Farmer», `.glb` con Reposo, Andar y Correr) a escala de 1,75 m; cápsula con sombrero solo si el modelo no está aún en `public/`.
 - Control en tercera persona libre: WASD, Mayús para correr, ratón para orbitar (*pointer lock*).
 - Colisión cápsula contra árboles, rocas, edificios y límites del valle; el personaje sigue la altura del terreno.
 - Reloj de juego, ciclo de día y noche con el sol moviéndose y sombras en cascada cerca de la cámara.
@@ -93,7 +93,7 @@ Transversal              Arte, audio, rendimiento, accesibilidad
 - Nivelar el terreno bajo el edificio.
 - Obra visible por etapas (cimientos → andamios → paredes → tejado) que dura días de juego.
 - Mover y demoler.
-- **Arte en paralelo:** modelos `.glb` de los cuatro edificios y sus etapas de obra en el estilo elegido en M0. Se conectan al juego al terminar el hito.
+- **Arte en paralelo:** modelos `.glb` de los cuatro edificios y sus etapas de obra en el estilo PBR estilizado (ADR 0003), con las texturas de la receta. Se conectan al juego al terminar el hito.
 
 **Aceptación:** se diseña una pequeña granja con zonas y tres edificios; las reglas de colocación tienen tests; las obras avanzan al dormir.
 
@@ -152,8 +152,9 @@ Transversal              Arte, audio, rendimiento, accesibilidad
 ## Transversal
 
 ### Arte
-- **Estilo:** se decide en M0 con la prueba comparativa (low-poly plano, *toon* o pintado) y queda en un ADR.
-- **Pipeline:** concepto en ComfyUI → modelo en Blender (o prototipo con Hunyuan3D 2.1 y retopología) → `.glb` con meshopt → ficha en `assets-src/fichas/`.
+- **Estilo:** PBR estilizado con texturas propias de ComfyUI ([ADR 0003](docs/adr/0003-estilo-visual.md)).
+- **Pipeline:** texturas con la receta de ComfyUI (o Poly Haven para piedra, roca y corteza) → modelos en Blender → `.glb` con meshopt y texturas KTX2 → ficha en `assets-src/fichas/` ([ADR 0005](docs/adr/0005-pipeline-arte.md)).
+- **Inventario:** qué texturas y modelos faltan y para qué hito, en [docs/arte/inventario.md](docs/arte/inventario.md).
 - **Regla:** todo recurso tiene ficha (prompt, semilla, modelo o `.blend`) para poder regenerarlo.
 - **Orden:** el arte de cada hito se produce en paralelo al hito y se conecta al terminarlo.
 
@@ -176,6 +177,7 @@ Teclas reasignables, sensibilidad e inversión del ratón, tamaño de texto de l
 |---|---|
 | El núcleo 2D no encaja en algún punto con el mundo 3D (alturas, colisiones) | La lógica sigue en la cuadrícula de 1 m; la altura y la colisión son solo de la vista. Revisarlo en M1–M2 |
 | Rendimiento con mucha vegetación | `InstancedMesh`, LOD y chunks desde M1; escena de estrés de desarrollo (M7-T06) |
-| Arte 3D lento de producir | *Placeholders* siempre; estilo sencillo; modelos generados por script en Blender |
+| Arte 3D lento de producir | *Placeholders* siempre; texturas con receta de ComfyUI (minutos por textura); modelos por script en Blender; recursos CC0 (Poly Haven, Grab3D) |
+| El estilo PBR no llega a 60 fps en un PC medio | Opciones de calidad (hierba, oclusión, sombras), KTX2, `InstancedMesh` y LOD; medir en M1 con la escena de la prueba |
 | La cámara libre marea o molesta al construir | El Modo Plano tiene su propia cámara; probar con jugadores en M4 |
-| El estilo visual elegido no convence tras el MVP | La prueba de estilo de M0 se hace antes de producir arte final |
+| El estilo visual elegido no convence tras el MVP | La prueba de estilo de M0 ya se hizo antes de producir arte final (ADR 0003) |
