@@ -1,0 +1,44 @@
+{
+  "arbol": {
+    "proporcionPino": 0.5,
+    "escala": { "min": 0.8, "max": 1.4 },
+    "variacionTono": 0.14,
+    "tronco": { "alto": 1.5, "radio": 0.17, "lados": 6 },
+    "pino": { "inicioCopa": 0.9, "alto": 3.8, "radio": 1.15, "niveles": 3, "lados": 7 },
+    "redondo": { "centroCopa": 2.6, "radio": 1.35, "detalle": 1 }
+  },
+  "roca": {
+    "escala": { "min": 0.55, "max": 1.4 },
+    "variacionTono": 0.12,
+    "radio": 0.55,
+    "achatamiento": 0.7,
+    "irregularidad": 0.22,
+    "hundimiento": 0.35
+  },
+  "planton": { "escala": 0.35 },
+  "bosqueColinas": {
+    "celda": 3.5,
+    "densidad": 0.6,
+    "alturaMaxima": 11,
+    "alturaMinimaSobreAgua": 0.4,
+    "margenValle": 3,
+    "margenAgua": 2.5,
+    "margenPueblo": 5,
+    "escala": { "min": 0.9, "max": 1.8 }
+  },
+  "hierba": {
+    "matasPorCasilla": 1.4,
+    "pesoTerreno": { "prado": 1, "bosque": 0.7, "rocoso": 0.25 },
+    "pesoFuera": 0.5,
+    "anilloMetros": 20,
+    "alturaMaxima": 3,
+    "margenAgua": 0.6,
+    "margenPueblo": 1.5,
+    "alto": { "min": 0.35, "max": 0.7 },
+    "ancho": 0.3,
+    "brotes": 5,
+    "variacionTono": 0.15,
+    "radioDibujo": 75,
+    "viento": { "amplitud": 0.14, "frecuencia": 0.35, "velocidad": 1.6 }
+  }
+}

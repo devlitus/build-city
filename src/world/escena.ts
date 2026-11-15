@@ -9,6 +9,7 @@ import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
+import { crearVegetacion } from './vegetacion'
 
 export interface Escena {
   escena: Scene
@@ -50,6 +51,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   escena.add(crearPueblo(valle, altura))
   const agua = crearAgua(valle, altura)
   escena.add(agua)
+  const vegetacion = crearVegetacion(valle, lector.estado.obstaculos, altura, semilla)
+  escena.add(vegetacion.objeto)
 
   const camara = new PerspectiveCamera(
     50,
@@ -82,12 +85,14 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       const dt = Math.min(0.1, (ahora - instanteAnterior) / 1000)
       horizonte.actualizar(dt)
       agua.actualizar(dt)
+      vegetacion.actualizar(dt, camara)
       instanteAnterior = ahora
       renderer.render(escena, camara)
     },
     destruir: () => {
       observador.disconnect()
       horizonte.destruir()
+      vegetacion.destruir()
       renderer.dispose()
       renderer.domElement.remove()
     },

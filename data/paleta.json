@@ -22,5 +22,9 @@
   "niebla": "#bcdcec",
   "luzSol": "#fff1d6",
   "hemisferioCielo": "#bcdcec",
-  "hemisferioSuelo": "#8a7a5a"
+  "hemisferioSuelo": "#8a7a5a",
+  "pino": "#3f7a48",
+  "copa": "#5f9a45",
+  "hierba": "#7fb04f",
+  "hierbaPunta": "#b4d36f"
 }
