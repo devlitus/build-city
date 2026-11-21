@@ -3,6 +3,7 @@ import paletaJson from '../../data/paleta.json'
 import type { FuenteEstado } from './fuente'
 import { cargarPaleta, colorHex } from '../world/paleta'
 import { Reloj } from './hud/Reloj'
+import { Herramientas } from './hud/Herramientas'
 
 const COLORES_UI = ['panel', 'texto', 'apagado', 'acento', 'linea'] as const
 
@@ -14,5 +15,11 @@ export function montarUi(contenedor: HTMLElement, almacen: FuenteEstado): void {
     contenedor.style.setProperty(`--ui-${nombre}`, colorHex(paleta, clave))
   }
   contenedor.style.pointerEvents = 'none'
-  render(<Reloj almacen={almacen} />, contenedor)
+  render(
+    <>
+      <Reloj almacen={almacen} />
+      <Herramientas almacen={almacen} />
+    </>,
+    contenedor,
+  )
 }
