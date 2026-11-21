@@ -86,7 +86,13 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   escena.add(crearPueblo(valle, altura))
   const agua = crearAgua(valle, altura)
   escena.add(agua)
-  const vegetacion = crearVegetacion(valle, lector.estado.obstaculos, altura, semilla)
+  const vegetacion = crearVegetacion(
+    valle,
+    lector.estado.obstaculos,
+    altura,
+    semilla,
+    lector.estado.dia,
+  )
   escena.add(vegetacion.objeto)
   const granjero = crearGranjero(lector, altura)
   escena.add(granjero.objeto)
@@ -129,7 +135,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       const pies = granjero.actualizar(dt, alfa)
       // Antes que la vegetación, que usa la cámara ya colocada.
       const mirado = terceraPersona.actualizar(dt, pies)
-      vegetacion.sincronizar(lector.estado.obstaculos)
+      vegetacion.sincronizar(lector.estado.obstaculos, lector.estado.dia)
       vegetacion.actualizar(dt, camara)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)

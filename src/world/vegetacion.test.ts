@@ -1,9 +1,10 @@
 import { InstancedMesh, PerspectiveCamera } from 'three'
 import { describe, expect, it } from 'vitest'
-import { crearEstadoInicial } from '../core'
+import { CONFIG_RECURSOS, crearEstadoInicial } from '../core'
 import { crearVegetacion } from './vegetacion'
 import { trozoCercano } from './dispersion'
 import { crearAltura } from './terreno/altura'
+import { DATOS_VEGETACION } from './vegetacion-datos'
 
 const semilla = 1
 const { valle, obstaculos } = crearEstadoInicial({ semilla })
@@ -30,7 +31,7 @@ describe('crearVegetacion', () => {
 
   it('tiene una instancia por cada árbol, roca y plantón del núcleo', () => {
     const por = (nombre: string) => mallas(veg.objeto).find((m) => m.name === nombre)?.count ?? -1
-    const arboles = obstaculos.filter((o) => o.tipo !== 'roca').length
+    const arboles = obstaculos.filter((o) => o.tipo === 'arbol').length
     expect(por('rocas')).toBe(obstaculos.filter((o) => o.tipo === 'roca').length)
     expect(por('arboles-tronco')).toBe(arboles)
     expect(por('arboles-copa-pino') + por('arboles-copa-redonda')).toBe(arboles)
@@ -70,17 +71,20 @@ describe('crearVegetacion.sincronizar', () => {
     const talado = obstaculos.map((o, i) =>
       i === iArbol ? { tipo: 'tocon' as const, x: o.x, y: o.y, variante: o.variante } : o,
     )
-    veg.sincronizar(talado)
+    veg.sincronizar(talado, 1)
     expect(por(veg, 'arboles-tronco')).toBe(arboles0 - 1)
     expect(por(veg, 'tocones')).toBe(1)
 
     const sinRoca = talado.filter(
       (o, i) => o.tipo !== 'roca' || i !== talado.findIndex((r) => r.tipo === 'roca'),
     )
-    veg.sincronizar(sinRoca)
+    veg.sincronizar(sinRoca, 1)
     expect(por(veg, 'rocas')).toBe(rocas0 - 1)
 
-    veg.sincronizar(sinRoca.filter((o) => o.tipo !== 'tocon'))
+    veg.sincronizar(
+      sinRoca.filter((o) => o.tipo !== 'tocon'),
+      1,
+    )
     expect(por(veg, 'tocones')).toBe(0)
     // Sin duplicar mallas: cada nombre aparece una sola vez.
     const nombres = mallas(veg.objeto).map((m) => m.name)
@@ -91,8 +95,35 @@ describe('crearVegetacion.sincronizar', () => {
   it('sin cambios visibles no reconstruye las mallas', () => {
     const veg = crearVegetacion(valle, obstaculos, altura, semilla)
     const antes = mallas(veg.objeto).find((m) => m.name === 'rocas')
-    veg.sincronizar(obstaculos.map((o) => ({ ...o, golpes: 1 })))
+    veg.sincronizar(
+      obstaculos.map((o) => ({ ...o, golpes: 1 })),
+      1,
+    )
     expect(mallas(veg.objeto).find((m) => m.name === 'rocas')).toBe(antes)
+    veg.destruir()
+  })
+
+  it('un plantón cambia de modelo al crecer y desaparece de las fases al ser árbol', () => {
+    const veg = crearVegetacion(valle, [], altura, semilla, 1)
+    const planton = { tipo: 'planton' as const, x: 60, y: 60, variante: 0.4, diaPlantado: 1 }
+    const nombres = () => mallas(veg.objeto).map((m) => m.name)
+    const faseDe = () =>
+      nombres()
+        .filter((n) => n.endsWith('-tronco') && n.startsWith('planton-'))
+        .map((n) => n.split('-')[1])
+    veg.sincronizar([planton], 1)
+    expect(faseDe()).toEqual(['0'])
+    const dias = CONFIG_RECURSOS.planton.diasCrecimiento
+    const ultima = DATOS_VEGETACION.planton.escalas.length - 1
+    veg.sincronizar([planton], 1 + dias - 1)
+    expect(faseDe()).toEqual([String(ultima)])
+    // Mismo día y mismos obstáculos: no se reconstruye.
+    const malla = mallas(veg.objeto).find((m) => m.name === `planton-${ultima}-tronco`)
+    veg.sincronizar([planton], 1 + dias - 1)
+    expect(mallas(veg.objeto).find((m) => m.name === `planton-${ultima}-tronco`)).toBe(malla)
+    veg.sincronizar([{ ...planton, tipo: 'arbol' as const }], 1 + dias)
+    expect(faseDe()).toEqual([])
+    expect(por(veg, 'arboles-tronco')).toBe(1)
     veg.destruir()
   })
 })
