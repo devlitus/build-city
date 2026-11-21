@@ -73,7 +73,7 @@ export function PanelParcela({
       aria-label={t('parcela.etiqueta')}
       style={{
         position: 'fixed',
-        top: '14px',
+        top: '72px',
         right: '14px',
         width: '260px',
         padding: '12px 14px',
