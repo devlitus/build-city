@@ -67,6 +67,10 @@ describe('avisoContextual', () => {
     expect(avisoContextual(con('hacha', tocon))).toBe(t('aviso.quitarTocon'))
   })
 
+  it('en pausa -> sin aviso', () => {
+    expect(avisoContextual({ ...con('hacha', arbol), pausado: true })).toBeUndefined()
+  })
+
   it('en Modo Plano (el comando se rechaza) -> sin aviso', () => {
     expect(avisoContextual({ ...con('hacha', arbol), modo: 'plano' })).toBeUndefined()
   })

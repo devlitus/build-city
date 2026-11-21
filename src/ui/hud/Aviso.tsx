@@ -20,8 +20,8 @@ const ESTILO = {
 
 /**
  * Aviso contextual (encima de la barra de herramientas) y mensaje flotante al recoger.
- * Solo dibuja: el texto lo deciden `avisoContextual` y `textoRecogida`. El aviso se recalcula solo
- * si cambia algo de lo que depende (personaje, herramienta, obstáculos, energía, modo…).
+ * Solo dibuja: el texto lo deciden `avisoContextual` y `textoRecogida`. El aviso se recalcula en
+ * cada notificación del almacén.
  */
 export function Aviso({ almacen }: { readonly almacen: FuenteEstado }) {
   const [aviso, setAviso] = useState<string | undefined>(() => avisoContextual(almacen.estado))
@@ -29,21 +29,10 @@ export function Aviso({ almacen }: { readonly almacen: FuenteEstado }) {
 
   useEffect(() => {
     let temporizador: ReturnType<typeof setTimeout> | undefined
-    let previo = almacen.estado
-    setAviso(avisoContextual(previo))
+    setAviso(avisoContextual(almacen.estado))
     const quitar = almacen.suscribir((n) => {
-      const e = almacen.estado
-      if (
-        e.personaje !== previo.personaje ||
-        e.herramienta !== previo.herramienta ||
-        e.obstaculos !== previo.obstaculos ||
-        e.energia !== previo.energia ||
-        e.modo !== previo.modo ||
-        e.valle !== previo.valle
-      ) {
-        setAviso(avisoContextual(e))
-      }
-      previo = e
+      // Barato y siempre coherente con el comando; Preact no repinta si el texto no cambia.
+      setAviso(avisoContextual(almacen.estado))
       const texto = textoRecogida(n)
       if (texto !== undefined) {
         setRecogida(texto)
