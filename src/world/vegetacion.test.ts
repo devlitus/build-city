@@ -54,3 +54,45 @@ describe('crearVegetacion', () => {
     for (const m of mallas(veg.objeto)) expect(m.boundingSphere).not.toBeNull()
   })
 })
+
+describe('crearVegetacion.sincronizar', () => {
+  const por = (veg: { objeto: { children: unknown[] } }, nombre: string) =>
+    mallas(veg.objeto).find((m) => m.name === nombre)?.count ?? -1
+
+  it('árbol talado -> tocón; roca picada y tocón quitado desaparecen', () => {
+    const veg = crearVegetacion(valle, obstaculos, altura, semilla)
+    const iArbol = obstaculos.findIndex((o) => o.tipo === 'arbol')
+    const arbol = obstaculos[iArbol]
+    if (!arbol) throw new Error('el valle de prueba no tiene árboles')
+    const arboles0 = por(veg, 'arboles-tronco')
+    const rocas0 = por(veg, 'rocas')
+
+    const talado = obstaculos.map((o, i) =>
+      i === iArbol ? { tipo: 'tocon' as const, x: o.x, y: o.y, variante: o.variante } : o,
+    )
+    veg.sincronizar(talado)
+    expect(por(veg, 'arboles-tronco')).toBe(arboles0 - 1)
+    expect(por(veg, 'tocones')).toBe(1)
+
+    const sinRoca = talado.filter(
+      (o, i) => o.tipo !== 'roca' || i !== talado.findIndex((r) => r.tipo === 'roca'),
+    )
+    veg.sincronizar(sinRoca)
+    expect(por(veg, 'rocas')).toBe(rocas0 - 1)
+
+    veg.sincronizar(sinRoca.filter((o) => o.tipo !== 'tocon'))
+    expect(por(veg, 'tocones')).toBe(0)
+    // Sin duplicar mallas: cada nombre aparece una sola vez.
+    const nombres = mallas(veg.objeto).map((m) => m.name)
+    expect(new Set(nombres).size).toBe(nombres.length)
+    veg.destruir()
+  })
+
+  it('sin cambios visibles no reconstruye las mallas', () => {
+    const veg = crearVegetacion(valle, obstaculos, altura, semilla)
+    const antes = mallas(veg.objeto).find((m) => m.name === 'rocas')
+    veg.sincronizar(obstaculos.map((o) => ({ ...o, golpes: 1 })))
+    expect(mallas(veg.objeto).find((m) => m.name === 'rocas')).toBe(antes)
+    veg.destruir()
+  })
+})

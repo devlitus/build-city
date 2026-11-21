@@ -373,6 +373,12 @@ export const EsquemaConfigRecursos = v.strictObject({
     /** Piedra que da una roca picada, por terreno. */
     piedra: cantidadPorTerreno(0),
   }),
+  tocon: v.strictObject({
+    /** Golpes de hacha que cuesta quitar el tocón que deja un árbol talado. */
+    golpes: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(100)),
+    /** Madera que da el tocón al quitarlo. */
+    madera: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+  }),
   planton: v.strictObject({
     /** Días que tarda un plantón en convertirse en árbol. */
     diasCrecimiento: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(100)),

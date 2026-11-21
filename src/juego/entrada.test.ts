@@ -3,6 +3,7 @@ import { HERRAMIENTAS } from '../core/inventario'
 import {
   comandoHerramientaDeRueda,
   comandoHerramientaDeTecla,
+  comandoUsarHerramienta,
   crearTeclas,
   direccionRelativa,
   instalarEleccionHerramienta,
@@ -156,5 +157,37 @@ describe('elegir herramienta', () => {
     expect(despachados).toEqual([{ tipo: 'ElegirHerramienta', herramienta: HERRAMIENTAS[1] }])
     quitar()
     expect(oyentes.size).toBe(0)
+  })
+})
+
+describe('comandoUsarHerramienta', () => {
+  const sinMods = { altKey: false, ctrlKey: false, metaKey: false }
+  // Mira al este desde el centro de (10, 10): delante hay un árbol en (11, 10).
+  const estado = {
+    personaje: { x: 10.5, y: 10.5, orientacion: 'este' as const },
+    obstaculos: [{ tipo: 'arbol' as const, x: 11, y: 10, variante: 0 }],
+  }
+  const E = { code: 'KeyE', ...sinMods }
+  const clic = { button: 0, ...sinMods }
+  const esperado = { tipo: 'UsarHerramienta', x: 11, y: 10 }
+
+  it('E siempre usa la herramienta sobre la casilla de objetivoDelante', () => {
+    expect(comandoUsarHerramienta(E, false, estado)).toEqual(esperado)
+    expect(comandoUsarHerramienta(E, true, estado)).toEqual(esperado)
+  })
+
+  it('sin obstáculo delante apunta a la casilla de enfrente', () => {
+    expect(comandoUsarHerramienta(E, false, { ...estado, obstaculos: [] })).toEqual(esperado)
+  })
+
+  it('el clic izquierdo usa la herramienta solo con el ratón capturado', () => {
+    expect(comandoUsarHerramienta(clic, true, estado)).toEqual(esperado)
+    expect(comandoUsarHerramienta(clic, false, estado)).toBeUndefined()
+    expect(comandoUsarHerramienta({ ...clic, button: 2 }, true, estado)).toBeUndefined()
+  })
+
+  it('otras teclas y teclas con modificadores no hacen nada', () => {
+    expect(comandoUsarHerramienta({ code: 'KeyW', ...sinMods }, true, estado)).toBeUndefined()
+    expect(comandoUsarHerramienta({ ...E, ctrlKey: true }, true, estado)).toBeUndefined()
   })
 })

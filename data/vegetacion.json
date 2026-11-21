@@ -16,6 +16,7 @@
     "hundimiento": 0.35
   },
   "planton": { "escala": 0.35 },
+  "tocon": { "radio": 0.3, "alto": 0.35, "lados": 8, "escala": { "min": 0.85, "max": 1.2 } },
   "bosqueColinas": {
     "celda": 3.5,
     "densidad": 0.6,

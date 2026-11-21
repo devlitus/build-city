@@ -42,6 +42,13 @@ export const esquemaVegetacion = v.object({
     hundimiento: fraccion,
   }),
   planton: v.object({ escala: estrictoPositivo }),
+  /** Tocón que deja un árbol talado: cilindro bajo. */
+  tocon: v.object({
+    radio: estrictoPositivo,
+    alto: estrictoPositivo,
+    lados: entero(3),
+    escala: rango,
+  }),
   bosqueColinas: v.object({
     /** Lado (m) de la celda de dispersión: una celda lleva como mucho un árbol. */
     celda: estrictoPositivo,

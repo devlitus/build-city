@@ -129,6 +129,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       const pies = granjero.actualizar(dt, alfa)
       // Antes que la vegetación, que usa la cámara ya colocada.
       const mirado = terceraPersona.actualizar(dt, pies)
+      vegetacion.sincronizar(lector.estado.obstaculos)
       vegetacion.actualizar(dt, camara)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
