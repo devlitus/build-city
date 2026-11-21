@@ -27,6 +27,7 @@ import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
 import { crearCapaPlano } from './plano/plano'
+import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 
 export interface Escena {
   escena: Scene
@@ -109,6 +110,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
 
   const plano = crearCapaPlano(lector, camara, renderer.domElement, terreno, altura)
   escena.add(plano.objeto)
+  const parcelasMundo = crearParcelasMundo(lector, altura)
+  escena.add(parcelasMundo.objeto)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -141,6 +144,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       const mirado = director.actualizar(dt, pies, lector.estado.modo)
       vegetacion.actualizar(dt, camara)
       plano.actualizar()
+      parcelasMundo.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -151,6 +155,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       terceraPersona.destruir()
       camaraPlano.destruir()
       plano.destruir()
+      parcelasMundo.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
