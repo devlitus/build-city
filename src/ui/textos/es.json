@@ -11,6 +11,10 @@
     "velocidad": "x{velocidad}",
     "etiqueta": "Reloj del juego"
   },
+  "avisos": {
+    "plantonPerdido": "Mochila llena: el plantón se ha perdido.",
+    "inventarioLleno": "La mochila está llena."
+  },
   "herramientas": {
     "etiqueta": "Barra de herramientas",
     "azada": "Azada",
