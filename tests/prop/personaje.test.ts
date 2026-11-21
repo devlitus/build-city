@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 import {
   aplicarComando,
-  casillaBloqueada,
+  circuloSolapaBloqueo,
   casillasRio,
   claveCasilla,
   CONFIG_PERSONAJE,
@@ -38,16 +38,10 @@ const comando: fc.Arbitrary<Comando> = fc.oneof(
   },
 )
 
+/** El personaje es un círculo (M2-T01): no solapa ninguna casilla bloqueada. */
 function cajaLibre(e: EstadoJuego): boolean {
-  const mapa = mapaTransitabilidad(e)
-  const m = CONFIG_PERSONAJE.tamanoCaja / 2
   const { x, y } = e.personaje
-  for (let cy = Math.floor(y - m); cy <= Math.ceil(y + m) - 1; cy++) {
-    for (let cx = Math.floor(x - m); cx <= Math.ceil(x + m) - 1; cx++) {
-      if (casillaBloqueada(mapa, cx, cy)) return false
-    }
-  }
-  return true
+  return !circuloSolapaBloqueo(mapaTransitabilidad(e), x, y, CONFIG_PERSONAJE.radio)
 }
 
 describe('personaje (propiedades)', () => {

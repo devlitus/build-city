@@ -19,7 +19,7 @@ import {
 
 const SEMILLAS = [1, 42, 12345, 7, 99, 2024]
 const M = CONFIG_PERSONAJE.tamanoCaja / 2
-const V = CONFIG_PERSONAJE.velocidadCasillasPorSegundo
+const V = CONFIG_PERSONAJE.velocidadAndar
 
 function mover(e: EstadoJuego, dx: number, dy: number, ms: number): EstadoJuego {
   const r = aplicarComando(e, { tipo: 'MoverPersonaje', dx, dy, ms })
