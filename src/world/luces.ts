@@ -1,5 +1,7 @@
 import { DirectionalLight, HemisphereLight, type Scene } from 'three'
 import { color } from './paleta'
+import { vectorSol } from './cielo'
+import { DATOS_CIELO } from './cielo-datos'
 
 /** Holgura sobre el semilado del valle para la cámara de sombras (cubre el giro del sol). */
 const HOLGURA_SOMBRAS = 1.25
@@ -11,11 +13,16 @@ export function añadirLuces(
 ): { sol: DirectionalLight; hemisferio: HemisphereLight } {
   const areaSombras = semiladoValle * HOLGURA_SOMBRAS
   const escala = areaSombras / 30
-  const hemisferio = new HemisphereLight(color('hemisferioCielo'), color('hemisferioSuelo'), 1.0)
+  const hemisferio = new HemisphereLight(
+    color('hemisferioCielo'),
+    color('hemisferioSuelo'),
+    DATOS_CIELO.intensidadHemisferio,
+  )
   escena.add(hemisferio)
 
-  const sol = new DirectionalLight(color('luzSol'), 2.2)
-  sol.position.set(20 * escala, 30 * escala, 14 * escala)
+  const sol = new DirectionalLight(color('luzSol'), DATOS_CIELO.intensidadSol)
+  // Misma dirección que el `Sky`: el sol de la escena y el del cielo coinciden.
+  sol.position.copy(vectorSol().multiplyScalar(DATOS_CIELO.sol.distancia * escala))
   sol.castShadow = true
   sol.shadow.mapSize.set(2048, 2048)
   const c = sol.shadow.camera
