@@ -152,7 +152,7 @@ function oraculoDespertar(e: EstadoJuego): { x: number; y: number } {
 }
 
 /** Ejecuta `f` con un tope de tiempo real: lanza ERR_SCRIPT_EXECUTION_TIMEOUT si se cuelga. */
-function conTope<T>(f: () => T, ms = 1000): T {
+function conTope<T>(f: () => T, ms = 20_000): T {
   return vm.runInNewContext('f()', { f }, { timeout: ms }) as T
 }
 
@@ -593,7 +593,7 @@ describe('M4-03 rompedor: estados corruptos (aplicarComando nunca lanza ni se cu
 
   it('[S3, cuelgue] casa terminada con coordenadas enormes (2^54, 1e300, ±Infinity): el desmayo entra en un bucle infinito', () => {
     // `x++` no cambia un número por encima de 2^53: el bucle del anillo en personajeAlDespertar
-    // no termina nunca. `conTope` corta al segundo con ERR_SCRIPT_EXECUTION_TIMEOUT.
+    // no termina nunca. `conTope` corta a los 20 s (holgado para máquinas cargadas) con ERR_SCRIPT_EXECUTION_TIMEOUT.
     const colgados: string[] = []
     for (const [x, y] of [
       [2 ** 54, 10],

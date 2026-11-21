@@ -5,6 +5,7 @@
  * partidas largas simuladas.
  */
 import { describe, expect, it } from 'vitest'
+import { itRendimiento } from '../rendimiento'
 import fc from 'fast-check'
 import {
   aplicarComando,
@@ -518,7 +519,17 @@ describe('caché de mapaTransitabilidad tras comprar', () => {
     expect(mapaTransitabilidad(e)).toBe(mapaTransitabilidad(e))
   })
 
-  it('alternar entre el estado anterior y el nuevo no se vuelve lento (mide)', () => {
+  it('alternar entre el estado anterior y el nuevo da siempre el mapa de cada estado', () => {
+    const viejo = BASE
+    const nuevo = ok(BASE, 0)
+    const mv = mapaTransitabilidad(viejo)
+    const mn = mapaTransitabilidad(nuevo)
+    for (let k = 0; k < 20; k++) {
+      expect(mapaTransitabilidad(k % 2 === 0 ? nuevo : viejo)).toEqual(k % 2 === 0 ? mn : mv)
+    }
+  })
+
+  itRendimiento('alternar entre el estado anterior y el nuevo no se vuelve lento (mide)', () => {
     const viejo = BASE
     const nuevo = ok(BASE, 0)
     mapaTransitabilidad(viejo)
