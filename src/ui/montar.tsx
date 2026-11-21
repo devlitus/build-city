@@ -5,6 +5,7 @@ import { cargarPaleta, colorHex } from '../world/paleta'
 import { Reloj } from './hud/Reloj'
 import { Herramientas } from './hud/Herramientas'
 import { Avisos } from './hud/Avisos'
+import { Aviso } from './hud/Aviso'
 import { Estado } from './hud/Estado'
 import { Desmayo } from './hud/Desmayo'
 
@@ -23,6 +24,7 @@ export function montarUi(contenedor: HTMLElement, almacen: FuenteEstado): void {
       <Reloj almacen={almacen} />
       <Herramientas almacen={almacen} />
       <Avisos almacen={almacen} />
+      <Aviso almacen={almacen} />
       <Estado almacen={almacen} />
       <Desmayo almacen={almacen} />
     </>,
