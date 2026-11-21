@@ -9,6 +9,7 @@ import {
   Float32BufferAttribute,
   InstancedMesh,
   Matrix4,
+  Mesh,
   MeshStandardMaterial,
   Quaternion,
   Vector3,
@@ -19,6 +20,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import type { Obstaculo, Valle } from '../core'
 import {
   celdasOcupadas,
+  claveCelda,
   clavesAgua,
   colocarObstaculos,
   dispersarBosque,
@@ -49,7 +51,25 @@ export interface Vegetacion {
    * plantar o crecer). Barato si nada visible cambió: se puede llamar en cada fotograma.
    */
   sincronizar(obstaculos: readonly Obstaculo[]): void
+  /**
+   * Oculta (o vuelve a mostrar) el árbol de la casilla (x, y) del núcleo, para que un efecto lo
+   * sustituya por una copia animada. No cambia el estado del juego.
+   */
+  ocultarArbol(x: number, y: number, oculto: boolean): void
+  /**
+   * Copia suelta de un árbol (mismo modelo y tono que el instanciado de esa `variante`), con la
+   * base en el origen; quien la pide la coloca. Comparte geometrías y es dueña de sus materiales
+   * (clones): hay que llamar a `liberar` al retirarla.
+   */
+  crearArbolSuelto(variante: number): ArbolSuelto
   destruir(): void
+}
+
+/** Copia de un árbol fuera de los lotes instanciados (ver `Vegetacion.crearArbolSuelto`). */
+export interface ArbolSuelto {
+  readonly objeto: Group
+  /** Quita el objeto de su padre y libera los materiales propios (las geometrías son compartidas). */
+  liberar(): void
 }
 
 const EJE_Y = new Vector3(0, 1, 0)
@@ -386,12 +406,22 @@ export function crearVegetacion(
   const grupo = new Group()
   grupo.name = 'vegetacion'
 
+  /** Casillas (`claveCelda`) cuyo árbol se oculta mientras lo sustituye un efecto. */
+  const ocultos = new Set<number>()
+
   /** Mallas de árboles, plantones, tocones y rocas del núcleo (se reconstruyen al sincronizar). */
   const mallasDeObstaculos = (lista: readonly Obstaculo[]): InstancedMesh[] => {
     const arboles = lotesArbol()
     const rocas = new Lote()
     const tocones = new Lote()
-    for (const c of colocarObstaculos(valle, lista)) {
+    colocarObstaculos(valle, lista).forEach((c, i) => {
+      const origen = lista[i]
+      if (
+        origen &&
+        (c.tipo === 'arbol' || c.tipo === 'planton') &&
+        ocultos.has(claveCelda(origen.x, origen.y))
+      )
+        return
       const y = altura(c.x, c.z)
       if (c.tipo === 'tocon') {
         const v = variacionDe(c.variante, semilla, datos.tocon.escala)
@@ -412,7 +442,7 @@ export function crearVegetacion(
         const factor = c.tipo === 'planton' ? datos.planton.escala : 1
         añadirArbol(arboles, c, y, v, semilla, datos.arbol, factor)
       }
-    }
+    })
     return [
       arboles.tronco.crear('arboles-tronco', piezas.troncoGeo, piezas.troncoMat, true),
       arboles.pino.crear('arboles-copa-pino', piezas.pinoGeo, piezas.pinoMat, true),
@@ -423,6 +453,15 @@ export function crearVegetacion(
   }
   let mallasActuales = mallasDeObstaculos(obstaculos)
   let obstaculosDibujados = obstaculos
+  const reconstruir = (): void => {
+    // Geometrías y materiales son compartidos: solo se liberan los búferes de instancias.
+    for (const m of mallasActuales) {
+      grupo.remove(m)
+      m.dispose()
+    }
+    mallasActuales = mallasDeObstaculos(obstaculosDibujados)
+    grupo.add(...mallasActuales)
+  }
 
   const agua = clavesAgua(celdasAgua(valle, altura))
   const entorno: EntornoDispersion = {
@@ -481,14 +520,46 @@ export function crearVegetacion(
         obstaculosDibujados = lista
         return
       }
-      // Geometrías y materiales son compartidos: solo se liberan los búferes de instancias.
-      for (const m of mallasActuales) {
-        grupo.remove(m)
-        m.dispose()
-      }
-      mallasActuales = mallasDeObstaculos(lista)
-      grupo.add(...mallasActuales)
       obstaculosDibujados = lista
+      reconstruir()
+    },
+    ocultarArbol: (x, y, oculto) => {
+      const clave = claveCelda(x, y)
+      if (ocultos.has(clave) === oculto) return
+      if (oculto) ocultos.add(clave)
+      else ocultos.delete(clave)
+      reconstruir()
+    },
+    crearArbolSuelto: (variante) => {
+      const v = variacionDe(variante, semilla, datos.arbol.escala)
+      const gris = sombra(v.tono, datos.arbol.variacionTono)
+      const copaPino = tipoCopa(variante, semilla, datos.arbol) === 'pino'
+      const propios: MeshStandardMaterial[] = []
+      const pieza = (geo: BufferGeometry, base: MeshStandardMaterial): Mesh => {
+        const mat = base.clone()
+        mat.color.multiply(gris)
+        propios.push(mat)
+        const malla = new Mesh(geo, mat)
+        malla.castShadow = true
+        return malla
+      }
+      const objeto = new Group()
+      objeto.name = 'arbol-suelto'
+      objeto.add(
+        pieza(piezas.troncoGeo, piezas.troncoMat),
+        copaPino
+          ? pieza(piezas.pinoGeo, piezas.pinoMat)
+          : pieza(piezas.redondoGeo, piezas.redondoMat),
+      )
+      objeto.scale.setScalar(v.escala)
+      objeto.rotation.y = v.giro
+      return {
+        objeto,
+        liberar: () => {
+          objeto.removeFromParent()
+          for (const m of propios) m.dispose()
+        },
+      }
     },
     destruir: () => {
       geometriaHierba.dispose()
