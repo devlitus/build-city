@@ -35,6 +35,8 @@ export type Comando =
       readonly dy: number
       /** Milisegundos de movimiento (≥ 0); el núcleo procesa como máximo `maxMsPorComando`. */
       readonly ms: number
+      /** Si corre (más rápido); por defecto false. */
+      readonly corre?: boolean
     }
   /** Cambia de modo; no toca `pausado` (la pausa del Plano se deriva en `tiempoDetenido`). */
   | { readonly tipo: 'CambiarModo'; readonly modo: ModoJuego }
@@ -331,9 +333,12 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       return { ok: true, eventos: SIN_EVENTOS, estado: { ...estado, minutoDelDia: minuto } }
     }
     case 'MoverPersonaje': {
-      const { dx, dy, ms } = comando
+      const { dx, dy, ms, corre } = comando
       const eje = (n: unknown): boolean => typeof n === 'number' && n >= -1 && n <= 1
       if (!eje(dx) || !eje(dy) || typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) {
+        return { ok: false, estado, error: 'parametro-invalido' }
+      }
+      if (corre !== undefined && typeof corre !== 'boolean') {
         return { ok: false, estado, error: 'parametro-invalido' }
       }
       if (tiempoDetenido(estado) || ms === 0 || (dx === 0 && dy === 0)) {
@@ -341,7 +346,15 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       }
       if (!edificiosValidos(estado.edificios))
         return { ok: false, estado, error: 'estado-invalido' }
-      const personaje = moverPersonaje(estado, estado.personaje, dx, dy, ms)
+      const personaje = moverPersonaje(
+        estado,
+        estado.personaje,
+        dx,
+        dy,
+        ms,
+        undefined,
+        corre === true,
+      )
       const antes = estado.personaje
       // Contra un muro no cambia nada: se devuelve el mismo estado (sin avisos por fotograma).
       if (
