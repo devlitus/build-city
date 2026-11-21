@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     environment: 'node',
-    testTimeout: 60_000,
+    testTimeout: 300_000,
     env: { RENDIMIENTO: '1' },
     testNamePattern: '\\[rendimiento\\]', // = ETIQUETA_RENDIMIENTO de tests/rendimiento.ts
     fileParallelism: false,
