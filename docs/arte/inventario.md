@@ -70,7 +70,7 @@ Cada fila **hecha** tiene su ficha: la receta de ComfyUI, el identificador de Po
 
 | Hito | Modelo | Estado | Origen |
 |---|---|---|---|
-| M2 | **Granjero** con Reposo, Andar y Correr | **hecho**: `borrador/prueba-estilo/modelos/granjero.glb` (45 000 triángulos, 3,4 MB) | G3D «Farmer» + `borrador/blender/preparar_granjero_grab3d.py` |
+| M2 | **Granjero** con Reposo, Andar y Correr | **hecho**: `public/modelos/granjero.glb` (45 000 triángulos, 3,4 MB; copia de `borrador/prueba-estilo/modelos/granjero.glb`) | G3D «Farmer» + `borrador/blender/preparar_granjero_grab3d.py` |
 | M3 | Animaciones golpear (hacha, pico) | pendiente | Biblioteca gratuita compatible + Blender |
 | M3 | Hacha, pico | pendiente | Blender |
 | M1/M3 | Árboles (hoja ancha y pino), tocón, rocas y trozos de roca | provisional en la prueba (por código) | Blender + texturas de la tabla |
