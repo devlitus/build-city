@@ -13,6 +13,7 @@ import { DATOS_CIELO } from './cielo-datos'
 import { crearHorizonte } from './horizonte'
 import { PARAMETROS_HORIZONTE } from './horizonte-parametros'
 import { añadirLuces } from './luces'
+import { crearLuzEscena } from './luz-escena'
 import { crearAgua } from './agua'
 import { color } from './paleta'
 import { crearPueblo } from './pueblo'
@@ -57,7 +58,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     PARAMETROS_HORIZONTE.niebla.cerca,
     PARAMETROS_HORIZONTE.niebla.lejos,
   )
-  añadirLuces(escena, lado / 2)
+  const luzEscena = crearLuzEscena(escena, renderer, cielo, añadirLuces(escena, lado / 2))
   const horizonte = crearHorizonte(lado)
   let instanteAnterior = performance.now()
 
@@ -104,6 +105,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       agua.actualizar(dt)
       vegetacion.actualizar(dt, camara)
       instanteAnterior = ahora
+      luzEscena.actualizar(lector.estado.minutoDelDia)
       renderer.render(escena, camara)
     },
     destruir: () => {

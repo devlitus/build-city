@@ -23,14 +23,28 @@ function crearSky(datos: DatosCielo, sol: Vector3): Sky {
 export interface Cielo {
   /** Cúpula visible: se añade a la escena. */
   readonly objeto: Sky
-  /** Entorno PMREM del mismo cielo (para `scene.environment`). */
+  /** Entorno PMREM del mismo cielo (para `scene.environment`). Cambia al regenerarse. */
   readonly entorno: Texture
+  /** Mueve el sol del cielo visible (barato, cada fotograma). */
+  fijarSol(direccion: Vector3, turbidez: number, rayleigh: number): void
+  /**
+   * Regenera el entorno PMREM con el sol y la atmósfera dados (caro: hay que llamarlo solo cuando
+   * el sol haya cambiado de forma apreciable). Devuelve la nueva textura de entorno.
+   */
+  regenerarEntorno(direccion: Vector3, turbidez: number, rayleigh: number): Texture
   destruir(): void
 }
 
+function fijarUniformes(sky: Sky, direccion: Vector3, turbidez: number, rayleigh: number): void {
+  const u = sky.material.uniforms
+  u['sunPosition']?.value.copy(direccion)
+  if (u['turbidity']) u['turbidity'].value = turbidez
+  if (u['rayleigh']) u['rayleigh'].value = rayleigh
+}
+
 /**
- * Cielo físico (`Sky`) más su entorno PMREM, generado una sola vez (no por fotograma), que
- * ilumina los materiales PBR con el mismo sol que la luz direccional.
+ * Cielo físico (`Sky`) más su entorno PMREM, que ilumina los materiales PBR con el mismo sol que
+ * la luz direccional. El entorno se genera al crear y solo se regenera a petición.
  */
 export function crearCielo(renderer: WebGLRenderer, datos: DatosCielo = DATOS_CIELO): Cielo {
   const sol = vectorSol(datos)
@@ -39,16 +53,28 @@ export function crearCielo(renderer: WebGLRenderer, datos: DatosCielo = DATOS_CI
   const skyEntorno = crearSky(datos, sol)
   escenaEntorno.add(skyEntorno)
   const pmrem = new PMREMGenerator(renderer)
-  const objetivo = pmrem.fromScene(escenaEntorno, 0, 0.1, 200)
-  pmrem.dispose()
-  skyEntorno.geometry.dispose()
-  skyEntorno.material.dispose()
+  let objetivo = pmrem.fromScene(escenaEntorno, 0, 0.1, 200)
   return {
     objeto,
-    entorno: objetivo.texture,
+    get entorno() {
+      return objetivo.texture
+    },
+    fijarSol(direccion, turbidez, rayleigh) {
+      fijarUniformes(objeto, direccion, turbidez, rayleigh)
+    },
+    regenerarEntorno(direccion, turbidez, rayleigh) {
+      fijarUniformes(skyEntorno, direccion, turbidez, rayleigh)
+      const anterior = objetivo
+      objetivo = pmrem.fromScene(escenaEntorno, 0, 0.1, 200)
+      anterior.dispose()
+      return objetivo.texture
+    },
     destruir() {
       objeto.geometry.dispose()
       objeto.material.dispose()
+      skyEntorno.geometry.dispose()
+      skyEntorno.material.dispose()
+      pmrem.dispose()
       objetivo.dispose()
     },
   }
