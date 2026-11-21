@@ -36,6 +36,7 @@ import { celdasAgua } from './agua'
 import { color } from './paleta'
 import type { FuncionAltura } from './terreno/altura'
 import { rangoDeTrozo, type RangoMetros } from './terreno/trozos'
+import { obstaculosCambiaron } from './obstaculos-cambio'
 import { DATOS_VEGETACION, type DatosVegetacion } from './vegetacion-datos'
 
 /** Resultado de `crearVegetacion`: el objeto a añadir a la escena y su ciclo de vida. */
@@ -43,6 +44,11 @@ export interface Vegetacion {
   readonly objeto: Object3D
   /** Llamar una vez por fotograma. */
   actualizar(dt: number, camara: Camera): void
+  /**
+   * Pone al día los modelos de árboles, rocas y tocones con `estado.obstaculos` (talar, picar,
+   * plantar o crecer). Barato si nada visible cambió: se puede llamar en cada fotograma.
+   */
+  sincronizar(obstaculos: readonly Obstaculo[]): void
   destruir(): void
 }
 
@@ -127,6 +133,13 @@ function geometriaRoca(d: DatosVegetacion['roca']): BufferGeometry {
   return g
 }
 
+/** Tocón: cilindro bajo con la base hundida 0,05 m para que no flote en las pendientes. */
+function geometriaTocon(d: DatosVegetacion['tocon']): BufferGeometry {
+  const g = new CylinderGeometry(d.radio * 0.85, d.radio, d.alto + 0.05, d.lados)
+  g.translate(0, (d.alto + 0.05) / 2 - 0.05, 0)
+  return g
+}
+
 function material(nombre: string): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color: color(nombre),
@@ -142,6 +155,7 @@ interface Piezas {
   readonly pinoGeo: BufferGeometry
   readonly redondoGeo: BufferGeometry
   readonly rocaGeo: BufferGeometry
+  readonly toconGeo: BufferGeometry
   readonly troncoMat: MeshStandardMaterial
   readonly pinoMat: MeshStandardMaterial
   readonly redondoMat: MeshStandardMaterial
@@ -154,6 +168,7 @@ function crearPiezas(datos: DatosVegetacion): Piezas {
     pinoGeo: geometriaCopaPino(datos.arbol.pino),
     redondoGeo: geometriaCopaRedonda(datos.arbol.redondo),
     rocaGeo: geometriaRoca(datos.roca),
+    toconGeo: geometriaTocon(datos.tocon),
     troncoMat: material('maderaOscura'),
     pinoMat: material('pino'),
     redondoMat: material('copa'),
@@ -371,24 +386,43 @@ export function crearVegetacion(
   const grupo = new Group()
   grupo.name = 'vegetacion'
 
-  const arboles = lotesArbol()
-  const rocas = new Lote()
-  for (const c of colocarObstaculos(valle, obstaculos)) {
-    const y = altura(c.x, c.z)
-    if (c.tipo === 'roca') {
-      const v = variacionDe(c.variante, semilla, datos.roca.escala)
-      const s = v.escala
-      const hundido = datos.roca.radio * datos.roca.achatamiento * s * datos.roca.hundimiento
-      rocas.añadir(
-        matriz(c.x, y + datos.roca.radio * datos.roca.achatamiento * s - hundido, c.z, v.giro, s),
-        sombra(v.tono, datos.roca.variacionTono),
-      )
-    } else {
-      const v = variacionDe(c.variante, semilla, datos.arbol.escala)
-      const factor = c.tipo === 'planton' ? datos.planton.escala : 1
-      añadirArbol(arboles, c, y, v, semilla, datos.arbol, factor)
+  /** Mallas de árboles, plantones, tocones y rocas del núcleo (se reconstruyen al sincronizar). */
+  const mallasDeObstaculos = (lista: readonly Obstaculo[]): InstancedMesh[] => {
+    const arboles = lotesArbol()
+    const rocas = new Lote()
+    const tocones = new Lote()
+    for (const c of colocarObstaculos(valle, lista)) {
+      const y = altura(c.x, c.z)
+      if (c.tipo === 'tocon') {
+        const v = variacionDe(c.variante, semilla, datos.tocon.escala)
+        tocones.añadir(
+          matriz(c.x, y, c.z, v.giro, v.escala),
+          sombra(v.tono, datos.arbol.variacionTono),
+        )
+      } else if (c.tipo === 'roca') {
+        const v = variacionDe(c.variante, semilla, datos.roca.escala)
+        const s = v.escala
+        const hundido = datos.roca.radio * datos.roca.achatamiento * s * datos.roca.hundimiento
+        rocas.añadir(
+          matriz(c.x, y + datos.roca.radio * datos.roca.achatamiento * s - hundido, c.z, v.giro, s),
+          sombra(v.tono, datos.roca.variacionTono),
+        )
+      } else {
+        const v = variacionDe(c.variante, semilla, datos.arbol.escala)
+        const factor = c.tipo === 'planton' ? datos.planton.escala : 1
+        añadirArbol(arboles, c, y, v, semilla, datos.arbol, factor)
+      }
     }
+    return [
+      arboles.tronco.crear('arboles-tronco', piezas.troncoGeo, piezas.troncoMat, true),
+      arboles.pino.crear('arboles-copa-pino', piezas.pinoGeo, piezas.pinoMat, true),
+      arboles.redondo.crear('arboles-copa-redonda', piezas.redondoGeo, piezas.redondoMat, true),
+      tocones.crear('tocones', piezas.toconGeo, piezas.troncoMat, true),
+      rocas.crear('rocas', piezas.rocaGeo, piezas.rocaMat, true),
+    ]
   }
+  let mallasActuales = mallasDeObstaculos(obstaculos)
+  let obstaculosDibujados = obstaculos
 
   const agua = clavesAgua(celdasAgua(valle, altura))
   const entorno: EntornoDispersion = {
@@ -411,10 +445,7 @@ export function crearVegetacion(
     bosque.tronco.crear('bosque-tronco', piezas.troncoGeo, piezas.troncoMat, false),
     bosque.pino.crear('bosque-copa-pino', piezas.pinoGeo, piezas.pinoMat, false),
     bosque.redondo.crear('bosque-copa-redonda', piezas.redondoGeo, piezas.redondoMat, false),
-    arboles.tronco.crear('arboles-tronco', piezas.troncoGeo, piezas.troncoMat, true),
-    arboles.pino.crear('arboles-copa-pino', piezas.pinoGeo, piezas.pinoMat, true),
-    arboles.redondo.crear('arboles-copa-redonda', piezas.redondoGeo, piezas.redondoMat, true),
-    rocas.crear('rocas', piezas.rocaGeo, piezas.rocaMat, true),
+    ...mallasActuales,
   )
 
   const viento = datos.hierba.viento
@@ -445,11 +476,31 @@ export function crearVegetacion(
           alturaMaximaHierba,
         )
     },
+    sincronizar: (lista) => {
+      if (!obstaculosCambiaron(obstaculosDibujados, lista)) {
+        obstaculosDibujados = lista
+        return
+      }
+      // Geometrías y materiales son compartidos: solo se liberan los búferes de instancias.
+      for (const m of mallasActuales) {
+        grupo.remove(m)
+        m.dispose()
+      }
+      mallasActuales = mallasDeObstaculos(lista)
+      grupo.add(...mallasActuales)
+      obstaculosDibujados = lista
+    },
     destruir: () => {
       geometriaHierba.dispose()
       materialDeHierba.dispose()
       for (const hijo of grupo.children) (hijo as InstancedMesh).dispose()
-      for (const g of [piezas.troncoGeo, piezas.pinoGeo, piezas.redondoGeo, piezas.rocaGeo])
+      for (const g of [
+        piezas.troncoGeo,
+        piezas.pinoGeo,
+        piezas.redondoGeo,
+        piezas.rocaGeo,
+        piezas.toconGeo,
+      ])
         g.dispose()
       for (const m of [piezas.troncoMat, piezas.pinoMat, piezas.redondoMat, piezas.rocaMat])
         m.dispose()
