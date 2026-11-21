@@ -4,6 +4,7 @@
  * Los tests marcados con [Sx corregido] demostraron un defecto; hoy pasan y quedan como regresión.
  */
 import { describe, expect, it } from 'vitest'
+import { itRendimiento } from '../rendimiento'
 import fc from 'fast-check'
 import * as v from 'valibot'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
@@ -144,12 +145,17 @@ describe('rompedor · generación con configs degeneradas pero válidas', () => 
     }
   })
 
-  it('lado grande (200) termina rápido y cumple invariantes', () => {
+  it('lado grande (200) cumple invariantes', () => {
+    const config = { ...CONFIG_VALLE, parcelasPorLado: 200 }
+    const { valle } = generarValle(config, 12345)
+    expect(invariantes(valle, config)).toBeNull()
+  })
+
+  itRendimiento('lado grande (200) termina en menos de 2 s', () => {
     const config = { ...CONFIG_VALLE, parcelasPorLado: 200 }
     const t0 = performance.now()
-    const { valle } = generarValle(config, 12345)
+    generarValle(config, 12345)
     expect(performance.now() - t0).toBeLessThan(2000)
-    expect(invariantes(valle, config)).toBeNull()
   })
 
   it('el río tiene ambas orientaciones y arranca en todas las posiciones laterales', () => {
