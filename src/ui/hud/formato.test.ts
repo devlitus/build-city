@@ -4,6 +4,7 @@ import { crearEstadoInicial } from '../../core'
 import { t } from '../textos'
 import {
   formatearHora,
+  formatearMonedas,
   nombreEstacion,
   textoFecha,
   textoVelocidad,
@@ -50,6 +51,16 @@ describe('formato del HUD', () => {
 
   it('t devuelve la clave si falta el texto', () => {
     expect(t('no.existe')).toBe('no.existe')
+  })
+})
+
+describe('monedas del HUD', () => {
+  it('agrupa los miles con punto', () => {
+    expect(formatearMonedas(1240)).toBe('1.240')
+    expect(formatearMonedas(0)).toBe('0')
+    expect(formatearMonedas(999)).toBe('999')
+    expect(formatearMonedas(1_000_000)).toBe('1.000.000')
+    expect(formatearMonedas(-1240)).toBe('-1.240')
   })
 })
 

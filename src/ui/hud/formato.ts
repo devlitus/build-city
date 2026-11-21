@@ -51,6 +51,13 @@ export function vistaReloj(estado: EstadoJuego): VistaReloj {
   }
 }
 
+/** Entero con "." cada 3 cifras (1240 -> "1.240"); `toLocaleString('es-ES')` no agrupa 4 cifras. */
+export function formatearMonedas(n: number): string {
+  const entero = Math.trunc(n)
+  const digitos = String(Math.abs(entero)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return entero < 0 ? `-${digitos}` : digitos
+}
+
 export function vistasIguales(a: VistaReloj, b: VistaReloj): boolean {
   return (
     a.hora === b.hora &&
