@@ -7,6 +7,53 @@
     "fraccionDesvanecer": 0.2
   },
   "golpeGranjero": { "duracion": 0.4, "inclinacion": 22, "fraccionPreparacion": 0.35 },
+  "sonidos": {
+    "volumenGeneral": 0.6,
+    "golpe-madera": {
+      "duracion": 0.14,
+      "ataque": 0.004,
+      "frecuenciaRuido": 900,
+      "q": 1.4,
+      "volumenRuido": 0.6,
+      "frecuenciaTono": 190,
+      "caidaTono": 90,
+      "volumenTono": 0.5,
+      "retraso": 0
+    },
+    "golpe-piedra": {
+      "duracion": 0.12,
+      "ataque": 0.002,
+      "frecuenciaRuido": 2600,
+      "q": 2.2,
+      "volumenRuido": 0.7,
+      "frecuenciaTono": 420,
+      "caidaTono": 260,
+      "volumenTono": 0.25,
+      "retraso": 0
+    },
+    "caida": {
+      "duracion": 0.9,
+      "ataque": 0.05,
+      "frecuenciaRuido": 260,
+      "q": 0.8,
+      "volumenRuido": 0.8,
+      "frecuenciaTono": 110,
+      "caidaTono": 38,
+      "volumenTono": 0.7,
+      "retraso": 0.55
+    },
+    "rotura": {
+      "duracion": 0.28,
+      "ataque": 0.003,
+      "frecuenciaRuido": 1400,
+      "q": 0.9,
+      "volumenRuido": 0.8,
+      "frecuenciaTono": 150,
+      "caidaTono": 60,
+      "volumenTono": 0.4,
+      "retraso": 0
+    }
+  },
   "particulas": {
     "capacidad": 96,
     "gravedad": 9.8,

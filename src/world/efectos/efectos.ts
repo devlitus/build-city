@@ -19,6 +19,7 @@ import { GestorEfectos, type Efecto } from './gestor'
 import { describirGolpe, type DescripcionGolpe } from './golpe'
 import { SistemaParticulas, crearRafaga } from './particulas'
 import { crearMallaParticulas } from './particulas-malla'
+import { crearSonidos, type Sonidos } from './sonidos'
 
 const GRADOS = Math.PI / 180
 
@@ -43,6 +44,8 @@ export interface OpcionesEfectos {
   readonly granjero: Pick<Granjero, 'golpear'>
   readonly altura: FuncionAltura
   readonly datos?: DatosEfectos
+  /** Por defecto, los sonidos sintéticos de Web Audio. */
+  readonly sonidos?: Sonidos
 }
 
 /**
@@ -53,6 +56,7 @@ export interface OpcionesEfectos {
 export function crearEfectos(opciones: OpcionesEfectos): Efectos {
   const { escena, lector, vegetacion, granjero, altura, datos = DATOS_EFECTOS } = opciones
   const gestor = new GestorEfectos()
+  const sonidos = opciones.sonidos ?? crearSonidos(datos)
 
   const buscar = (x: number, y: number): Obstaculo | undefined =>
     lector.estado.obstaculos.find((o) => o.x === x && o.y === y)
@@ -144,6 +148,7 @@ export function crearEfectos(opciones: OpcionesEfectos): Efectos {
       lanzarParticulas(d)
       const p = posicionObstaculo(d, lector.estado.valle)
       granjero.golpear(p.x, p.z)
+      sonidos.reproducir(d.sonido)
       if (d.arbol === 'ninguno') continue
       // Tras talar, el núcleo ya dejó un tocón con la misma variante que tenía el árbol.
       const o = buscar(d.x, d.y)
@@ -168,6 +173,7 @@ export function crearEfectos(opciones: OpcionesEfectos): Efectos {
       gestor.limpiar()
       particulas.limpiar()
       mallaParticulas.destruir()
+      sonidos.destruir()
     },
   }
 }
