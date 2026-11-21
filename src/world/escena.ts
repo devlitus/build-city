@@ -20,7 +20,8 @@ import { crearGranjero } from './personaje/modelo'
 import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
 import { crearSombras } from './sombras'
-import { casillaAMetros, ladoMetros } from './terreno/coordenadas'
+import { crearTerceraPersona } from './camaras/tercera-persona'
+import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
 
@@ -28,8 +29,20 @@ export interface Escena {
   escena: Scene
   camara: PerspectiveCamera
   renderer: WebGLRenderer
-  /** Dibuja un fotograma. */
-  dibujar(): void
+  /**
+   * Dibuja un fotograma. `alfa` en [0, 1] interpola al personaje entre su posición del paso fijo
+   * anterior y la actual (ver `alfaDelAcumulador`).
+   */
+  dibujar(alfa?: number): void
+  /** Para cada paso fijo, antes de mover al personaje: guarda su posición previa para interpolar. */
+  marcarPaso(): void
+  /** Hacia dónde mira la cámara en el suelo (rad; 0 = norte, crece a la derecha). */
+  yawCamara(): number
+  /**
+   * Activa o desactiva el seguimiento de la cámara en tercera persona (se desactiva mientras
+   * manda la cámara libre de depuración).
+   */
+  fijarCamaraSeguimiento(activa: boolean): void
   destruir(): void
 }
 
@@ -84,9 +97,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     0.3,
     Math.max(lado * 6, PARAMETROS_HORIZONTE.niebla.lejos),
   )
-  // Vista inicial: desde el sur y en alto, mirando al centro del valle.
-  camara.position.set(0, lado * 0.44, lado * 0.875)
-  camara.lookAt(0, 0, 0)
+  // La pose real la fija la cámara en tercera persona en cada fotograma.
+  const terceraPersona = crearTerceraPersona(camara, renderer.domElement, altura)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -104,23 +116,28 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     escena,
     camara,
     renderer,
-    dibujar: () => {
+    marcarPaso: () => granjero.marcarPaso(),
+    yawCamara: () => terceraPersona.yaw,
+    fijarCamaraSeguimiento: (activa) => {
+      terceraPersona.habilitada = activa
+    },
+    dibujar: (alfa = 1) => {
       const ahora = performance.now()
       const dt = Math.min(0.1, (ahora - instanteAnterior) / 1000)
       horizonte.actualizar(dt)
       agua.actualizar(dt)
+      const pies = granjero.actualizar(dt, alfa)
+      // Antes que la vegetación, que usa la cámara ya colocada.
+      const mirado = terceraPersona.actualizar(dt, pies)
       vegetacion.actualizar(dt, camara)
-      granjero.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
-      // Provisional hasta T04: las sombras siguen al personaje; la cámara en tercera persona
-      // pasará aquí el punto que mira.
-      const p = lector.estado.personaje
-      const o = casillaAMetros(p.x - 0.5, p.y - 0.5, valle)
-      sombras.actualizar({ x: o.x, y: 0, z: o.z })
+      // Las sombras siguen al punto que mira la cámara.
+      sombras.actualizar(mirado)
       renderer.render(escena, camara)
     },
     destruir: () => {
+      terceraPersona.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()

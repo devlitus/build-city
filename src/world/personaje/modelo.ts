@@ -18,7 +18,9 @@ import {
   velocidadHorizontal,
 } from './animacion'
 import { DATOS_ANIMACION } from './animacion-datos'
+import { crearSeguidorAltura } from './altura'
 import { escalaParaAltura, personajeAMetros } from './medidas'
+import type { Punto3 } from '../camaras/orbita'
 
 /** Ruta del modelo «Farmer» de Grab3D (CC0), en `public/`. */
 const RUTA_MODELO = `${import.meta.env.BASE_URL}modelos/granjero.glb`
@@ -26,7 +28,17 @@ const RUTA_MODELO = `${import.meta.env.BASE_URL}modelos/granjero.glb`
 export interface Granjero {
   /** Raíz en la posición del personaje; vacía hasta que carga el modelo. */
   readonly objeto: Group
-  actualizar(dt: number): void
+  /**
+   * Fija como «posición previa» la que tiene ahora el estado. Se llama en cada paso fijo, antes
+   * de despachar el movimiento, para poder interpolar entre pasos.
+   */
+  marcarPaso(): void
+  /**
+   * Coloca y anima al granjero. Dibuja entre la posición previa (`alfa` 0) y la actual del estado
+   * (`alfa` 1); con 20 Hz de simulación esto evita los tirones a 60 fps. Devuelve la posición de
+   * los pies.
+   */
+  actualizar(dt: number, alfa?: number): Punto3
   destruir(): void
 }
 
@@ -36,7 +48,10 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
   raiz.name = 'granjero'
   const { valle, personaje } = lector.estado
   const inicio = personajeAMetros(personaje.x, personaje.y, valle)
-  raiz.position.set(inicio.x, altura(inicio.x, inicio.z), inicio.z)
+  const seguidorAltura = crearSeguidorAltura(altura)
+  raiz.position.set(inicio.x, seguidorAltura.actualizar(inicio.x, inicio.z, 0), inicio.z)
+  let previoX = inicio.x
+  let previoZ = inicio.z
 
   let mezclador: AnimationMixer | null = null
   let acciones: {
@@ -95,12 +110,25 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
 
   return {
     objeto: raiz,
-    actualizar: (dt) => {
+    marcarPaso: () => {
       const { personaje: p, valle: v } = lector.estado
-      const pos = personajeAMetros(p.x, p.y, v)
-      raiz.position.set(pos.x, altura(pos.x, pos.z), pos.z)
+      const actual = personajeAMetros(p.x, p.y, v)
+      previoX = actual.x
+      previoZ = actual.z
+    },
+    actualizar: (dt, alfa = 1) => {
+      const { personaje: p, valle: v } = lector.estado
+      const actual = personajeAMetros(p.x, p.y, v)
+      const t = Math.min(1, Math.max(0, alfa))
+      const pos = {
+        x: previoX + (actual.x - previoX) * t,
+        z: previoZ + (actual.z - previoZ) * t,
+      }
+      const y = seguidorAltura.actualizar(pos.x, pos.z, dt)
+      raiz.position.set(pos.x, y, pos.z)
+      const pies = { x: pos.x, y, z: pos.z }
 
-      if (dt <= 0) return
+      if (dt <= 0) return pies
       const dx = pos.x - xAnterior
       const dz = pos.z - zAnterior
       xAnterior = pos.x
@@ -112,7 +140,7 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
       giro = girarHacia(giro, objetivo, DATOS_ANIMACION.giro.velocidadAngular, dt)
       raiz.rotation.y = giro
 
-      if (!mezclador || !acciones) return
+      if (!mezclador || !acciones) return pies
       const { pesos, timeScale } = elegirAnimacion(velocidad, DATOS_ANIMACION)
       // Fundido: los pesos siguen a los objetivos con la duración configurada.
       const rapidez = DATOS_ANIMACION.tiempoFundido > 0 ? 3 / DATOS_ANIMACION.tiempoFundido : 1000
@@ -122,6 +150,7 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
         accion.setEffectiveTimeScale(nombre === 'reposo' ? 1 : timeScale)
       }
       mezclador.update(dt)
+      return pies
     },
     destruir: () => {
       destruido = true
