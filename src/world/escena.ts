@@ -91,7 +91,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   escena.add(vegetacion.objeto)
   const granjero = crearGranjero(lector, altura)
   escena.add(granjero.objeto)
-  const efectos = crearEfectos({ escena, lector, vegetacion, altura })
+  const efectos = crearEfectos({ escena, lector, vegetacion, granjero, altura })
 
   const camara = new PerspectiveCamera(
     50,

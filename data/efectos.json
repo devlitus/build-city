@@ -6,6 +6,7 @@
     "anguloFinal": 90,
     "fraccionDesvanecer": 0.2
   },
+  "golpeGranjero": { "duracion": 0.4, "inclinacion": 22, "fraccionPreparacion": 0.35 },
   "particulas": {
     "capacidad": 96,
     "gravedad": 9.8,

@@ -3,6 +3,7 @@ import type { Obstaculo } from '../../core'
 import type { LectorEstado, Suscriptor } from '../../juego/almacen'
 import { posicionObstaculo } from '../dispersion'
 import { personajeAMetros } from '../personaje/medidas'
+import type { Granjero } from '../personaje/modelo'
 import type { FuncionAltura } from '../terreno/altura'
 import type { Vegetacion } from '../vegetacion'
 import {
@@ -38,6 +39,8 @@ export interface OpcionesEfectos {
   readonly escena: Object3D
   readonly lector: LectorEstado & FuenteEventos
   readonly vegetacion: Vegetacion
+  /** El granjero hace el gesto de golpear al recibir un golpe. */
+  readonly granjero: Pick<Granjero, 'golpear'>
   readonly altura: FuncionAltura
   readonly datos?: DatosEfectos
 }
@@ -48,7 +51,7 @@ export interface OpcionesEfectos {
  * estado del juego ni decide reglas.
  */
 export function crearEfectos(opciones: OpcionesEfectos): Efectos {
-  const { escena, lector, vegetacion, altura, datos = DATOS_EFECTOS } = opciones
+  const { escena, lector, vegetacion, granjero, altura, datos = DATOS_EFECTOS } = opciones
   const gestor = new GestorEfectos()
 
   const buscar = (x: number, y: number): Obstaculo | undefined =>
@@ -139,6 +142,8 @@ export function crearEfectos(opciones: OpcionesEfectos): Efectos {
       const d = describirGolpe(e)
       if (!d) continue
       lanzarParticulas(d)
+      const p = posicionObstaculo(d, lector.estado.valle)
+      granjero.golpear(p.x, p.z)
       if (d.arbol === 'ninguno') continue
       // Tras talar, el núcleo ya dejó un tocón con la misma variante que tenía el árbol.
       const o = buscar(d.x, d.y)

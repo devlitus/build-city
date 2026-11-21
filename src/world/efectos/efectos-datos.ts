@@ -45,6 +45,14 @@ export const esquemaEfectos = v.object({
     /** Fracción final de la duración en la que encoge hasta desaparecer. */
     fraccionDesvanecer: fraccion,
   }),
+  golpeGranjero: v.object({
+    /** Duración del gesto de golpear del granjero (s). */
+    duracion: estrictoPositivo,
+    /** Inclinación del cuerpo hacia delante en el golpe (grados). */
+    inclinacion: estrictoPositivo,
+    /** Fracción de la duración que dedica a echarse atrás antes de golpear. */
+    fraccionPreparacion: fraccion,
+  }),
   particulas: v.object({
     /** Tope de partículas vivas a la vez. */
     capacidad: v.pipe(v.number(), v.integer(), v.minValue(1)),
