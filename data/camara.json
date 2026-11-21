@@ -6,5 +6,10 @@
   "alturaHombro": 1.5,
   "desplazamientoLateral": 0.4,
   "rapidezSeguimiento": 10,
-  "margenTerreno": 0.5
+  "margenTerreno": 0.5,
+  "transicionDuracion": 0.8,
+  "plano": {
+    "inclinacion": { "min": 0.5, "max": 1.5, "inicial": 1.0 },
+    "distancia": { "inicial": 60, "min": 15, "max": 160 }
+  }
 }

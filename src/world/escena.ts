@@ -21,6 +21,8 @@ import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
 import { crearSombras } from './sombras'
 import { crearTerceraPersona } from './camaras/tercera-persona'
+import { crearCamaraPlano } from './camaras/plano'
+import { crearDirectorCamara } from './camaras/director'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
@@ -102,6 +104,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   // La pose real la fija la cámara en tercera persona en cada fotograma.
   const terceraPersona = crearTerceraPersona(camara, renderer.domElement, altura)
 
+  const camaraPlano = crearCamaraPlano(camara, renderer.domElement, altura)
+  const director = crearDirectorCamara(camara, terceraPersona, camaraPlano, altura)
+
   const plano = crearCapaPlano(lector, camara, renderer.domElement, terreno, altura)
   escena.add(plano.objeto)
 
@@ -124,7 +129,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     marcarPaso: () => granjero.marcarPaso(),
     yawCamara: () => terceraPersona.yaw,
     fijarCamaraSeguimiento: (activa) => {
-      terceraPersona.habilitada = activa
+      director.seguimiento = activa
     },
     dibujar: (alfa = 1) => {
       const ahora = performance.now()
@@ -133,7 +138,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       agua.actualizar(dt)
       const pies = granjero.actualizar(dt, alfa)
       // Antes que la vegetación, que usa la cámara ya colocada.
-      const mirado = terceraPersona.actualizar(dt, pies)
+      const mirado = director.actualizar(dt, pies, lector.estado.modo)
       vegetacion.actualizar(dt, camara)
       plano.actualizar()
       instanteAnterior = ahora
@@ -144,6 +149,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     },
     destruir: () => {
       terceraPersona.destruir()
+      camaraPlano.destruir()
       plano.destruir()
       observador.disconnect()
       horizonte.destruir()
