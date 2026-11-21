@@ -99,6 +99,17 @@ describe('catálogo de materiales', () => {
     expect(plano[1]).toBeLessThan(objetivo[1])
   })
 
+  it('un material sin textura tiene exactamente el color de la paleta', () => {
+    const f = fabrica()
+    for (const [nombre, m] of Object.entries(CATALOGO_MATERIALES.materiales)) {
+      if (m.textura !== undefined || m.colorPorVertice === true) continue
+      const c = f.material(nombre).color
+      expect(c.getHex(SRGBColorSpace), nombre).toBe(
+        parseInt(paletaJuego[m.tinte]?.slice(1) ?? '0', 16),
+      )
+    }
+  })
+
   it('el tinte reproduce el color objetivo sobre la textura', () => {
     const [r, g, b] = tinteSobreTextura([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     expect([r, g, b]).toEqual([1, 1, 1])
