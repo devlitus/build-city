@@ -15,6 +15,9 @@ import {
 } from './caida'
 import { DATOS_EFECTOS, type DatosEfectos } from './efectos-datos'
 import { GestorEfectos, type Efecto } from './gestor'
+import { describirGolpe, type DescripcionGolpe } from './golpe'
+import { SistemaParticulas, crearRafaga } from './particulas'
+import { crearMallaParticulas } from './particulas-malla'
 
 const GRADOS = Math.PI / 180
 
@@ -117,29 +120,49 @@ export function crearEfectos(opciones: OpcionesEfectos): Efectos {
     gestor.alta(efecto, `arbol-${o.x}-${o.y}`)
   }
 
+  const particulas = new SistemaParticulas(datos.particulas.capacidad, datos.particulas.gravedad)
+  const mallaParticulas = crearMallaParticulas(particulas, datos.particulas.capacidad)
+  escena.add(mallaParticulas.objeto)
+  let rafagas = 0
+
+  const lanzarParticulas = (d: DescripcionGolpe): void => {
+    const tipo = d.material === 'madera' ? datos.particulas.astillas : datos.particulas.piedra
+    const p = posicionObstaculo(d, lector.estado.valle)
+    const origen = { x: p.x, y: altura(p.x, p.z) + tipo.alturaOrigen, z: p.z }
+    const cantidad = d.fase === 'golpe' ? tipo.cantidadGolpe : tipo.cantidadRotura
+    particulas.emitir(crearRafaga(origen, cantidad, tipo, ++rafagas))
+  }
+
   const alEvento: Suscriptor = (n) => {
     if (!n.ok) return
     for (const e of n.eventos) {
-      if (e.tipo === 'obstaculo-golpeado' && e.obstaculo === 'arbol') {
-        const o = buscar(e.x, e.y)
-        if (o) sacudirArbol(o)
-      } else if (e.tipo === 'obstaculo-quitado' && e.obstaculo === 'arbol') {
-        // El núcleo ya dejó un tocón en la casilla, con la misma variante que tenía el árbol.
-        const o = buscar(e.x, e.y)
-        if (o) caerArbol(o)
-      }
+      const d = describirGolpe(e)
+      if (!d) continue
+      lanzarParticulas(d)
+      if (d.arbol === 'ninguno') continue
+      // Tras talar, el núcleo ya dejó un tocón con la misma variante que tenía el árbol.
+      const o = buscar(d.x, d.y)
+      if (!o) continue
+      if (d.arbol === 'sacudir') sacudirArbol(o)
+      else caerArbol(o)
     }
   }
   const quitarSuscripcion = lector.suscribir(alEvento)
 
   return {
-    actualizar: (dt) => gestor.actualizar(dt),
+    actualizar: (dt) => {
+      gestor.actualizar(dt)
+      particulas.actualizar(dt, altura)
+      mallaParticulas.sincronizar()
+    },
     get vivos() {
       return gestor.vivos
     },
     destruir: () => {
       quitarSuscripcion()
       gestor.limpiar()
+      particulas.limpiar()
+      mallaParticulas.destruir()
     },
   }
 }

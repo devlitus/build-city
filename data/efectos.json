@@ -5,5 +5,29 @@
     "fraccionCaida": 0.65,
     "anguloFinal": 90,
     "fraccionDesvanecer": 0.2
+  },
+  "particulas": {
+    "capacidad": 96,
+    "gravedad": 9.8,
+    "astillas": {
+      "cantidadGolpe": 5,
+      "cantidadRotura": 14,
+      "alturaOrigen": 1,
+      "rapidez": 2.2,
+      "impulsoVertical": 2.6,
+      "vida": 0.6,
+      "tamano": 0.08,
+      "colores": ["madera", "maderaOscura"]
+    },
+    "piedra": {
+      "cantidadGolpe": 5,
+      "cantidadRotura": 12,
+      "alturaOrigen": 0.35,
+      "rapidez": 2,
+      "impulsoVertical": 2.2,
+      "vida": 0.55,
+      "tamano": 0.07,
+      "colores": ["roca", "piedra"]
+    }
   }
 }
