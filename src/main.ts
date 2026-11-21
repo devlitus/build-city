@@ -41,7 +41,9 @@ if (contenedor) {
     })
   }
 
-  instalarTeclasTiempo(almacen)
+  // Se guarda para quitar el oyente al volver al menú (aún sin usar).
+  const quitarTeclasTiempo = instalarTeclasTiempo(almacen)
+  void quitarTeclasTiempo
   instalarEleccionHerramienta(almacen)
   instalarUsoHerramienta(
     almacen,

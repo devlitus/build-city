@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { itRendimiento } from '../../tests/rendimiento'
 import {
   aplicarComando,
   colocacionValida,
@@ -184,20 +185,23 @@ describe('bloquea-paso', () => {
     expect(motivo(sinZona, 'caja-envio', x, y - 1)).toBe('zona-incompatible')
   })
 
-  it('es rápido: menos de 2 ms por llamada en el valle de 96x96 (cursor en movimiento)', () => {
-    const e = abierto()
-    const lado = ladoValle(e.valle)
-    colocacionValida(e, 'caja-envio', 10, 10) // calienta cachés
-    const n = 400
-    const t0 = performance.now()
-    for (let i = 0; i < n; i++) {
-      colocacionValida(e, 'cobertizo', i % (lado - 4), (i * 7) % (lado - 3))
-    }
-    const ms = (performance.now() - t0) / n
-    console.log(`colocacionValida: ${ms.toFixed(3)} ms por llamada`)
-    // Margen amplio para que no sea frágil en CI; el objetivo es < 2 ms.
-    expect(ms).toBeLessThan(10)
-  })
+  itRendimiento(
+    'es rápido: menos de 2 ms por llamada en el valle de 96x96 (cursor en movimiento)',
+    () => {
+      const e = abierto()
+      const lado = ladoValle(e.valle)
+      colocacionValida(e, 'caja-envio', 10, 10) // calienta cachés
+      const n = 400
+      const t0 = performance.now()
+      for (let i = 0; i < n; i++) {
+        colocacionValida(e, 'cobertizo', i % (lado - 4), (i * 7) % (lado - 3))
+      }
+      const ms = (performance.now() - t0) / n
+      console.log(`colocacionValida: ${ms.toFixed(3)} ms por llamada`)
+      // Margen amplio para que no sea frágil en CI; el objetivo es < 2 ms.
+      expect(ms).toBeLessThan(10)
+    },
+  )
 })
 
 describe('unico-ya-existe en segunda posición', () => {

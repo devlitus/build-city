@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- índices con noUncheckedIndexedAccess */
 import { describe, expect, it } from 'vitest'
+import { itRendimiento } from '../rendimiento'
 import fc from 'fast-check'
 import {
   buscarCamino,
@@ -56,28 +57,31 @@ describe('buscarCamino (propiedades)', () => {
     )
   })
 
-  it('rendimiento: el peor caso del valle tarda menos de 5 ms por cada 96×96 casillas (presupuesto proporcional al área)', () => {
-    const estado = crearEstadoInicial({ semilla: 42, dineroInicial: 0 })
-    const mapa = mapaTransitabilidad(estado)
-    const p = (c: number) => ({ x: (c % mapa.lado) + 0.5, y: Math.floor(c / mapa.lado) + 0.5 })
-    // Muchos destinos libres repartidos por todo el valle (incluido el otro lado del río,
-    // lejos de los vados) desde la aparición y desde la esquina opuesta; se toma el peor caso.
-    const origenes = [estado.personaje, p(mapa.bloqueada.lastIndexOf(0))]
-    buscarCamino(estado, origenes[0]!, p(0)) // calentar
-    let peor = 0
-    for (const origen of origenes) {
-      for (let c = 0; c < mapa.bloqueada.length; c += 61) {
-        if (mapa.bloqueada[c] === 1) continue
-        let mejor = Infinity
-        for (let i = 0; i < 3; i++) {
-          const t0 = performance.now()
-          buscarCamino(estado, origen, p(c))
-          mejor = Math.min(mejor, performance.now() - t0)
+  itRendimiento(
+    'el peor caso del valle tarda menos de 5 ms por cada 96×96 casillas (presupuesto proporcional al área)',
+    () => {
+      const estado = crearEstadoInicial({ semilla: 42, dineroInicial: 0 })
+      const mapa = mapaTransitabilidad(estado)
+      const p = (c: number) => ({ x: (c % mapa.lado) + 0.5, y: Math.floor(c / mapa.lado) + 0.5 })
+      // Muchos destinos libres repartidos por todo el valle (incluido el otro lado del río,
+      // lejos de los vados) desde la aparición y desde la esquina opuesta; se toma el peor caso.
+      const origenes = [estado.personaje, p(mapa.bloqueada.lastIndexOf(0))]
+      buscarCamino(estado, origenes[0]!, p(0)) // calentar
+      let peor = 0
+      for (const origen of origenes) {
+        for (let c = 0; c < mapa.bloqueada.length; c += 61) {
+          if (mapa.bloqueada[c] === 1) continue
+          let mejor = Infinity
+          for (let i = 0; i < 3; i++) {
+            const t0 = performance.now()
+            buscarCamino(estado, origen, p(c))
+            mejor = Math.min(mejor, performance.now() - t0)
+          }
+          peor = Math.max(peor, mejor)
         }
-        peor = Math.max(peor, mejor)
       }
-    }
-    // 5 ms era el presupuesto para 96×96 casillas (M1-T01 pasa el valle a 160×160): crece con el área.
-    expect(peor).toBeLessThan(5 * (mapa.lado / 96) ** 2)
-  })
+      // 5 ms era el presupuesto para 96×96 casillas (M1-T01 pasa el valle a 160×160): crece con el área.
+      expect(peor).toBeLessThan(5 * (mapa.lado / 96) ** 2)
+    },
+  )
 })

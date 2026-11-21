@@ -6,6 +6,6 @@ export default defineConfig({
     environment: 'node',
     // Generar un estado inicial tarda ~10 ms con el valle de 160×160, pero hay tests que crean
     // cientos y recorren el mapa entero: con la máquina cargada superan con facilidad los 20 s.
-    testTimeout: 60_000,
+    testTimeout: 300_000,
   },
 })
