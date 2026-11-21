@@ -24,6 +24,7 @@ import { crearTerceraPersona } from './camaras/tercera-persona'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
+import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
 export interface Escena {
   escena: Scene
@@ -47,7 +48,7 @@ export interface Escena {
 }
 
 /** Crea el lienzo three.js dentro del contenedor, con luces, terreno y redimensionado. */
-export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Escena {
+export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & FuenteEventos): Escena {
   const { valle, semilla } = lector.estado
   const lado = ladoMetros(valle)
 
@@ -96,6 +97,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   escena.add(vegetacion.objeto)
   const granjero = crearGranjero(lector, altura)
   escena.add(granjero.objeto)
+  const efectos = crearEfectos({ escena, lector, vegetacion, granjero, altura })
 
   const camara = new PerspectiveCamera(
     50,
@@ -137,6 +139,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       const mirado = terceraPersona.actualizar(dt, pies)
       vegetacion.sincronizar(lector.estado.obstaculos, lector.estado.dia)
       vegetacion.actualizar(dt, camara)
+      efectos.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -148,6 +151,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
+      efectos.destruir()
       vegetacion.destruir()
       granjero.destruir()
       renderer.dispose()
