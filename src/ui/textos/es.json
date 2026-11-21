@@ -1,0 +1,14 @@
+{
+  "estacion": {
+    "primavera": "Primavera",
+    "verano": "Verano",
+    "otono": "Otoño",
+    "invierno": "Invierno"
+  },
+  "reloj": {
+    "fecha": "Día {dia} · {estacion} · Año {anio}",
+    "pausa": "Pausa",
+    "velocidad": "x{velocidad}",
+    "etiqueta": "Reloj del juego"
+  }
+}
