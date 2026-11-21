@@ -1,7 +1,11 @@
-import type { Object3D, PerspectiveCamera } from 'three'
+import { Group, type Object3D, type PerspectiveCamera } from 'three'
 import type { LectorEstado } from '../../juego/almacen'
 import { seleccionParcela } from '../../juego/seleccion-parcela'
 import type { FuncionAltura } from '../terreno/altura'
+import { filtroDesaturacion } from './geometria-plano'
+import { crearLindes } from './lindes'
+import { DATOS_PLANO } from './plano-datos'
+import { crearRejilla } from './rejilla'
 import { crearResaltadoParcela } from './resaltado'
 import { crearSeleccion, type BajoCursor } from './seleccion'
 
@@ -44,17 +48,42 @@ export function crearCapaPlano(
   lienzo.addEventListener('pointerdown', alPulsar)
   lienzo.addEventListener('pointerup', alSoltar)
 
+  const rejilla = crearRejilla(altura)
+  const grupo = new Group()
+  grupo.name = 'plano'
+  const lindes = crearLindes(altura)
+  grupo.add(resaltado.objeto, rejilla.objeto, lindes.objeto)
+  // Desaturación: filtro CSS del lienzo (sin coste en la escena; se quita al salir del plano).
+  lienzo.style.transition = `filter ${DATOS_PLANO.desaturacion.duracionTransicion}s ease`
+  let desaturado = false
+  let firmaPropias: string | null = null
+  /** Reconstruye la rejilla solo si cambian las parcelas propias (p. ej. al comprar). */
+  const sincronizar = (): void => {
+    const v = lector.estado.valle
+    const firma = v.parcelas.map((p) => (p.estado === 'propia' ? '1' : '0')).join('')
+    if (firma === firmaPropias) return
+    firmaPropias = firma
+    rejilla.actualizar(v)
+    lindes.actualizar(v)
+  }
   return {
-    objeto: resaltado.objeto,
+    objeto: grupo,
     get bajoCursor() {
       return seleccion.actual
     },
     actualizar() {
-      if (lector.estado.modo !== 'plano') {
+      const enPlano = lector.estado.modo === 'plano'
+      grupo.visible = enPlano
+      if (enPlano !== desaturado) {
+        desaturado = enPlano
+        lienzo.style.filter = enPlano ? filtroDesaturacion(DATOS_PLANO.desaturacion.cantidad) : ''
+      }
+      if (!enPlano) {
         seleccion.olvidar()
         resaltado.mostrar(null)
         return
       }
+      sincronizar()
       resaltado.mostrar(seleccion.actualizar()?.indiceParcela ?? null)
     },
     destruir() {
@@ -62,6 +91,10 @@ export function crearCapaPlano(
       lienzo.removeEventListener('pointerup', alSoltar)
       seleccion.destruir()
       resaltado.destruir()
+      rejilla.destruir()
+      lindes.destruir()
+      lienzo.style.filter = ''
+      lienzo.style.transition = ''
     },
   }
 }
