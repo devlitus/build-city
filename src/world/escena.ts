@@ -1,5 +1,15 @@
-import { Color, Fog, PCFShadowMap, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import {
+  ACESFilmicToneMapping,
+  Fog,
+  PCFShadowMap,
+  PerspectiveCamera,
+  Scene,
+  SRGBColorSpace,
+  WebGLRenderer,
+} from 'three'
 import type { LectorEstado } from '../juego/almacen'
+import { crearCielo } from './cielo'
+import { DATOS_CIELO } from './cielo-datos'
 import { crearHorizonte } from './horizonte'
 import { PARAMETROS_HORIZONTE } from './horizonte-parametros'
 import { añadirLuces } from './luces'
@@ -27,6 +37,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
 
   const renderer = new WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.outputColorSpace = SRGBColorSpace
+  renderer.toneMapping = ACESFilmicToneMapping
+  renderer.toneMappingExposure = DATOS_CIELO.exposicion
   renderer.shadowMap.enabled = true
   // three 0.187 retiró PCFSoftShadowMap; PCFShadowMap ya filtra suave.
   renderer.shadowMap.type = PCFShadowMap
@@ -34,7 +47,11 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   contenedor.append(renderer.domElement)
 
   const escena = new Scene()
-  escena.background = new Color(color('cielo'))
+  // El cielo físico dibuja el fondo y, con su entorno PMREM, ilumina los materiales PBR.
+  const cielo = crearCielo(renderer)
+  escena.add(cielo.objeto)
+  escena.environment = cielo.entorno
+  escena.environmentIntensity = DATOS_CIELO.intensidadEntorno
   escena.fog = new Fog(
     color('niebla'),
     PARAMETROS_HORIZONTE.niebla.cerca,
@@ -92,6 +109,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     destruir: () => {
       observador.disconnect()
       horizonte.destruir()
+      cielo.destruir()
       vegetacion.destruir()
       renderer.dispose()
       renderer.domElement.remove()

@@ -12,9 +12,10 @@ import {
   type Object3D,
 } from 'three'
 import type { Valle } from '../core'
-import { materialDe } from './materiales'
+import { fabricaDelJuego, materialDe } from './materiales'
 import { bordeSur, centroPlaza, DATOS_PUEBLO, puntosCamino, type DatosPueblo } from './pueblo-datos'
 import type { FuncionAltura } from './terreno/altura'
+import { uvTerreno } from './terreno/uv'
 
 /** Caja unitaria con la base en y = 0 (se escala por edificio). */
 function cajaUnitaria(): BoxGeometry {
@@ -51,7 +52,9 @@ function crearCamino(
   const puntos = puntosCamino(valle, datos)
   const medio = datos.camino.ancho / 2
   const elevacion = 0.06
+  const metros = fabricaDelJuego().datos('camino').metrosPorRepeticion ?? 1
   const posiciones: number[] = []
+  const uvs: number[] = []
   const indices: number[] = []
   puntos.forEach((p, i) => {
     const antes = puntos[Math.max(0, i - 1)] ?? p
@@ -64,6 +67,8 @@ function crearCamino(
       const x = p.x + nx * medio * lado
       const z = p.z + nz * medio * lado
       posiciones.push(x, altura(x, z) + elevacion, z)
+      // UV en metros globales, como el terreno: la textura del camino casa con el suelo.
+      uvs.push(...uvTerreno(x, z, metros))
     }
     if (i > 0) {
       const a = (i - 1) * 2
@@ -72,9 +77,10 @@ function crearCamino(
   })
   const g = new BufferGeometry()
   g.setAttribute('position', new Float32BufferAttribute(posiciones, 3))
+  g.setAttribute('uv', new Float32BufferAttribute(uvs, 2))
   g.setIndex(indices)
   g.computeVertexNormals()
-  const camino = new Mesh(g, materialDe('tierra'))
+  const camino = new Mesh(g, materialDe('camino'))
   camino.receiveShadow = true
   camino.name = 'camino'
   return camino
