@@ -570,7 +570,12 @@ describe('caja del personaje en el límite de la huella', () => {
           // Empujar contra el edificio recién hecho durante 3 s.
           let s = vida(r.estado)
           for (let k = 0; k < 12; k++) s = paso(s, { tipo: 'MoverPersonaje', dx, dy, ms: 250 })
-          expect(toca(s.personaje.x, s.personaje.y)).toBe(false)
+          // El personaje es un círculo (M2-T01): contra el edificio comprueba el círculo.
+          const cx = Math.min(Math.max(s.personaje.x, X), X + d.ancho)
+          const cy = Math.min(Math.max(s.personaje.y, Y), Y + d.alto)
+          expect(Math.hypot(s.personaje.x - cx, s.personaje.y - cy)).toBeGreaterThanOrEqual(
+            CONFIG_PERSONAJE.radio - 1e-9,
+          )
           expect(Number.isFinite(s.personaje.x) && Number.isFinite(s.personaje.y)).toBe(true)
         },
       ),

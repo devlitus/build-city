@@ -256,6 +256,22 @@ function alcanzable(e: EstadoJuego): { lado: number; vista: Uint8Array; bloq: Ui
   return { lado, vista, bloq }
 }
 
+/** Casillas que solapa el círculo del personaje (M2-T01) centrado en (px, py). */
+function casillasCirculo(px: number, py: number): { x: number; y: number }[] {
+  const r = CONFIG_PERSONAJE.radio
+  const l: { x: number; y: number }[] = []
+  for (let y = Math.floor(py - r); y <= Math.floor(py + r); y++) {
+    for (let x = Math.floor(px - r); x <= Math.floor(px + r); x++) {
+      const d = Math.hypot(
+        px - Math.min(Math.max(px, x), x + 1),
+        py - Math.min(Math.max(py, y), y + 1),
+      )
+      if (d < r) l.push({ x, y })
+    }
+  }
+  return l
+}
+
 /** Casillas que toca la caja de colisión centrada en (px, py). */
 function casillasCaja(px: number, py: number): { x: number; y: number }[] {
   const m = CONFIG_PERSONAJE.tamanoCaja / 2
@@ -347,7 +363,7 @@ function comprobarInvariantes(e: EstadoJuego, ctx: string): void {
   ok(casas <= 1, `${ctx} ${casas} casas`)
   // Alcance: personaje y despertar.
   const a = alcanzable(e)
-  for (const k of casillasCaja(e.personaje.x, e.personaje.y)) {
+  for (const k of casillasCirculo(e.personaje.x, e.personaje.y)) {
     ok(a.vista[k.y * lado + k.x] === 1, `${ctx} personaje en (${k.x},${k.y}) no alcanzable`)
   }
   const d = personajeAlDespertar(e)
