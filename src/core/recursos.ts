@@ -88,9 +88,7 @@ function golpear(tipo: 'arbol' | 'roca'): EfectoHerramienta {
     const o = obstaculoEn(estado, x, y)
     // Un golpe al aire se acepta y gasta energía (sin efecto); el hacha también arranca un plantón.
     const vale =
-      o &&
-      (o.tipo === tipo ||
-        (tipo === 'arbol' && (o.tipo === 'planton' || o.tipo === 'tocon')))
+      o && (o.tipo === tipo || (tipo === 'arbol' && (o.tipo === 'planton' || o.tipo === 'tocon')))
     if (!o || !vale) return { ok: true, estado, eventos: [] }
     const terreno = terrenoDeCasilla(estado, x, y)
     if (!terreno) return invalido
