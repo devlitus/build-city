@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { crearTeclas, direccionRelativa, instalarEntrada } from './entrada'
+import { HERRAMIENTAS } from '../core/inventario'
+import {
+  comandoHerramientaDeRueda,
+  comandoHerramientaDeTecla,
+  crearTeclas,
+  direccionRelativa,
+  instalarEleccionHerramienta,
+  instalarEntrada,
+} from './entrada'
 
 const W = { adelante: true, atras: false, izquierda: false, derecha: false }
 
@@ -81,5 +89,72 @@ describe('instalarEntrada', () => {
     expect(t.adelante).toBe(false)
     quitar()
     expect(o.oyentes.size).toBe(0)
+  })
+})
+
+function en(i: number) {
+  const h = HERRAMIENTAS[i]
+  if (h === undefined) throw new Error(`no hay herramienta ${i}`)
+  return h
+}
+
+describe('elegir herramienta', () => {
+  const sin = { altKey: false, ctrlKey: false, metaKey: false }
+  const ultima = en(HERRAMIENTAS.length - 1)
+
+  it('la tecla 3 elige la tercera herramienta', () => {
+    expect(comandoHerramientaDeTecla({ code: 'Digit3', ...sin })).toEqual({
+      tipo: 'ElegirHerramienta',
+      herramienta: HERRAMIENTAS[2],
+    })
+    expect(comandoHerramientaDeTecla({ code: 'Numpad3', ...sin })?.herramienta).toBe(
+      HERRAMIENTAS[2],
+    )
+  })
+
+  it('las teclas sobrantes no hacen nada', () => {
+    expect(comandoHerramientaDeTecla({ code: 'Digit9', ...sin })).toBeUndefined()
+    expect(comandoHerramientaDeTecla({ code: 'Digit0', ...sin })).toBeUndefined()
+  })
+
+  it('Alt+número no elige herramienta', () => {
+    expect(comandoHerramientaDeTecla({ code: 'Digit1', ...sin, altKey: true })).toBeUndefined()
+  })
+
+  it('la rueda pasa a la siguiente y da la vuelta', () => {
+    const r = { deltaY: 100, ...sin }
+    expect(comandoHerramientaDeRueda(r, en(0))?.herramienta).toBe(HERRAMIENTAS[1])
+    expect(comandoHerramientaDeRueda(r, ultima)?.herramienta).toBe(HERRAMIENTAS[0])
+  })
+
+  it('la rueda hacia arriba pasa a la anterior y da la vuelta', () => {
+    const r = { deltaY: -100, ...sin }
+    expect(comandoHerramientaDeRueda(r, en(1))?.herramienta).toBe(HERRAMIENTAS[0])
+    expect(comandoHerramientaDeRueda(r, en(0))?.herramienta).toBe(ultima)
+  })
+
+  it('Alt+rueda (zoom) no elige herramienta', () => {
+    expect(comandoHerramientaDeRueda({ deltaY: 100, ...sin, altKey: true }, en(0))).toBeUndefined()
+  })
+
+  it('los oyentes despachan y la función de retirada los quita', () => {
+    const oyentes = new Map<string, (e: never) => void>()
+    const o = {
+      addEventListener: (n: string, f: (e: never) => void) => void oyentes.set(n, f),
+      removeEventListener: (n: string) => void oyentes.delete(n),
+    }
+    const despachados: unknown[] = []
+    const quitar = instalarEleccionHerramienta(
+      {
+        estado: { herramienta: HERRAMIENTAS[0] } as never,
+        despachar: ((c: unknown) => despachados.push(c)) as never,
+      },
+      o as unknown as Window,
+    )
+    const e = { code: 'Digit2', ...sin, repeat: false, target: null, preventDefault: () => {} }
+    oyentes.get('keydown')?.(e as never)
+    expect(despachados).toEqual([{ tipo: 'ElegirHerramienta', herramienta: HERRAMIENTAS[1] }])
+    quitar()
+    expect(oyentes.size).toBe(0)
   })
 })

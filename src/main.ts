@@ -2,7 +2,12 @@ import { crearEstadoInicial } from './core'
 import { crearAlmacen } from './juego/almacen'
 import { iniciarBucle } from './juego/bucle'
 import { CONFIG_BUCLE } from './juego/config-bucle'
-import { crearTeclas, direccionRelativa, instalarEntrada } from './juego/entrada'
+import {
+  crearTeclas,
+  direccionRelativa,
+  instalarEleccionHerramienta,
+  instalarEntrada,
+} from './juego/entrada'
 import { instalarTeclasTiempo } from './juego/tiempo'
 import { montarUi } from './ui/montar'
 import type { CamaraDepuracion } from './world/camaras/depuracion'
@@ -36,6 +41,7 @@ if (contenedor) {
   }
 
   instalarTeclasTiempo(almacen)
+  instalarEleccionHerramienta(almacen)
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)
   const ui = document.getElementById('ui')
