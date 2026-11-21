@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import type { FuenteEstado } from '../fuente'
-import { SEGUNDOS_AVISO, textoAviso } from './avisos'
+import { SEGUNDOS_AVISO, textoAviso } from './texto-aviso'
 
 /**
  * Aviso simple del HUD (arriba, en el centro): muestra el último mensaje unos segundos.

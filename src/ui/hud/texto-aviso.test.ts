@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Notificacion } from '../../juego/almacen'
 import { t } from '../textos'
-import { textoAviso } from './avisos'
+import { textoAviso } from './texto-aviso'
 
 const comando = { tipo: 'UsarHerramienta', x: 1, y: 1 } as const
 
