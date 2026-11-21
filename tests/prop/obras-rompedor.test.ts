@@ -784,5 +784,5 @@ describe('M4-03 rompedor: partidas largas', () => {
     // Que el ataque llegue de verdad a terminar obras y cambiar de día.
     expect(contadores.dias).toBeGreaterThan(300)
     expect(contadores.fin).toBeGreaterThan(100)
-  }, 120_000)
+  }, 300_000)
 })

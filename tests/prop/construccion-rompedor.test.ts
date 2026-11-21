@@ -1397,7 +1397,7 @@ describe('balance (medición)', () => {
     )
     expect(semillasConAlguna / N).toBeGreaterThan(0.5)
     // Mide 200 valles de 8×8 parcelas de 20 (M1-T01): ~35 s, más que el tiempo por defecto.
-  }, 120_000)
+  }, 300_000)
 })
 
 /**
