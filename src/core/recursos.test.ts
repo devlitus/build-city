@@ -34,6 +34,8 @@ const limpio: EstadoJuego = {
 const con = (...obstaculos: Obstaculo[]): EstadoJuego => ({ ...limpio, obstaculos })
 const arbol: Obstaculo = { tipo: 'arbol', x: 51, y: 50, variante: 0.5 }
 const roca: Obstaculo = { tipo: 'roca', x: 49, y: 50, variante: 0.5 }
+/** Lo que deja el árbol talado en su casilla. */
+const TOCON: Obstaculo = { tipo: 'tocon', x: 51, y: 50, variante: 0.5 }
 const usar = (e: EstadoJuego, x: number, y: number, h = e.herramienta) => {
   const c: Comando = { tipo: 'UsarHerramienta', x, y }
   return aplicarComando({ ...e, herramienta: h }, c)
@@ -106,7 +108,7 @@ describe('hacha', () => {
       50,
       'hacha',
     )
-    expect(estado.obstaculos).toEqual([])
+    expect(estado.obstaculos).toEqual([TOCON])
     expect(estado.materiales.madera).toBe(CONFIG_RECURSOS.arbol.madera[terreno])
     expect(estado.materiales.piedra).toBe(0)
     expect(cantidadDe(estado.inventario, 'planton')).toBe(CONFIG_RECURSOS.arbol.plantones)
@@ -128,7 +130,7 @@ describe('hacha', () => {
     }
     expect(e.obstaculos[0]).toMatchObject({ tipo: 'arbol', golpes: 1 })
     const { estado } = repetir(e, golpesA - 1, 51, 50, 'hacha')
-    expect(estado.obstaculos).toEqual([])
+    expect(estado.obstaculos).toEqual([TOCON])
   })
   it('cada golpe gasta el coste de la herramienta', () => {
     const { estado } = repetir(con(arbol), 1, 51, 50, 'hacha')
@@ -199,7 +201,7 @@ describe('hacha', () => {
       50,
       'hacha',
     )
-    expect(estado.obstaculos).toEqual([])
+    expect(estado.obstaculos).toEqual([TOCON])
     expect(estado.materiales.madera).toBe(CONFIG_RECURSOS.arbol.madera[terreno])
     expect(cantidadDe(estado.inventario, 'planton')).toBe(0)
   })
@@ -368,7 +370,9 @@ describe('replantar con la mano', () => {
     expect(e.obstaculos[0]?.tipo).toBe('arbol')
   })
   it('ciclo completo: talar, replantar y que vuelva a ser árbol', () => {
-    const a = repetir(con(arbol), golpesA, 51, 50, 'hacha').estado
+    // Talar deja un tocón: hay que quitarlo con el hacha antes de replantar.
+    const talado = repetir(con(arbol), golpesA, 51, 50, 'hacha').estado
+    const a = repetir(talado, CONFIG_RECURSOS.tocon.golpes, 51, 50, 'hacha').estado
     const b = usar(
       { ...a, inventario: [{ objeto: 'planton', cantidad: 1 }] },
       51,

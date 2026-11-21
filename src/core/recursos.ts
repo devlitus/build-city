@@ -50,6 +50,7 @@ export function casillaPropia(estado: Pick<EstadoJuego, 'valle'>, x: number, y: 
 export function golpesNecesarios(o: Pick<Obstaculo, 'tipo'>, terreno: Terreno): number {
   if (o.tipo === 'arbol') return CONFIG_RECURSOS.arbol.golpes[terreno]
   if (o.tipo === 'roca') return CONFIG_RECURSOS.roca.golpes[terreno]
+  if (o.tipo === 'tocon') return CONFIG_RECURSOS.tocon.golpes
   return 1
 }
 
@@ -71,7 +72,7 @@ export function golpearia(
   const o = obstaculoEn(estado, x, y)
   if (!o) return false
   return estado.herramienta === 'hacha'
-    ? o.tipo === 'arbol' || o.tipo === 'planton'
+    ? o.tipo === 'arbol' || o.tipo === 'planton' || o.tipo === 'tocon'
     : estado.herramienta === 'pico' && o.tipo === 'roca'
 }
 
@@ -86,7 +87,10 @@ function golpear(tipo: 'arbol' | 'roca'): EfectoHerramienta {
   const aplicar = (estado: EstadoJuego, x: number, y: number): ResultadoEfecto => {
     const o = obstaculoEn(estado, x, y)
     // Un golpe al aire se acepta y gasta energía (sin efecto); el hacha también arranca un plantón.
-    const vale = o && (o.tipo === tipo || (tipo === 'arbol' && o.tipo === 'planton'))
+    const vale =
+      o &&
+      (o.tipo === tipo ||
+        (tipo === 'arbol' && (o.tipo === 'planton' || o.tipo === 'tocon')))
     if (!o || !vale) return { ok: true, estado, eventos: [] }
     const terreno = terrenoDeCasilla(estado, x, y)
     if (!terreno) return invalido
@@ -106,7 +110,12 @@ function golpear(tipo: 'arbol' | 'roca'): EfectoHerramienta {
       }
     }
     // Último golpe: se quita y da su botín.
-    const madera = o.tipo === 'arbol' ? CONFIG_RECURSOS.arbol.madera[terreno] : 0
+    const madera =
+      o.tipo === 'arbol'
+        ? CONFIG_RECURSOS.arbol.madera[terreno]
+        : o.tipo === 'tocon'
+          ? CONFIG_RECURSOS.tocon.madera
+          : 0
     const piedra = o.tipo === 'roca' ? CONFIG_RECURSOS.roca.piedra[terreno] : 0
     if (
       !Number.isSafeInteger(estado.materiales.madera + madera) ||
@@ -146,7 +155,13 @@ function golpear(tipo: 'arbol' | 'roca'): EfectoHerramienta {
       estado: {
         ...estado,
         rng,
-        obstaculos: estado.obstaculos.filter((b) => b !== o),
+        // Un árbol talado deja un tocón en su casilla (bloquea el paso); lo demás desaparece.
+        obstaculos:
+          o.tipo === 'arbol'
+            ? estado.obstaculos.map((b) =>
+                b === o ? { tipo: 'tocon' as const, x, y, variante: o.variante } : b,
+              )
+            : estado.obstaculos.filter((b) => b !== o),
         materiales: {
           madera: estado.materiales.madera + madera,
           piedra: estado.materiales.piedra + piedra,
