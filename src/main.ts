@@ -1,6 +1,8 @@
 import { crearEstadoInicial } from './core'
 import { crearAlmacen } from './juego/almacen'
 import { iniciarBucle } from './juego/bucle'
+import { instalarTeclasTiempo } from './juego/tiempo'
+import { montarUi } from './ui/montar'
 import { crearEscena } from './world/escena'
 
 /** Semilla provisional hasta que exista la pantalla de nueva partida. */
@@ -26,6 +28,10 @@ if (contenedor) {
       actualizarCamaraLibre = m.crearCamaraDepuracion(camara, renderer.domElement).actualizar
     })
   }
+
+  instalarTeclasTiempo(almacen)
+  const ui = document.getElementById('ui')
+  if (ui) montarUi(ui, almacen)
 
   iniciarBucle({
     almacen,

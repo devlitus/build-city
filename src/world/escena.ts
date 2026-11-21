@@ -16,9 +16,11 @@ import { añadirLuces } from './luces'
 import { crearLuzEscena } from './luz-escena'
 import { crearAgua } from './agua'
 import { color } from './paleta'
+import { crearGranjero } from './personaje/modelo'
 import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
-import { ladoMetros } from './terreno/coordenadas'
+import { crearSombras } from './sombras'
+import { casillaAMetros, ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
 
@@ -58,7 +60,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     PARAMETROS_HORIZONTE.niebla.cerca,
     PARAMETROS_HORIZONTE.niebla.lejos,
   )
-  const luzEscena = crearLuzEscena(escena, renderer, cielo, añadirLuces(escena, lado / 2))
+  const luces = añadirLuces(escena)
+  const luzEscena = crearLuzEscena(escena, renderer, cielo, luces)
+  const sombras = crearSombras(luces.sol)
   const horizonte = crearHorizonte(lado)
   let instanteAnterior = performance.now()
 
@@ -71,6 +75,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   escena.add(agua)
   const vegetacion = crearVegetacion(valle, lector.estado.obstaculos, altura, semilla)
   escena.add(vegetacion.objeto)
+  const granjero = crearGranjero(lector, altura)
+  escena.add(granjero.objeto)
 
   const camara = new PerspectiveCamera(
     50,
@@ -104,8 +110,14 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       horizonte.actualizar(dt)
       agua.actualizar(dt)
       vegetacion.actualizar(dt, camara)
+      granjero.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
+      // Provisional hasta T04: las sombras siguen al personaje; la cámara en tercera persona
+      // pasará aquí el punto que mira.
+      const p = lector.estado.personaje
+      const o = casillaAMetros(p.x - 0.5, p.y - 0.5, valle)
+      sombras.actualizar({ x: o.x, y: 0, z: o.z })
       renderer.render(escena, camara)
     },
     destruir: () => {
@@ -113,6 +125,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       horizonte.destruir()
       cielo.destruir()
       vegetacion.destruir()
+      granjero.destruir()
       renderer.dispose()
       renderer.domElement.remove()
     },

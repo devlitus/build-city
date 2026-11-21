@@ -19,7 +19,11 @@ export function suavizarAltura(
   const rapidez = diferencia > 0 ? parametros.rapidezSubida : parametros.rapidezBajada
   const nuevo = actual + diferencia * (1 - Math.exp(-dt * rapidez))
   // Sigue entre `actual` y `objetivo`: el suelo menos la tolerancia nunca supera al objetivo.
-  return Math.max(nuevo, objetivo - parametros.tolerancia)
+  // Con las pinzas activas la independencia del fotograma es aproximada (acotada por las cotas).
+  return Math.min(
+    Math.max(nuevo, objetivo - parametros.tolerancia),
+    objetivo + parametros.flotacionMaxima,
+  )
 }
 
 export interface SeguidorAltura {

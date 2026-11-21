@@ -9,6 +9,7 @@ const P: ParametrosAltura = {
   rapidezBajada: 10,
   saltoMaximo: 5,
   tolerancia: 100,
+  flotacionMaxima: 100,
 }
 const metros = fc.double({ min: -50, max: 50, noNaN: true })
 
@@ -82,5 +83,31 @@ describe('suavizado de la altura del personaje', () => {
       const y = seguidor.actualizar(x, 0, 1 / 60)
       expect(y).toBeGreaterThanOrEqual(rampa(x) - PARAMETROS_ALTURA.tolerancia - 1e-9)
     }
+  })
+
+  it('al bajar una pendiente corriendo los pies no flotan más que la cota', () => {
+    for (const pendiente of [0.4, 0.6]) {
+      const rampa = (x: number) => 20 - pendiente * x
+      const seguidor = crearSeguidorAltura((x) => rampa(x), PARAMETROS_ALTURA)
+      let x = 0
+      seguidor.actualizar(x, 0, 1 / 60)
+      for (let i = 0; i < 300; i++) {
+        x += 7 / 60 // corriendo, 7 m/s
+        const y = seguidor.actualizar(x, 0, 1 / 60)
+        expect(y - rampa(x)).toBeLessThanOrEqual(PARAMETROS_ALTURA.flotacionMaxima + 1e-9)
+        expect(y - rampa(x)).toBeGreaterThanOrEqual(-PARAMETROS_ALTURA.tolerancia - 1e-9)
+      }
+    }
+  })
+
+  it('converge al objetivo desde cualquier altura (propiedad)', () => {
+    fc.assert(
+      fc.property(metros, fc.double({ min: -1, max: 1, noNaN: true }), (a, d) => {
+        const objetivo = a + d
+        let y = a
+        for (let i = 0; i < 600; i++) y = suavizarAltura(y, objetivo, 1 / 60, PARAMETROS_ALTURA)
+        expect(Math.abs(y - objetivo)).toBeLessThan(1e-6)
+      }),
+    )
   })
 })

@@ -1,0 +1,10 @@
+{
+  "altura": 1.75,
+  "velocidadAndar": 1.4,
+  "velocidadCorrer": 4,
+  "umbralParado": 0.1,
+  "suavizadoVelocidad": 8,
+  "tiempoFundido": 0.25,
+  "giro": { "velocidadAngular": 10, "velocidadMinima": 0.15 },
+  "ritmo": { "minimo": 0.6, "maximo": 1.6 }
+}

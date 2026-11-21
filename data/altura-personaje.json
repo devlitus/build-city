@@ -2,5 +2,6 @@
   "rapidezSubida": 16,
   "rapidezBajada": 9,
   "saltoMaximo": 1.5,
-  "tolerancia": 0.05
+  "tolerancia": 0.05,
+  "flotacionMaxima": 0.05
 }

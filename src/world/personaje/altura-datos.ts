@@ -13,6 +13,8 @@ export const esquemaAlturaPersonaje = v.object({
   saltoMaximo: estrictoPositivo,
   /** Cuánto (m) pueden quedar los pies por debajo del suelo antes de forzar la subida. */
   tolerancia: v.pipe(v.number(), v.minValue(0)),
+  /** Cuánto (m) pueden quedar los pies por encima del suelo al bajar una pendiente. */
+  flotacionMaxima: v.pipe(v.number(), v.minValue(0)),
 })
 
 export type ParametrosAltura = v.InferOutput<typeof esquemaAlturaPersonaje>
