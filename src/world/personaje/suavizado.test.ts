@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { cargarAlturaPersonaje, PARAMETROS_ALTURA, type ParametrosAltura } from './altura-datos'
 import { crearSeguidorAltura, suavizarAltura } from './altura'
 
-const P: ParametrosAltura = { rapidezSubida: 10, rapidezBajada: 10, saltoMaximo: 5, tolerancia: 0 }
+// Tolerancia enorme: desactiva el suelo mínimo para probar solo el acercamiento exponencial.
+const P: ParametrosAltura = {
+  rapidezSubida: 10,
+  rapidezBajada: 10,
+  saltoMaximo: 5,
+  tolerancia: 100,
+}
 const metros = fc.double({ min: -50, max: 50, noNaN: true })
 
 describe('suavizado de la altura del personaje', () => {
