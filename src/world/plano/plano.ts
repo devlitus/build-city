@@ -1,6 +1,7 @@
 import { Group, type Object3D, type PerspectiveCamera } from 'three'
 import type { LectorEstado } from '../../juego/almacen'
 import type { FuncionAltura } from '../terreno/altura'
+import { crearLindes } from './lindes'
 import { crearRejilla } from './rejilla'
 import { crearResaltadoParcela } from './resaltado'
 import { crearSeleccion, type BajoCursor } from './seleccion'
@@ -28,7 +29,8 @@ export function crearCapaPlano(
   const rejilla = crearRejilla(altura)
   const grupo = new Group()
   grupo.name = 'plano'
-  grupo.add(resaltado.objeto, rejilla.objeto)
+  const lindes = crearLindes(altura)
+  grupo.add(resaltado.objeto, rejilla.objeto, lindes.objeto)
   let firmaPropias: string | null = null
   /** Reconstruye la rejilla solo si cambian las parcelas propias (p. ej. al comprar). */
   const sincronizar = (): void => {
@@ -37,6 +39,7 @@ export function crearCapaPlano(
     if (firma === firmaPropias) return
     firmaPropias = firma
     rejilla.actualizar(v)
+    lindes.actualizar(v)
   }
   return {
     objeto: grupo,
@@ -58,6 +61,7 @@ export function crearCapaPlano(
       seleccion.destruir()
       resaltado.destruir()
       rejilla.destruir()
+      lindes.destruir()
     },
   }
 }
