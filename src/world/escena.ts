@@ -15,6 +15,7 @@ import { PARAMETROS_HORIZONTE } from './horizonte-parametros'
 import { añadirLuces } from './luces'
 import { crearAgua } from './agua'
 import { color } from './paleta'
+import { crearGranjero } from './personaje/modelo'
 import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
 import { ladoMetros } from './terreno/coordenadas'
@@ -70,6 +71,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   escena.add(agua)
   const vegetacion = crearVegetacion(valle, lector.estado.obstaculos, altura, semilla)
   escena.add(vegetacion.objeto)
+  const granjero = crearGranjero(lector, altura)
+  escena.add(granjero.objeto)
 
   const camara = new PerspectiveCamera(
     50,
@@ -103,6 +106,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       horizonte.actualizar(dt)
       agua.actualizar(dt)
       vegetacion.actualizar(dt, camara)
+      granjero.actualizar(dt)
       instanteAnterior = ahora
       renderer.render(escena, camara)
     },
@@ -111,6 +115,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       horizonte.destruir()
       cielo.destruir()
       vegetacion.destruir()
+      granjero.destruir()
       renderer.dispose()
       renderer.domElement.remove()
     },
