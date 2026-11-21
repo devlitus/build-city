@@ -108,6 +108,15 @@ export const EsquemaConfigPersonaje = v.strictObject({
 
 export type ConfigPersonaje = v.InferOutput<typeof EsquemaConfigPersonaje>
 
+export const EsquemaConfigHerramientas = v.strictObject({
+  /** Distancia máxima, en casillas, del personaje al centro de un obstáculo para apuntarlo. */
+  alcance: v.pipe(v.number(), v.finite(), v.minValue(0.5), v.maxValue(3)),
+  /** Apertura total del cono frontal, en grados. */
+  anguloCono: v.pipe(v.number(), v.finite(), v.minValue(10), v.maxValue(180)),
+})
+
+export type ConfigHerramientas = v.InferOutput<typeof EsquemaConfigHerramientas>
+
 /** Factor multiplicador estrictamente positivo. */
 const factorPositivo = v.pipe(
   v.number(),
@@ -363,6 +372,12 @@ export const EsquemaConfigRecursos = v.strictObject({
     golpes: cantidadPorTerreno(1),
     /** Piedra que da una roca picada, por terreno. */
     piedra: cantidadPorTerreno(0),
+  }),
+  tocon: v.strictObject({
+    /** Golpes de hacha que cuesta quitar el tocón que deja un árbol talado. */
+    golpes: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(100)),
+    /** Madera que da el tocón al quitarlo. */
+    madera: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
   }),
   planton: v.strictObject({
     /** Días que tarda un plantón en convertirse en árbol. */

@@ -5,11 +5,11 @@ import { siguienteAleatorio } from './rng'
 import type { Valle } from './valle'
 
 /**
- * Árbol, roca o plantón colocados en una casilla; bloquean el paso. Se talan y pican con el hacha
+ * Árbol, roca, plantón o tocón (lo que deja un árbol talado) colocados en una casilla; bloquean el paso. Se talan y pican con el hacha
  * y el pico (`recursos.ts`); el plantón es un árbol recién replantado que crece con los días.
  */
 export interface Decoracion {
-  readonly tipo: 'arbol' | 'roca' | 'planton'
+  readonly tipo: 'arbol' | 'roca' | 'planton' | 'tocon'
   /** Casilla global. */
   readonly x: number
   readonly y: number

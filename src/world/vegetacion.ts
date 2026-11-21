@@ -9,6 +9,7 @@ import {
   Float32BufferAttribute,
   InstancedMesh,
   Matrix4,
+  Mesh,
   MeshStandardMaterial,
   Quaternion,
   Vector3,
@@ -16,10 +17,12 @@ import {
   type Object3D,
 } from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import type { Obstaculo, Valle } from '../core'
+import { CONFIG_RECURSOS, type Obstaculo, type Valle } from '../core'
 import {
   celdasOcupadas,
+  claveCelda,
   clavesAgua,
+  crearFiltroPueblo,
   colocarObstaculos,
   dispersarBosque,
   matasDeTrozo,
@@ -36,6 +39,8 @@ import { celdasAgua } from './agua'
 import { color } from './paleta'
 import type { FuncionAltura } from './terreno/altura'
 import { rangoDeTrozo, type RangoMetros } from './terreno/trozos'
+import { obstaculosCambiaron } from './obstaculos-cambio'
+import { faseDePlanton } from './planton-fase'
 import { DATOS_VEGETACION, type DatosVegetacion } from './vegetacion-datos'
 
 /** Resultado de `crearVegetacion`: el objeto a añadir a la escena y su ciclo de vida. */
@@ -43,7 +48,30 @@ export interface Vegetacion {
   readonly objeto: Object3D
   /** Llamar una vez por fotograma. */
   actualizar(dt: number, camara: Camera): void
+  /**
+   * Pone al día los modelos de árboles, rocas y tocones con `estado.obstaculos` (talar, picar,
+   * plantar o crecer). `dia` es el día actual: fija la fase de crecimiento de cada plantón. Barato si nada visible cambió: se puede llamar en cada fotograma.
+   */
+  sincronizar(obstaculos: readonly Obstaculo[], dia: number): void
+  /**
+   * Oculta (o vuelve a mostrar) el árbol de la casilla (x, y) del núcleo, para que un efecto lo
+   * sustituya por una copia animada. No cambia el estado del juego.
+   */
+  ocultarArbol(x: number, y: number, oculto: boolean): void
+  /**
+   * Copia suelta de un árbol (mismo modelo y tono que el instanciado de esa `variante`), con la
+   * base en el origen; quien la pide la coloca. Comparte geometrías y es dueña de sus materiales
+   * (clones): hay que llamar a `liberar` al retirarla.
+   */
+  crearArbolSuelto(variante: number): ArbolSuelto
   destruir(): void
+}
+
+/** Copia de un árbol fuera de los lotes instanciados (ver `Vegetacion.crearArbolSuelto`). */
+export interface ArbolSuelto {
+  readonly objeto: Group
+  /** Quita el objeto de su padre y libera los materiales propios (las geometrías son compartidas). */
+  liberar(): void
 }
 
 const EJE_Y = new Vector3(0, 1, 0)
@@ -71,6 +99,11 @@ function sombra(tono: number, variacion: number): Color {
   return new Color(s, s, s)
 }
 
+/** Valor del rango en la posición `t` (0 a 1). */
+function mezcla(rango: { readonly min: number; readonly max: number }, t: number): number {
+  return rango.min + (rango.max - rango.min) * t
+}
+
 /** Une varias geometrías con los mismos atributos en una sola. */
 function unir(geometrias: BufferGeometry[]): BufferGeometry {
   const g = mergeGeometries(geometrias)
@@ -80,9 +113,10 @@ function unir(geometrias: BufferGeometry[]): BufferGeometry {
 }
 
 function geometriaTronco(d: DatosVegetacion['arbol']['tronco']): BufferGeometry {
-  const g = new CylinderGeometry(d.radio * 0.7, d.radio, d.alto + 0.2, d.lados)
-  // Base 0,1 m bajo el suelo para que no flote en las pendientes.
-  g.translate(0, (d.alto + 0.2) / 2 - 0.1, 0)
+  const alto = d.alto + d.extra
+  const g = new CylinderGeometry(d.radio * d.afilado, d.radio, alto, d.lados)
+  // Base bajo el suelo para que no flote en las pendientes.
+  g.translate(0, alto / 2 - d.hundimiento, 0)
   return g
 }
 
@@ -90,8 +124,8 @@ function geometriaCopaPino(d: DatosVegetacion['arbol']['pino']): BufferGeometry 
   const conos: BufferGeometry[] = []
   for (let i = 0; i < d.niveles; i++) {
     const t = i / d.niveles
-    const altoCono = (d.alto / d.niveles) * 1.6
-    const cono = new ConeGeometry(d.radio * (1 - t * 0.55), altoCono, d.lados)
+    const altoCono = (d.alto / d.niveles) * d.alargamiento
+    const cono = new ConeGeometry(d.radio * (1 - t * d.estrechamiento), altoCono, d.lados)
     cono.translate(0, d.inicioCopa + t * d.alto + altoCono / 2, 0)
     conos.push(cono)
   }
@@ -100,7 +134,7 @@ function geometriaCopaPino(d: DatosVegetacion['arbol']['pino']): BufferGeometry 
 
 function geometriaCopaRedonda(d: DatosVegetacion['arbol']['redondo']): BufferGeometry {
   const g = new IcosahedronGeometry(d.radio, d.detalle)
-  g.scale(1, 0.85, 1)
+  g.scale(1, d.achatamiento, 1)
   g.translate(0, d.centroCopa, 0)
   return g
 }
@@ -127,6 +161,14 @@ function geometriaRoca(d: DatosVegetacion['roca']): BufferGeometry {
   return g
 }
 
+/** Tocón: cilindro bajo con la base hundida para que no flote en las pendientes. */
+function geometriaTocon(d: DatosVegetacion['tocon']): BufferGeometry {
+  const alto = d.alto + d.hundimiento
+  const g = new CylinderGeometry(d.radio * d.afilado, d.radio, alto, d.lados)
+  g.translate(0, alto / 2 - d.hundimiento, 0)
+  return g
+}
+
 function material(nombre: string): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color: color(nombre),
@@ -142,6 +184,7 @@ interface Piezas {
   readonly pinoGeo: BufferGeometry
   readonly redondoGeo: BufferGeometry
   readonly rocaGeo: BufferGeometry
+  readonly toconGeo: BufferGeometry
   readonly troncoMat: MeshStandardMaterial
   readonly pinoMat: MeshStandardMaterial
   readonly redondoMat: MeshStandardMaterial
@@ -154,6 +197,7 @@ function crearPiezas(datos: DatosVegetacion): Piezas {
     pinoGeo: geometriaCopaPino(datos.arbol.pino),
     redondoGeo: geometriaCopaRedonda(datos.arbol.redondo),
     rocaGeo: geometriaRoca(datos.roca),
+    toconGeo: geometriaTocon(datos.tocon),
     troncoMat: material('maderaOscura'),
     pinoMat: material('pino'),
     redondoMat: material('copa'),
@@ -237,8 +281,8 @@ function geometriaMata(datos: DatosVegetacion['hierba']): BufferGeometry {
     const a = (i / datos.brotes) * Math.PI * 2 + hash(3, i, 1) * 0.6
     const cx = Math.cos(a)
     const cz = Math.sin(a)
-    const radio = 0.06 + hash(3, i, 2) * 0.06
-    const inclinacion = 0.12 + hash(3, i, 3) * 0.2
+    const radio = mezcla(datos.radioBrote, hash(3, i, 2))
+    const inclinacion = mezcla(datos.inclinacion, hash(3, i, 3))
     const mitad = datos.ancho / 2
     // Base: dos vértices a lo ancho de la tangente; punta: desplazada hacia fuera.
     posiciones.push(
@@ -334,15 +378,20 @@ function crearHierba(
   const { valle, semilla, altura, datos } = entorno
   const h = datos.hierba
   const trozos: TrozoHierba[] = []
+  // El filtro del pueblo es caro de crear: uno para todos los trozos.
+  const conFiltro: EntornoDispersion = {
+    ...entorno,
+    enPueblo: crearFiltroPueblo(valle, h.margenPueblo),
+  }
   for (const trozo of trozosDeHierba(valle, datos)) {
-    const matas = matasDeTrozo(trozo, entorno)
+    const matas = matasDeTrozo(trozo, conFiltro)
     if (matas.length === 0) continue
     const lote = new Lote()
     for (const m of matas) {
       const v = variacionDe(m.variante, semilla, h.alto)
-      const ancho = 0.8 + hash(semilla, m.variante * 1e6, 31) * 0.5
+      const ancho = mezcla(h.anchoMata, hash(semilla, m.variante * 1e6, 31))
       lote.añadir(
-        matriz(m.x, altura(m.x, m.z) - 0.03, m.z, v.giro, ancho, v.escala, ancho),
+        matriz(m.x, altura(m.x, m.z) - h.hundimiento, m.z, v.giro, ancho, v.escala, ancho),
         sombra(v.tono, h.variacionTono),
       )
     }
@@ -365,29 +414,105 @@ export function crearVegetacion(
   obstaculos: readonly Obstaculo[],
   altura: FuncionAltura,
   semilla: number,
+  dia = 1,
   datos: DatosVegetacion = DATOS_VEGETACION,
 ): Vegetacion {
   const piezas = crearPiezas(datos)
   const grupo = new Group()
   grupo.name = 'vegetacion'
 
-  const arboles = lotesArbol()
-  const rocas = new Lote()
-  for (const c of colocarObstaculos(valle, obstaculos)) {
-    const y = altura(c.x, c.z)
-    if (c.tipo === 'roca') {
-      const v = variacionDe(c.variante, semilla, datos.roca.escala)
-      const s = v.escala
-      const hundido = datos.roca.radio * datos.roca.achatamiento * s * datos.roca.hundimiento
-      rocas.añadir(
-        matriz(c.x, y + datos.roca.radio * datos.roca.achatamiento * s - hundido, c.z, v.giro, s),
-        sombra(v.tono, datos.roca.variacionTono),
+  /** Casillas (`claveCelda`) cuyo árbol se oculta mientras lo sustituye un efecto. */
+  const ocultos = new Set<number>()
+
+  /** Mallas de árboles, plantones, tocones y rocas del núcleo (se reconstruyen al sincronizar). */
+  const mallasDeObstaculos = (lista: readonly Obstaculo[], dia: number): InstancedMesh[] => {
+    const arboles = lotesArbol()
+    const fasesPlanton = datos.planton.escalas.map(lotesArbol)
+    const rocas = new Lote()
+    const tocones = new Lote()
+    colocarObstaculos(valle, lista).forEach((c, i) => {
+      const origen = lista[i]
+      if (
+        origen &&
+        (c.tipo === 'arbol' || c.tipo === 'planton') &&
+        ocultos.has(claveCelda(origen.x, origen.y))
       )
-    } else {
-      const v = variacionDe(c.variante, semilla, datos.arbol.escala)
-      const factor = c.tipo === 'planton' ? datos.planton.escala : 1
-      añadirArbol(arboles, c, y, v, semilla, datos.arbol, factor)
+        return
+      const y = altura(c.x, c.z)
+      if (c.tipo === 'tocon') {
+        const v = variacionDe(c.variante, semilla, datos.tocon.escala)
+        tocones.añadir(
+          matriz(c.x, y, c.z, v.giro, v.escala),
+          sombra(v.tono, datos.arbol.variacionTono),
+        )
+      } else if (c.tipo === 'roca') {
+        const v = variacionDe(c.variante, semilla, datos.roca.escala)
+        const s = v.escala
+        const hundido = datos.roca.radio * datos.roca.achatamiento * s * datos.roca.hundimiento
+        rocas.añadir(
+          matriz(c.x, y + datos.roca.radio * datos.roca.achatamiento * s - hundido, c.z, v.giro, s),
+          sombra(v.tono, datos.roca.variacionTono),
+        )
+      } else {
+        const v = variacionDe(c.variante, semilla, datos.arbol.escala)
+        if (c.tipo === 'planton') {
+          const fase = faseDeObstaculo(lista[i], dia)
+          const escala = datos.planton.escalas[fase] ?? 1
+          añadirArbol(fasesPlanton[fase] ?? arboles, c, y, v, semilla, datos.arbol, escala)
+        } else {
+          añadirArbol(arboles, c, y, v, semilla, datos.arbol)
+        }
+      }
+    })
+    const plantones = fasesPlanton.flatMap((l, f) =>
+      l.tronco.matrices.length === 0
+        ? []
+        : [
+            l.tronco.crear(`planton-${f}-tronco`, piezas.troncoGeo, piezas.troncoMat, true),
+            l.pino.crear(`planton-${f}-copa-pino`, piezas.pinoGeo, piezas.pinoMat, true),
+            l.redondo.crear(
+              `planton-${f}-copa-redonda`,
+              piezas.redondoGeo,
+              piezas.redondoMat,
+              true,
+            ),
+          ],
+    )
+    return [
+      ...plantones,
+      arboles.tronco.crear('arboles-tronco', piezas.troncoGeo, piezas.troncoMat, true),
+      arboles.pino.crear('arboles-copa-pino', piezas.pinoGeo, piezas.pinoMat, true),
+      arboles.redondo.crear('arboles-copa-redonda', piezas.redondoGeo, piezas.redondoMat, true),
+      tocones.crear('tocones', piezas.toconGeo, piezas.troncoMat, true),
+      rocas.crear('rocas', piezas.rocaGeo, piezas.rocaMat, true),
+    ]
+  }
+  /** Fase de crecimiento de un plantón según el día actual. */
+  const faseDeObstaculo = (o: Obstaculo | undefined, dia: number): number =>
+    faseDePlanton(
+      o?.diaPlantado,
+      dia,
+      CONFIG_RECURSOS.planton.diasCrecimiento,
+      datos.planton.escalas.length,
+    )
+  /** Fases de los plantones de la lista, en orden: si cambian hay que redibujar. */
+  const fasesDe = (lista: readonly Obstaculo[], dia: number): string =>
+    lista
+      .filter((o) => o.tipo === 'planton')
+      .map((o) => faseDeObstaculo(o, dia))
+      .join(',')
+  let mallasActuales = mallasDeObstaculos(obstaculos, dia)
+  let obstaculosDibujados = obstaculos
+  let fasesDibujadas = fasesDe(obstaculos, dia)
+  let diaDibujado = dia
+  const reconstruir = (): void => {
+    // Geometrías y materiales son compartidos: solo se liberan los búferes de instancias.
+    for (const m of mallasActuales) {
+      grupo.remove(m)
+      m.dispose()
     }
+    mallasActuales = mallasDeObstaculos(obstaculosDibujados, diaDibujado)
+    grupo.add(...mallasActuales)
   }
 
   const agua = clavesAgua(celdasAgua(valle, altura))
@@ -411,10 +536,7 @@ export function crearVegetacion(
     bosque.tronco.crear('bosque-tronco', piezas.troncoGeo, piezas.troncoMat, false),
     bosque.pino.crear('bosque-copa-pino', piezas.pinoGeo, piezas.pinoMat, false),
     bosque.redondo.crear('bosque-copa-redonda', piezas.redondoGeo, piezas.redondoMat, false),
-    arboles.tronco.crear('arboles-tronco', piezas.troncoGeo, piezas.troncoMat, true),
-    arboles.pino.crear('arboles-copa-pino', piezas.pinoGeo, piezas.pinoMat, true),
-    arboles.redondo.crear('arboles-copa-redonda', piezas.redondoGeo, piezas.redondoMat, true),
-    rocas.crear('rocas', piezas.rocaGeo, piezas.rocaMat, true),
+    ...mallasActuales,
   )
 
   const viento = datos.hierba.viento
@@ -445,11 +567,66 @@ export function crearVegetacion(
           alturaMaximaHierba,
         )
     },
+    sincronizar: (lista, diaActual) => {
+      const fases = fasesDe(lista, diaActual)
+      if (!obstaculosCambiaron(obstaculosDibujados, lista) && fases === fasesDibujadas) {
+        obstaculosDibujados = lista
+        return
+      }
+      obstaculosDibujados = lista
+      diaDibujado = diaActual
+      fasesDibujadas = fases
+      reconstruir()
+    },
+    ocultarArbol: (x, y, oculto) => {
+      const clave = claveCelda(x, y)
+      if (ocultos.has(clave) === oculto) return
+      if (oculto) ocultos.add(clave)
+      else ocultos.delete(clave)
+      reconstruir()
+    },
+    crearArbolSuelto: (variante) => {
+      const v = variacionDe(variante, semilla, datos.arbol.escala)
+      const gris = sombra(v.tono, datos.arbol.variacionTono)
+      const copaPino = tipoCopa(variante, semilla, datos.arbol) === 'pino'
+      const propios: MeshStandardMaterial[] = []
+      const pieza = (geo: BufferGeometry, base: MeshStandardMaterial): Mesh => {
+        const mat = base.clone()
+        mat.color.multiply(gris)
+        propios.push(mat)
+        const malla = new Mesh(geo, mat)
+        malla.castShadow = true
+        return malla
+      }
+      const objeto = new Group()
+      objeto.name = 'arbol-suelto'
+      objeto.add(
+        pieza(piezas.troncoGeo, piezas.troncoMat),
+        copaPino
+          ? pieza(piezas.pinoGeo, piezas.pinoMat)
+          : pieza(piezas.redondoGeo, piezas.redondoMat),
+      )
+      objeto.scale.setScalar(v.escala)
+      objeto.rotation.y = v.giro
+      return {
+        objeto,
+        liberar: () => {
+          objeto.removeFromParent()
+          for (const m of propios) m.dispose()
+        },
+      }
+    },
     destruir: () => {
       geometriaHierba.dispose()
       materialDeHierba.dispose()
       for (const hijo of grupo.children) (hijo as InstancedMesh).dispose()
-      for (const g of [piezas.troncoGeo, piezas.pinoGeo, piezas.redondoGeo, piezas.rocaGeo])
+      for (const g of [
+        piezas.troncoGeo,
+        piezas.pinoGeo,
+        piezas.redondoGeo,
+        piezas.rocaGeo,
+        piezas.toconGeo,
+      ])
         g.dispose()
       for (const m of [piezas.troncoMat, piezas.pinoMat, piezas.redondoMat, piezas.rocaMat])
         m.dispose()

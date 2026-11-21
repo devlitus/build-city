@@ -9,6 +9,10 @@
     "golpes": { "prado": 3, "bosque": 3, "rocoso": 5 },
     "piedra": { "prado": 3, "bosque": 3, "rocoso": 4 }
   },
+  "tocon": {
+    "golpes": 1,
+    "madera": 1
+  },
   "planton": {
     "diasCrecimiento": 4
   }

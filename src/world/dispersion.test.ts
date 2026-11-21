@@ -77,6 +77,9 @@ describe('obstáculos del núcleo', () => {
       // El río quita casillas, así que la densidad real no supera la de datos (con margen estadístico).
       expect(contar('arbol') / casillas).toBeLessThanOrEqual(dens.arbol * 1.4 + 0.01)
       expect(contar('roca') / casillas).toBeLessThanOrEqual(dens.roca * 1.4 + 0.01)
+      // Cota inferior: el río y los márgenes quitan casillas, pero no la mayoría de los obstáculos.
+      expect(contar('arbol') / casillas).toBeGreaterThanOrEqual(dens.arbol * 0.4)
+      expect(contar('roca') / casillas).toBeGreaterThanOrEqual(dens.roca * 0.4)
     }
     expect(lado).toBe(160)
   })
