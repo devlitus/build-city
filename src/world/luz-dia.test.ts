@@ -8,7 +8,11 @@ import {
   type LuzDelDia,
 } from './luz-dia'
 
-const claveNombrada = (n: string) => DATOS_LUZ.claves.find((c) => c.nombre === n)!
+const claveNombrada = (n: string): (typeof DATOS_LUZ.claves)[number] => {
+  const c = DATOS_LUZ.claves.find((k) => k.nombre === n)
+  if (!c) throw new Error(`Falta la clave ${n}`)
+  return c
+}
 
 /** Mayor diferencia por canal (0 a 1) entre dos colores 0xrrggbb. */
 function saltoColor(a: number, b: number): number {
