@@ -10,5 +10,14 @@
     "pausa": "Pausa",
     "velocidad": "x{velocidad}",
     "etiqueta": "Reloj del juego"
+  },
+  "herramientas": {
+    "etiqueta": "Barra de herramientas",
+    "azada": "Azada",
+    "regadera": "Regadera",
+    "semillas": "Semillas",
+    "mano": "Mano",
+    "hacha": "Hacha",
+    "pico": "Pico"
   }
 }

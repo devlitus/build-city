@@ -32,7 +32,6 @@ import {
 const TIPOS: readonly TipoEdificio[] = ['casa', 'caja-envio', 'cobertizo']
 const RICO = 1_000_000_000
 const MUCHO = { madera: 1_000_000, piedra: 1_000_000 }
-const M = CONFIG_PERSONAJE.tamanoCaja / 2
 const FIN = CONFIG_TIEMPO.horaFin
 const def = (t: TipoEdificio) => CONFIG_EDIFICIOS.edificios[t]
 
@@ -100,11 +99,18 @@ function alcanzablesPropio(e: EstadoJuego): Uint8Array {
   return vista
 }
 
-/** ¿La caja del personaje solo toca casillas alcanzables (y dentro del valle)? */
+/**
+ * ¿El círculo del personaje (M2-T01) solo solapa casillas alcanzables (y dentro del valle)?
+ * Mismo criterio que `circuloSolapaBloqueo`, pero contra la región alcanzable del oráculo.
+ */
 function cajaLibre(e: EstadoJuego, px: number, py: number): boolean {
   const vista = alcanzablesPropio(e)
-  for (let y = Math.floor(py - M); y <= Math.ceil(py + M) - 1; y++)
-    for (let x = Math.floor(px - M); x <= Math.ceil(px + M) - 1; x++) {
+  const r = CONFIG_PERSONAJE.radio
+  for (let y = Math.floor(py - r); y <= Math.floor(py + r); y++)
+    for (let x = Math.floor(px - r); x <= Math.floor(px + r); x++) {
+      const dx = px - Math.max(x, Math.min(px, x + 1))
+      const dy = py - Math.max(y, Math.min(py, y + 1))
+      if (dx * dx + dy * dy >= r * r) continue
       if (x < 0 || y < 0 || x >= LADO || y >= LADO) return false
       if (vista[y * LADO + x] !== 1) return false
     }
