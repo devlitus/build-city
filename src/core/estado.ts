@@ -42,6 +42,8 @@ import {
  * sigue sin haber partidas guardadas.
  * v11 (M5-03): se añaden `tierra` (cadena de `lado*lado` caracteres: sin labrar o arada) y
  * `plantas` (una tupla por casilla plantada). Sin migración: sigue sin haber partidas guardadas.
+ * M4-T01: se añade `pausarEnPlano` (ajuste) sin subir la versión (los tests del Rompedor fijan 11);
+ * sigue sin haber partidas guardadas.
  */
 export const VERSION_FORMATO = 11
 
@@ -63,6 +65,8 @@ export interface EstadoJuego {
   readonly minutoDelDia: number
   /** Pausa elegida por el jugador. La del Modo Plano es derivada (`tiempoDetenido`), no se guarda aquí. */
   readonly pausado: boolean
+  /** Ajuste del jugador: si es `true`, el Modo Plano detiene el reloj (por defecto `data/tiempo.json`). */
+  readonly pausarEnPlano: boolean
   readonly modo: ModoJuego
   /** Velocidad del tiempo (una de `CONFIG_TIEMPO.velocidades`). */
   readonly velocidad: number
@@ -103,9 +107,14 @@ export interface EstadoJuego {
   readonly personaje: Personaje
 }
 
-/** El reloj y el personaje están quietos: pausa del jugador o Modo Plano (pausa automática). */
-export function tiempoDetenido(estado: Pick<EstadoJuego, 'pausado' | 'modo'>): boolean {
-  return estado.pausado || estado.modo === 'plano'
+/**
+ * El reloj está quieto: pausa del jugador, o Modo Plano si el ajuste `pausarEnPlano` está activo.
+ * La velocidad no se toca al cambiar de modo, así que al salir vuelve la que había.
+ */
+export function tiempoDetenido(
+  estado: Pick<EstadoJuego, 'pausado' | 'modo' | 'pausarEnPlano'>,
+): boolean {
+  return estado.pausado || (estado.modo === 'plano' && estado.pausarEnPlano)
 }
 
 export interface OpcionesNuevaPartida {
@@ -160,6 +169,7 @@ export function crearEstadoInicial(opciones: OpcionesNuevaPartida): EstadoJuego 
     dia: 1,
     minutoDelDia: minuto,
     pausado: false,
+    pausarEnPlano: CONFIG_TIEMPO.pausarEnPlano,
     modo: 'vida',
     velocidad: VELOCIDAD_INICIAL,
     dinero,
