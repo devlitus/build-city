@@ -2,7 +2,7 @@ import type { ConfigPersonaje, ConfigValle } from './datos/esquemas'
 import { decorarValle, type Obstaculo } from './decoracion'
 import { casillasOcupadas, type Edificio } from './edificios'
 import { casillasRio, claveCasilla, generarVados } from './rio'
-import type { Valle } from './valle'
+import type { Parcela, Valle } from './valle'
 
 /** Río del valle: ancho del cauce y vados (claves de casilla globales, transitables). */
 export interface Cauce {
@@ -269,6 +269,48 @@ function reutilizable(datos: DatosMapa): MapaTransitabilidad | undefined {
     }
   }
   return u.mapa
+}
+
+/**
+ * Índice (en `valle.parcelas`) de la parcela que contiene el punto (x, z), en metros con el
+ * origen en el centro del valle (x al este, z al sur; 1 casilla = 1 m). Es la convención de la
+ * escena, pero la cuenta es pura. Se llama `...EnPunto` para no chocar con `parcelaEn(valle, fila, columna)`.
+ *
+ * Regla fija en las lindes: los intervalos son semiabiertos [inicio, fin). Un punto exactamente
+ * en la linde pertenece a la parcela del este/sur, y el borde este/sur del valle queda fuera.
+ * Devuelve `null` fuera del valle o con coordenadas no finitas.
+ */
+export function indiceParcelaEnPunto(valle: Valle, x: number, z: number): number | null {
+  const casilla = casillaEnPunto(valle, x, z)
+  if (!casilla) return null
+  const fila = Math.floor(casilla.y / valle.casillasPorParcela)
+  const columna = Math.floor(casilla.x / valle.casillasPorParcela)
+  return fila * valle.parcelasPorLado + columna
+}
+
+/** Parcela y su índice bajo el punto (x, z) en metros; ver `indiceParcelaEnPunto`. */
+export function parcelaEnPunto(
+  valle: Valle,
+  x: number,
+  z: number,
+): { readonly indice: number; readonly parcela: Parcela } | null {
+  const indice = indiceParcelaEnPunto(valle, x, z)
+  const parcela = indice === null ? undefined : valle.parcelas[indice]
+  return indice !== null && parcela ? { indice, parcela } : null
+}
+
+/** Casilla global (x al este, y al sur) que contiene el punto (x, z) en metros; `null` fuera del valle. */
+export function casillaEnPunto(
+  valle: Valle,
+  x: number,
+  z: number,
+): { readonly x: number; readonly y: number } | null {
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return null
+  const lado = ladoValle(valle)
+  const cx = Math.floor(x + lado / 2)
+  const cy = Math.floor(z + lado / 2)
+  if (cx < 0 || cy < 0 || cx >= lado || cy >= lado) return null
+  return { x: cx, y: cy }
 }
 
 /** Fuera del valle cuenta como bloqueado. Acepta casillas enteras. */
