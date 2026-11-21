@@ -19,7 +19,8 @@ import { color } from './paleta'
 import { crearGranjero } from './personaje/modelo'
 import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
-import { ladoMetros } from './terreno/coordenadas'
+import { crearSombras } from './sombras'
+import { casillaAMetros, ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
 
@@ -59,7 +60,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     PARAMETROS_HORIZONTE.niebla.cerca,
     PARAMETROS_HORIZONTE.niebla.lejos,
   )
-  const luzEscena = crearLuzEscena(escena, renderer, cielo, añadirLuces(escena, lado / 2))
+  const luces = añadirLuces(escena)
+  const luzEscena = crearLuzEscena(escena, renderer, cielo, luces)
+  const sombras = crearSombras(luces.sol)
   const horizonte = crearHorizonte(lado)
   let instanteAnterior = performance.now()
 
@@ -110,6 +113,11 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       granjero.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
+      // Provisional hasta T04: las sombras siguen al personaje; la cámara en tercera persona
+      // pasará aquí el punto que mira.
+      const p = lector.estado.personaje
+      const o = casillaAMetros(p.x - 0.5, p.y - 0.5, valle)
+      sombras.actualizar({ x: o.x, y: 0, z: o.z })
       renderer.render(escena, camara)
     },
     destruir: () => {
