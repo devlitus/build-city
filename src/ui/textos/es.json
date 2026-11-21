@@ -1,0 +1,46 @@
+{
+  "estacion": {
+    "primavera": "Primavera",
+    "verano": "Verano",
+    "otono": "Otoño",
+    "invierno": "Invierno"
+  },
+  "reloj": {
+    "fecha": "Día {dia} · {estacion} · Año {anio}",
+    "pausa": "Pausa",
+    "velocidad": "x{velocidad}",
+    "etiqueta": "Reloj del juego"
+  },
+  "energia": {
+    "etiqueta": "Energía del granjero",
+    "nombre": "Energía",
+    "valor": "{actual} / {maximo}"
+  },
+  "desmayo": {
+    "etiqueta": "Te has desmayado de cansancio"
+  },
+  "avisos": {
+    "plantonPerdido": "Mochila llena: el plantón se ha perdido.",
+    "inventarioLleno": "La mochila está llena."
+  },
+  "aviso": {
+    "talarArbol": "E — Talar árbol · {golpes} golpes",
+    "talarArbolUno": "E — Talar árbol · 1 golpe",
+    "picarRoca": "E — Picar roca",
+    "quitarTocon": "E — Quitar tocón",
+    "arrancarPlanton": "E — Arrancar plantón",
+    "cansancio": "Estás demasiado cansado",
+    "madera": "+{n} madera",
+    "piedra": "+{n} piedra",
+    "planton": "+{n} plantón"
+  },
+  "herramientas": {
+    "etiqueta": "Barra de herramientas",
+    "azada": "Azada",
+    "regadera": "Regadera",
+    "semillas": "Semillas",
+    "mano": "Mano",
+    "hacha": "Hacha",
+    "pico": "Pico"
+  }
+}

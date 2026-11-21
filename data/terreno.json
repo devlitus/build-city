@@ -1,0 +1,36 @@
+{
+  "nivelAgua": 0,
+  "alturaBase": 0.5,
+  "ruidoParcela": { "amplitud": 0.08, "longitudOnda": 14 },
+  "cauce": { "profundidad": 0.8, "bordeFondo": 0, "anchoOrilla": 0.3 },
+  "colinas": {
+    "altura": 16,
+    "anchoSubida": 40,
+    "amplitudRuido": 3,
+    "longitudOnda": 18,
+    "alturaMinima": 6
+  },
+  "malla": { "radioColinas": 100 },
+  "agua": {
+    "opacidad": 0.72,
+    "brillo": 0.1,
+    "rugosidad": 0.25,
+    "margen": 0.5,
+    "onda": {
+      "amplitud": 0.07,
+      "longitudOnda": 3.5,
+      "velocidad": 0.5,
+      "estiramientoZ": 0.8,
+      "armonicoFrecuencia": 1.7,
+      "armonicoVelocidad": 1.3,
+      "cruzadaVelocidad": 0.7
+    }
+  },
+  "colores": {
+    "alturaArena": 0.25,
+    "alturaRoca": 9,
+    "alturaNieve": 15,
+    "pendienteRoca": 0.9,
+    "variacion": 0.06
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "velocidadAndar": 4,
+  "velocidadCorrer": 7,
+  "radio": 0.3,
+  "tamanoCaja": 0.6,
+  "ladoPueblo": "sur",
+  "margenAparicion": 3,
+  "maxMsPorComando": 250
+}

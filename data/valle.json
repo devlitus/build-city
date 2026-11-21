@@ -1,0 +1,19 @@
+{
+  "parcelasPorLado": 8,
+  "casillasPorParcela": 20,
+  "pesosTerreno": { "prado": 5, "bosque": 3, "rocoso": 2 },
+  "pesosFertilidad": {
+    "prado": { "baja": 1, "media": 4, "alta": 4 },
+    "bosque": { "baja": 3, "media": 5, "alta": 2 },
+    "rocoso": { "baja": 7, "media": 3, "alta": 0.5 }
+  },
+  "pesosAguaSinRio": { "pozo": 2, "seca": 3 },
+  "probabilidadDesvioRio": 0.35,
+  "anchoRio": 5,
+  "densidadDecoracion": {
+    "prado": { "arbol": 0.01, "roca": 0.005 },
+    "bosque": { "arbol": 0.15, "roca": 0.01 },
+    "rocoso": { "arbol": 0.008, "roca": 0.06 }
+  },
+  "vados": { "min": 1, "max": 2, "grosor": 3 }
+}

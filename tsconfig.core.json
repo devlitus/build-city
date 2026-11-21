@@ -1,0 +1,16 @@
+{
+  "//": "El núcleo es lógica pura: sin DOM, sin navegador, sin three.js (ver ADR 0004). `paths` apunta three a un módulo que no compila para que importarlo falle en el compilador aunque @types/three esté instalado.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": [],
+    "jsx": "preserve",
+    "jsxImportSource": null,
+    "paths": {
+      "three": ["./tools/three-prohibido-en-core.ts"],
+      "three/*": ["./tools/three-prohibido-en-core.ts"]
+    }
+  },
+  "include": ["src/core"],
+  "exclude": ["src/core/**/*.test.ts"]
+}
