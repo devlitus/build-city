@@ -309,7 +309,8 @@ describe('comando y parcelaComprable no discrepan nunca', () => {
       ),
       { numRuns: 3000 },
     )
-  })
+    // Con el valle de 64 parcelas (M1-T01) cada estado es mayor: más que el tiempo por defecto.
+  }, 90_000)
 
   it('parcelaComprable es pura: misma entrada, misma salida; no muta nada', () => {
     fc.assert(
@@ -535,7 +536,7 @@ describe('caché de mapaTransitabilidad tras comprar', () => {
     const mover = (s: EstadoJuego) =>
       aplicarComando(s, { tipo: 'MoverPersonaje', dx: 1, dy: 0.3, ms: 400 }).estado.personaje
     let e = BASE
-    for (const i of [0, 1, 2, 6, 7]) e = ok(e, i)
+    for (const i of [0, 1, 2, N, N + 1]) e = ok(e, i)
     expect(mover(e)).toEqual(mover(BASE))
   })
 })

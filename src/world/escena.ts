@@ -1,34 +1,25 @@
 import {
-  BoxGeometry,
-  Color,
-  ConeGeometry,
+  ACESFilmicToneMapping,
   Fog,
-  IcosahedronGeometry,
-  Mesh,
   PCFShadowMap,
   PerspectiveCamera,
-  PlaneGeometry,
   Scene,
+  SRGBColorSpace,
   WebGLRenderer,
-  type BufferGeometry,
 } from 'three'
+import type { LectorEstado } from '../juego/almacen'
+import { crearCielo } from './cielo'
+import { DATOS_CIELO } from './cielo-datos'
+import { crearHorizonte } from './horizonte'
+import { PARAMETROS_HORIZONTE } from './horizonte-parametros'
 import { añadirLuces } from './luces'
-import { materialDe } from './materiales'
+import { crearAgua } from './agua'
 import { color } from './paleta'
-
-function objeto(
-  geometria: BufferGeometry,
-  colorMaterial: string,
-  x: number,
-  y: number,
-  z: number,
-): Mesh {
-  const malla = new Mesh(geometria, materialDe(colorMaterial))
-  malla.position.set(x, y, z)
-  malla.castShadow = true
-  malla.receiveShadow = true
-  return malla
-}
+import { crearPueblo } from './pueblo'
+import { crearAltura } from './terreno/altura'
+import { ladoMetros } from './terreno/coordenadas'
+import { crearTerreno } from './terreno/malla'
+import { crearVegetacion } from './vegetacion'
 
 export interface Escena {
   escena: Scene
@@ -39,10 +30,16 @@ export interface Escena {
   destruir(): void
 }
 
-/** Crea el lienzo three.js dentro del contenedor, con luces, objetos de prueba y redimensionado. */
-export function crearEscena(contenedor: HTMLElement): Escena {
+/** Crea el lienzo three.js dentro del contenedor, con luces, terreno y redimensionado. */
+export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Escena {
+  const { valle, semilla } = lector.estado
+  const lado = ladoMetros(valle)
+
   const renderer = new WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.outputColorSpace = SRGBColorSpace
+  renderer.toneMapping = ACESFilmicToneMapping
+  renderer.toneMappingExposure = DATOS_CIELO.exposicion
   renderer.shadowMap.enabled = true
   // three 0.187 retiró PCFSoftShadowMap; PCFShadowMap ya filtra suave.
   renderer.shadowMap.type = PCFShadowMap
@@ -50,22 +47,39 @@ export function crearEscena(contenedor: HTMLElement): Escena {
   contenedor.append(renderer.domElement)
 
   const escena = new Scene()
-  escena.background = new Color(color('cielo'))
-  escena.fog = new Fog(color('niebla'), 40, 120)
-  añadirLuces(escena)
+  // El cielo físico dibuja el fondo y, con su entorno PMREM, ilumina los materiales PBR.
+  const cielo = crearCielo(renderer)
+  escena.add(cielo.objeto)
+  escena.environment = cielo.entorno
+  escena.environmentIntensity = DATOS_CIELO.intensidadEntorno
+  escena.fog = new Fog(
+    color('niebla'),
+    PARAMETROS_HORIZONTE.niebla.cerca,
+    PARAMETROS_HORIZONTE.niebla.lejos,
+  )
+  añadirLuces(escena, lado / 2)
+  const horizonte = crearHorizonte(lado)
+  let instanteAnterior = performance.now()
 
-  const suelo = new Mesh(new PlaneGeometry(80, 80), materialDe('prado'))
-  suelo.rotation.x = -Math.PI / 2
-  suelo.receiveShadow = true
-  escena.add(suelo)
+  // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
+  escena.add(crearTerreno(valle, semilla))
+  escena.add(horizonte.objeto)
+  const altura = crearAltura(valle, semilla)
+  escena.add(crearPueblo(valle, altura))
+  const agua = crearAgua(valle, altura)
+  escena.add(agua)
+  const vegetacion = crearVegetacion(valle, lector.estado.obstaculos, altura, semilla)
+  escena.add(vegetacion.objeto)
 
-  escena.add(objeto(new BoxGeometry(3, 3, 3), 'teja', -5, 1.5, 0))
-  escena.add(objeto(new ConeGeometry(2, 4, 6), 'bosque', 0, 2, 0))
-  escena.add(objeto(new IcosahedronGeometry(1.8, 0), 'roca', 5, 1.8, 0))
-
-  const camara = new PerspectiveCamera(50, 1, 0.3, 300)
-  camara.position.set(0, 9, 18)
-  camara.lookAt(0, 1.5, 0)
+  const camara = new PerspectiveCamera(
+    50,
+    1,
+    0.3,
+    Math.max(lado * 6, PARAMETROS_HORIZONTE.niebla.lejos),
+  )
+  // Vista inicial: desde el sur y en alto, mirando al centro del valle.
+  camara.position.set(0, lado * 0.44, lado * 0.875)
+  camara.lookAt(0, 0, 0)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -84,10 +98,19 @@ export function crearEscena(contenedor: HTMLElement): Escena {
     camara,
     renderer,
     dibujar: () => {
+      const ahora = performance.now()
+      const dt = Math.min(0.1, (ahora - instanteAnterior) / 1000)
+      horizonte.actualizar(dt)
+      agua.actualizar(dt)
+      vegetacion.actualizar(dt, camara)
+      instanteAnterior = ahora
       renderer.render(escena, camara)
     },
     destruir: () => {
       observador.disconnect()
+      horizonte.destruir()
+      cielo.destruir()
+      vegetacion.destruir()
       renderer.dispose()
       renderer.domElement.remove()
     },

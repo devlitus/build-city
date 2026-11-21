@@ -12,14 +12,14 @@ import datos from '../../data/valle.json'
 const gen = (s: number) => generarValle(CONFIG_VALLE, s).valle
 
 describe('generación del valle', () => {
-  it('crea 6×6 parcelas de 16×16 desde data/valle.json', () => {
+  it('crea 8×8 parcelas de 20×20 desde data/valle.json', () => {
     const valle = gen(1)
-    expect(valle.parcelasPorLado).toBe(6)
-    expect(valle.casillasPorParcela).toBe(16)
-    expect(valle.parcelas).toHaveLength(36)
+    expect(valle.parcelasPorLado).toBe(8)
+    expect(valle.casillasPorParcela).toBe(20)
+    expect(valle.parcelas).toHaveLength(64)
     expect(valle.parcelas.every((p) => p.estado === 'en-venta')).toBe(true)
-    expect(parcelaEn(valle, 2, 3)).toBe(valle.parcelas[15])
-    expect(parcelaEn(valle, 6, 0)).toBeUndefined()
+    expect(parcelaEn(valle, 2, 3)).toBe(valle.parcelas[19])
+    expect(parcelaEn(valle, 8, 0)).toBeUndefined()
   })
 
   it('el estado inicial guarda el valle y avanza el RNG', () => {
@@ -71,8 +71,8 @@ describe('generación del valle', () => {
     for (const k of ['f:baja', 'f:media', 'f:alta', 'a:rio', 'a:pozo', 'a:seca']) {
       expect(frac(k)).toBeGreaterThan(0.05)
     }
-    expect(frac('a:rio')).toBeGreaterThan(0.15)
-    expect(frac('a:rio')).toBeLessThan(0.3)
+    expect(frac('a:rio')).toBeGreaterThan(0.1)
+    expect(frac('a:rio')).toBeLessThan(0.25)
   })
 
   it('el terreno rocoso tiende a fertilidad baja', () => {
@@ -96,7 +96,7 @@ describe('validación de data/valle.json', () => {
   })
 
   const invalidos: [string, unknown][] = [
-    ['tamaño no entero', { ...datos, parcelasPorLado: 6.5 }],
+    ['tamaño no entero', { ...datos, parcelasPorLado: 8.5 }],
     ['tamaño cero', { ...datos, casillasPorParcela: 0 }],
     ['peso negativo', { ...datos, pesosTerreno: { ...datos.pesosTerreno, prado: -1 } }],
     ['suma de pesos cero', { ...datos, pesosAguaSinRio: { pozo: 0, seca: 0 } }],

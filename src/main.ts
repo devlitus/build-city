@@ -9,8 +9,8 @@ const SEMILLA_PROVISIONAL = 1
 const contenedor = document.getElementById('juego')
 if (contenedor) {
   Object.assign(contenedor.style, { position: 'fixed', inset: '0' })
-  const { dibujar } = crearEscena(contenedor)
   const almacen = crearAlmacen(crearEstadoInicial({ semilla: SEMILLA_PROVISIONAL }))
+  const { dibujar, camara, renderer } = crearEscena(contenedor, almacen)
 
   let contarFps: (() => void) | undefined
   if (import.meta.env.DEV) {
@@ -19,9 +19,20 @@ if (contenedor) {
     })
   }
 
+  let actualizarCamaraLibre: ((dt: number) => void) | undefined
+  let ultimo = performance.now()
+  if (import.meta.env.DEV) {
+    void import('./world/camaras/depuracion').then((m) => {
+      actualizarCamaraLibre = m.crearCamaraDepuracion(camara, renderer.domElement).actualizar
+    })
+  }
+
   iniciarBucle({
     almacen,
     dibujar: () => {
+      const ahora = performance.now()
+      actualizarCamaraLibre?.((ahora - ultimo) / 1000)
+      ultimo = ahora
       dibujar()
       contarFps?.()
     },

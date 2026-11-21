@@ -4,6 +4,8 @@
   "bosque": "#6a9a4a",
   "roca": "#9a9583",
   "nieve": "#eef1f2",
+  "montana": "#7f8b76",
+  "nube": "#ffffff",
   "arena": "#d8c690",
   "lecho": "#7a8c6a",
   "tierra": "#7a4f33",
@@ -20,5 +22,9 @@
   "niebla": "#bcdcec",
   "luzSol": "#fff1d6",
   "hemisferioCielo": "#bcdcec",
-  "hemisferioSuelo": "#8a7a5a"
+  "hemisferioSuelo": "#8a7a5a",
+  "pino": "#3f7a48",
+  "copa": "#5f9a45",
+  "hierba": "#7fb04f",
+  "hierbaPunta": "#b4d36f"
 }

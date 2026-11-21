@@ -56,7 +56,7 @@ describe('buscarCamino (propiedades)', () => {
     )
   })
 
-  it('rendimiento: el peor caso del valle de 96x96 tarda menos de 5 ms', () => {
+  it('rendimiento: el peor caso del valle tarda menos de 5 ms por cada 96×96 casillas (presupuesto proporcional al área)', () => {
     const estado = crearEstadoInicial({ semilla: 42, dineroInicial: 0 })
     const mapa = mapaTransitabilidad(estado)
     const p = (c: number) => ({ x: (c % mapa.lado) + 0.5, y: Math.floor(c / mapa.lado) + 0.5 })
@@ -77,6 +77,7 @@ describe('buscarCamino (propiedades)', () => {
         peor = Math.max(peor, mejor)
       }
     }
-    expect(peor).toBeLessThan(5)
+    // 5 ms era el presupuesto para 96×96 casillas (M1-T01 pasa el valle a 160×160): crece con el área.
+    expect(peor).toBeLessThan(5 * (mapa.lado / 96) ** 2)
   })
 })

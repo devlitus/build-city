@@ -23,7 +23,7 @@ import { crecerPlantas, motivoNoRegar } from './riego'
 import { empezarDiaSiguiente } from './obras'
 import { ladoValle } from './mapa'
 
-const base = crearEstadoInicial({ semilla: 42 })
+const base = crearEstadoInicial({ semilla: 1 })
 const lado = ladoValle(base.valle)
 const sitio = (x: number, y: number) => y * lado + x
 

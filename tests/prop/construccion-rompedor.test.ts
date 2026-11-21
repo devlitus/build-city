@@ -209,10 +209,10 @@ const todas = SEMILLAS.map((s) =>
 /** Como `todas`, pero con solo 18 parcelas compradas (para que haya fronteras con ajenas). */
 const parciales = SEMILLAS.map((s) => {
   let e = crearEstadoInicial({ semilla: s, dineroInicial: RICO, materialesIniciales: MUCHO })
-  for (let vuelta = 0; vuelta < 36; vuelta++)
+  for (let vuelta = 0; vuelta < e.valle.parcelas.length; vuelta++)
     for (let i = 0; i < e.valle.parcelas.length; i++) {
       if (e.valle.parcelas.filter((p) => p.estado === 'propia').length >= 18) break
-      e = paso(e, { tipo: 'ComprarParcela', indice: (i * 7 + vuelta) % 36 })
+      e = paso(e, { tipo: 'ComprarParcela', indice: (i * 7 + vuelta) % e.valle.parcelas.length })
     }
   return plano(e)
 })
@@ -228,6 +228,14 @@ function base(i: number): EstadoJuego {
 }
 const LADO = ladoValle(base(0).valle)
 const C = base(0).valle.casillasPorParcela
+const PARCELAS = base(0).valle.parcelas.length
+/** La parcela de la aparición y las vecinas (antes 32, 33, 26, 27, 31 en el valle de 6×6). */
+const PARCELAS_APARICION = (() => {
+  const e = base(0)
+  const n = e.valle.parcelasPorLado
+  const ap = Math.floor(e.aparicion.y / C) * n + Math.floor(e.aparicion.x / C)
+  return [ap, ap + 1, ap - 1, ap - n, ap - n + 1].filter((i) => i >= 0 && i < PARCELAS)
+})()
 
 /** Base sin obstáculos, toda pintada de `zona` y con el personaje lejos (esquina 0.5,0.5 si no es agua). */
 function limpio(i: number, zona: Zona): EstadoJuego {
@@ -1079,7 +1087,10 @@ function comandoLargo(lado: number, c: number): fc.Arbitrary<unknown[]> {
       arbitrary: unico(
         fc.record({
           tipo: fc.constant('ComprarParcela'),
-          indice: fc.oneof(fc.integer({ min: 0, max: 35 }), fc.constantFrom(32, 33, 26, 27, 31)),
+          indice: fc.oneof(
+            fc.integer({ min: 0, max: PARCELAS - 1 }),
+            fc.constantFrom(...PARCELAS_APARICION),
+          ),
         }),
       ),
     },
@@ -1380,7 +1391,8 @@ describe('balance (medición)', () => {
       ].join('\n'),
     )
     expect(semillasConAlguna / N).toBeGreaterThan(0.5)
-  })
+    // Mide 200 valles de 8×8 parcelas de 20 (M1-T01): ~35 s, más que el tiempo por defecto.
+  }, 120_000)
 })
 
 /**

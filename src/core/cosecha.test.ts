@@ -21,7 +21,7 @@ import {
 import { ladoValle } from './mapa'
 import { empezarDiaSiguiente } from './obras'
 
-const base = crearEstadoInicial({ semilla: 42 })
+const base = crearEstadoInicial({ semilla: 1 })
 const lado = ladoValle(base.valle)
 const sitio = (x: number, y: number) => y * lado + x
 const SUELO = { x: 50, y: 51 }

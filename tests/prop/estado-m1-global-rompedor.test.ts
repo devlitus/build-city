@@ -58,6 +58,6 @@ describe('estado inicial con valle (M1)', () => {
     const e = crearEstadoInicial({ semilla: 42, dineroInicial: 0 })
     expect(e.versionFormato).toBe(VERSION_FORMATO)
     expect(VERSION_FORMATO).toBe(11)
-    expect(JSON.stringify(e).length).toBeLessThan(100_000) // M2-02: el estado incluye los obstáculos (máximo medido ~65 KB); muy por debajo de 1 MB
+    expect(JSON.stringify(e).length).toBeLessThan(250_000) // M2-02: el estado incluye los obstáculos; con el valle de 8×8 (M1-T01) mide ~150 KB, muy por debajo de 1 MB
   })
 })
