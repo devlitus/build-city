@@ -6,7 +6,7 @@
     "invierno": "Invierno"
   },
   "reloj": {
-    "fecha": "Día {dia} · {estacion} · Año {año}",
+    "fecha": "Día {dia} · {estacion} · Año {anio}",
     "pausa": "Pausa",
     "velocidad": "x{velocidad}",
     "etiqueta": "Reloj del juego"
