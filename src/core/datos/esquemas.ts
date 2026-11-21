@@ -108,6 +108,15 @@ export const EsquemaConfigPersonaje = v.strictObject({
 
 export type ConfigPersonaje = v.InferOutput<typeof EsquemaConfigPersonaje>
 
+export const EsquemaConfigHerramientas = v.strictObject({
+  /** Distancia máxima, en casillas, del personaje al centro de un obstáculo para apuntarlo. */
+  alcance: v.pipe(v.number(), v.finite(), v.minValue(0.5), v.maxValue(3)),
+  /** Apertura total del cono frontal, en grados. */
+  anguloCono: v.pipe(v.number(), v.finite(), v.minValue(10), v.maxValue(180)),
+})
+
+export type ConfigHerramientas = v.InferOutput<typeof EsquemaConfigHerramientas>
+
 /** Factor multiplicador estrictamente positivo. */
 const factorPositivo = v.pipe(
   v.number(),
