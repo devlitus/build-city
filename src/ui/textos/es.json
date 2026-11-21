@@ -10,5 +10,32 @@
     "pausa": "Pausa",
     "velocidad": "x{velocidad}",
     "etiqueta": "Reloj del juego"
+  },
+  "estado": {
+    "monedas": "Monedas"
+  },
+  "parcela": {
+    "titulo": "Parcela {fila}-{columna}",
+    "tipo": "Terreno",
+    "fertilidad": "Fertilidad",
+    "agua": "Agua",
+    "precio": "Precio",
+    "monedas": "{n} monedas",
+    "terreno": { "prado": "Prado", "bosque": "Bosque", "rocoso": "Rocoso" },
+    "nivel": { "baja": "Baja", "media": "Media", "alta": "Alta" },
+    "fuente": { "rio": "Río", "pozo": "Pozo", "seca": "Seca" },
+    "comprar": "Comprar",
+    "confirmar": "Confirmar",
+    "cancelar": "Cancelar",
+    "cerrar": "Cerrar",
+    "confirmarPregunta": "¿Comprar esta parcela por {precio}?",
+    "etiqueta": "Panel de parcela",
+    "motivo": {
+      "ya-propia": "Esta parcela ya es tuya.",
+      "no-adyacente": "Solo puedes comprar parcelas que toquen una tuya (en diagonal no vale).",
+      "fondos-insuficientes": "Te faltan {falta} monedas.",
+      "parametro-invalido": "Parcela no válida.",
+      "precio-invalido": "No se puede calcular el precio."
+    }
   }
 }

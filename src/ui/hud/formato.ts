@@ -27,7 +27,7 @@ export function textoFecha(estado: Pick<EstadoJuego, 'dia'>): string {
 
 /** "Pausa" si el tiempo está detenido; si no, "x1", "x2"... */
 export function textoVelocidad(
-  estado: Pick<EstadoJuego, 'pausado' | 'velocidad' | 'modo'>,
+  estado: Pick<EstadoJuego, 'pausado' | 'velocidad' | 'modo' | 'pausarEnPlano'>,
 ): string {
   return tiempoDetenido(estado)
     ? t('reloj.pausa')
@@ -50,6 +50,23 @@ export function vistaReloj(estado: EstadoJuego): VistaReloj {
     detenido: tiempoDetenido(estado),
   }
 }
+
+/** Entero con "." cada 3 cifras (1240 -> "1.240"); `toLocaleString('es-ES')` no agrupa 4 cifras. */
+export function formatearMonedas(n: number): string {
+  const entero = Math.trunc(n)
+  const digitos = String(Math.abs(entero)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return entero < 0 ? `-${digitos}` : digitos
+}
+
+export type DireccionCambio = 'sube' | 'baja' | 'igual'
+
+/** Hacia dónde ha cambiado el dinero (decide el color de la animación). */
+export function direccionCambio(anterior: number, actual: number): DireccionCambio {
+  return actual > anterior ? 'sube' : actual < anterior ? 'baja' : 'igual'
+}
+
+/** Duración visual (ms) del destello de las monedas al cambiar; el CSS usa el mismo valor. */
+export const DURACION_DESTELLO_MS = 500
 
 export function vistasIguales(a: VistaReloj, b: VistaReloj): boolean {
   return (

@@ -2,7 +2,7 @@
 export function crearContadorFps(contenedor: HTMLElement): () => void {
   const el = document.createElement('div')
   el.style.cssText =
-    'position:absolute;top:8px;right:8px;padding:2px 8px;font:12px monospace;' +
+    'position:absolute;bottom:8px;right:8px;padding:2px 8px;font:12px monospace;' +
     'color:#fff;background:rgba(0,0,0,.55);border-radius:4px;pointer-events:none;z-index:10'
   el.textContent = '-- fps'
   contenedor.append(el)

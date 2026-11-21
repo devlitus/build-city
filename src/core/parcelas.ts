@@ -49,3 +49,20 @@ export function parcelaComprable(
     return { comprable: false, motivo: 'fondos-insuficientes', precio }
   return { comprable: true, precio }
 }
+
+/**
+ * Índices de las parcelas que muestran el cartel «Se vende» en el mundo. Pura.
+ * Son las que la regla de adyacencia de `parcelaComprable` permite comprar, con independencia
+ * del dinero (una parcela adyacente sin fondos sigue «Se vende»). Mientras no hay propias,
+ * todas las parcelas en venta la cumplen (la primera compra es libre).
+ */
+export function indicesConCartel(
+  estado: Pick<EstadoJuego, 'valle' | 'comprasHechas' | 'dinero'>,
+): number[] {
+  const salida: number[] = []
+  for (let i = 0; i < estado.valle.parcelas.length; i++) {
+    const r = parcelaComprable(estado, i)
+    if (r.comprable || r.motivo === 'fondos-insuficientes') salida.push(i)
+  }
+  return salida
+}

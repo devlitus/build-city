@@ -122,6 +122,39 @@ describe('ComprarParcela', () => {
   })
 })
 
+describe('reglas de compra del plan (M4-T05)', () => {
+  it('la primera compra es libre de adyacencia', () => {
+    for (const i of [0, idx(0, N - 1), centro, N * N - 1]) expect(comprar(base, i).ok).toBe(true)
+  })
+
+  it('la segunda exige adyacencia', () => {
+    const e = ok(base, centro)
+    expect(comprar(e, idx(2, 3)).ok).toBe(true)
+    expect(comprar(e, idx(0, 0))).toMatchObject({ ok: false, error: 'no-adyacente' })
+  })
+
+  it('en diagonal no es adyacente', () => {
+    const e = ok(base, centro)
+    expect(comprar(e, idx(3, 3))).toMatchObject({ ok: false, error: 'no-adyacente' })
+  })
+
+  it('el dinero nunca queda negativo', () => {
+    let e: EstadoJuego = { ...base, dinero: 5000 }
+    for (const i of [centro, idx(2, 3), idx(2, 4), idx(3, 2), idx(1, 2), idx(3, 3), idx(1, 3)]) {
+      const r = comprar(e, i)
+      if (r.ok) e = r.estado
+      expect(e.dinero).toBeGreaterThanOrEqual(0)
+    }
+    expect(comprar({ ...base, dinero: 0 }, centro).ok).toBe(false)
+  })
+
+  it('comprar dos veces se rechaza', () => {
+    const e = ok(base, centro)
+    expect(comprar(e, centro)).toMatchObject({ ok: false, error: 'ya-propia' })
+    expect(e.comprasHechas).toBe(1)
+  })
+})
+
 describe('parcelaComprable', () => {
   it('incluye el precio en no-adyacente y fondos-insuficientes', () => {
     const e = ok(base, centro)

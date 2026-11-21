@@ -41,7 +41,7 @@ export interface ResultadoMinutos {
  * del estado (pura). Si el tiempo está detenido no avanza y el resto se conserva.
  */
 export function minutosDelPaso(
-  estado: Pick<EstadoJuego, 'pausado' | 'modo' | 'velocidad'>,
+  estado: Pick<EstadoJuego, 'pausado' | 'modo' | 'velocidad' | 'pausarEnPlano'>,
   dtMs: number,
   restoPrevio: number,
 ): ResultadoMinutos {
