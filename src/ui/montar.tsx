@@ -5,8 +5,10 @@ import { cargarPaleta, colorHex } from '../world/paleta'
 import { Reloj } from './hud/Reloj'
 import { Herramientas } from './hud/Herramientas'
 import { Avisos } from './hud/Avisos'
+import { Estado } from './hud/Estado'
+import { Desmayo } from './hud/Desmayo'
 
-const COLORES_UI = ['panel', 'texto', 'apagado', 'acento', 'linea'] as const
+const COLORES_UI = ['panel', 'texto', 'apagado', 'acento', 'linea', 'alerta'] as const
 
 /** Monta el HUD en `contenedor` (`#ui`). Los colores salen de la paleta como variables CSS. */
 export function montarUi(contenedor: HTMLElement, almacen: FuenteEstado): void {
@@ -21,6 +23,8 @@ export function montarUi(contenedor: HTMLElement, almacen: FuenteEstado): void {
       <Reloj almacen={almacen} />
       <Herramientas almacen={almacen} />
       <Avisos almacen={almacen} />
+      <Estado almacen={almacen} />
+      <Desmayo almacen={almacen} />
     </>,
     contenedor,
   )
