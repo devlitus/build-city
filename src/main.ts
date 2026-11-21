@@ -7,6 +7,7 @@ import {
   direccionRelativa,
   instalarEleccionHerramienta,
   instalarEntrada,
+  instalarUsoHerramienta,
 } from './juego/entrada'
 import { instalarTeclasTiempo } from './juego/tiempo'
 import { montarUi } from './ui/montar'
@@ -42,6 +43,11 @@ if (contenedor) {
 
   instalarTeclasTiempo(almacen)
   instalarEleccionHerramienta(almacen)
+  instalarUsoHerramienta(
+    almacen,
+    renderer.domElement,
+    () => document.pointerLockElement === renderer.domElement,
+  )
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)
   const ui = document.getElementById('ui')

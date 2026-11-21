@@ -165,7 +165,7 @@ describe('reglas de la herramienta', () => {
     // La madera y la piedra van a los materiales, que no tienen capacidad: nunca se pierden.
     const piedra = golpear(
       { ...con('pico', { ...roca, golpes: 1 }), inventario: llena() },
-      CONFIG_RECURSOS.roca.golpes.prado,
+      CONFIG_RECURSOS.roca.golpes[terrenoDeCasilla(limpio, 49, 50) as 'prado'],
       49,
       50,
     ).estado

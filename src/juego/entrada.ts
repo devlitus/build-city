@@ -1,5 +1,6 @@
-import type { Comando } from '../core'
+import type { Comando, EstadoJuego } from '../core'
 import { HERRAMIENTAS, type Herramienta } from '../core/inventario'
+import { objetivoDelante } from '../core/objetivo'
 import type { Almacen } from './almacen'
 
 /** Teclas de movimiento pulsadas. Es un objeto mutable: `instalarEntrada` lo rellena. */
@@ -159,5 +160,57 @@ export function instalarEleccionHerramienta(
   return () => {
     objetivo.removeEventListener('keydown', alPulsar)
     objetivo.removeEventListener('wheel', alRodar)
+  }
+}
+
+type ComandoUsar = Extract<Comando, { tipo: 'UsarHerramienta' }>
+
+/**
+ * Tecla o clic -> `UsarHerramienta` (pura): la casilla sale de `objetivoDelante`. **E** siempre
+ * usa la herramienta; el **clic izquierdo** solo con el ratón capturado (*pointer lock*): sin
+ * captura el clic sirve para capturarlo (cámara). Con Alt/Ctrl/Meta no hace nada.
+ */
+export function comandoUsarHerramienta(
+  entrada:
+    | Pick<KeyboardEvent, 'code' | 'altKey' | 'ctrlKey' | 'metaKey'>
+    | Pick<MouseEvent, 'button' | 'altKey' | 'ctrlKey' | 'metaKey'>,
+  ratonCapturado: boolean,
+  estado: Pick<EstadoJuego, 'obstaculos' | 'personaje'>,
+): ComandoUsar | undefined {
+  if (entrada.altKey || entrada.ctrlKey || entrada.metaKey) return undefined
+  const usa = 'code' in entrada ? entrada.code === 'KeyE' : entrada.button === 0 && ratonCapturado
+  if (!usa) return undefined
+  const { personaje } = estado
+  const objetivo = objetivoDelante(personaje, personaje.orientacion, estado)
+  return { tipo: 'UsarHerramienta', x: objetivo.x, y: objetivo.y }
+}
+
+/**
+ * Instala E (en `objetivo`) y el clic izquierdo (en `lienzo`) para usar la herramienta. Solo
+ * envía el comando por el almacén. Devuelve la función que quita los oyentes.
+ */
+export function instalarUsoHerramienta(
+  almacen: Pick<Almacen, 'estado' | 'despachar'>,
+  lienzo: Pick<HTMLElement, 'addEventListener' | 'removeEventListener'>,
+  ratonCapturado: () => boolean,
+  objetivo: Pick<Window, 'addEventListener' | 'removeEventListener'> = window,
+): () => void {
+  const alPulsar = (e: KeyboardEvent): void => {
+    if (e.repeat || enCampoDeTexto(e.target)) return
+    const comando = comandoUsarHerramienta(e, ratonCapturado(), almacen.estado)
+    if (!comando) return
+    e.preventDefault()
+    almacen.despachar(comando)
+  }
+  // `mousedown`: el clic que captura el ratón (aún sin captura) no golpea; los siguientes sí.
+  const alPulsarRaton = (e: MouseEvent): void => {
+    const comando = comandoUsarHerramienta(e, ratonCapturado(), almacen.estado)
+    if (comando) almacen.despachar(comando)
+  }
+  objetivo.addEventListener('keydown', alPulsar)
+  lienzo.addEventListener('mousedown', alPulsarRaton)
+  return () => {
+    objetivo.removeEventListener('keydown', alPulsar)
+    lienzo.removeEventListener('mousedown', alPulsarRaton)
   }
 }
