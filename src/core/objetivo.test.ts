@@ -11,11 +11,18 @@ const con = (...obstaculos: Obstaculo[]) => ({ obstaculos })
 const P = { x: 10.5, y: 10.5 }
 
 describe('objetivoDelante', () => {
-  it('elige el más cercano', () => {
-    const lejos = arbol(10, 12)
-    const cerca = arbol(10, 11)
-    const r = objetivoDelante(P, 'sur', con(lejos, cerca), { alcance: 3, anguloCono: 90 })
-    expect(r).toMatchObject({ tipo: 'obstaculo', x: 10, y: 11, obstaculo: cerca })
+  it('elige el más cercano, sea cual sea el orden de la lista', () => {
+    const pos = { x: 10.5, y: 10.2 }
+    const cerca = arbol(10, 11) // centro (10.5, 11.5): distancia 1.3
+    const lejos = arbol(11, 11) // centro (11.5, 11.5): distancia ~1.64
+    const cfg = { alcance: 3, anguloCono: 180 }
+    for (const lista of [
+      [cerca, lejos],
+      [lejos, cerca],
+    ]) {
+      const r = objetivoDelante(pos, 'sur', con(...lista), cfg)
+      expect(r).toMatchObject({ tipo: 'obstaculo', x: 10, y: 11, obstaculo: cerca })
+    }
   })
 
   it('ignora lo que está detrás', () => {
@@ -24,7 +31,9 @@ describe('objetivoDelante', () => {
   })
 
   it('ignora lo que está fuera de alcance', () => {
-    const r = objetivoDelante(P, 'sur', con(arbol(10, 13)), { alcance: 1.6, anguloCono: 100 })
+    // El vecino está en el área 3x3 y en el cono, pero a 1.45 > alcance 1.2.
+    const pos = { x: 10.5, y: 10.05 }
+    const r = objetivoDelante(pos, 'sur', con(arbol(10, 11)), { alcance: 1.2, anguloCono: 100 })
     expect(r).toEqual({ tipo: 'casilla', x: 10, y: 11 })
   })
 
