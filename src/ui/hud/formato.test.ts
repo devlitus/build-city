@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { crearEstadoInicial } from '../../core'
 import { t } from '../textos'
 import {
+  direccionCambio,
   formatearHora,
   formatearMonedas,
   nombreEstacion,
@@ -61,6 +62,14 @@ describe('monedas del HUD', () => {
     expect(formatearMonedas(999)).toBe('999')
     expect(formatearMonedas(1_000_000)).toBe('1.000.000')
     expect(formatearMonedas(-1240)).toBe('-1.240')
+  })
+})
+
+describe('direccionCambio', () => {
+  it('indica si el dinero sube, baja o no cambia', () => {
+    expect(direccionCambio(100, 150)).toBe('sube')
+    expect(direccionCambio(150, 100)).toBe('baja')
+    expect(direccionCambio(100, 100)).toBe('igual')
   })
 })
 

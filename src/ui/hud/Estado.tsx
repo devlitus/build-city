@@ -1,23 +1,38 @@
 import { useEffect, useState } from 'preact/hooks'
 import type { FuenteEstado } from '../fuente'
 import { t } from '../textos'
-import { formatearMonedas } from './formato'
+import {
+  DURACION_DESTELLO_MS,
+  direccionCambio,
+  formatearMonedas,
+  type DireccionCambio,
+} from './formato'
+
+/** Destello breve: el color vuelve al de reposo. Colores = variables `--ui-*` de la paleta. */
+const ESTILOS = `
+@keyframes destello-sube { from { color: var(--ui-sube); transform: scale(1.12); } to { color: var(--ui-acento); transform: scale(1); } }
+@keyframes destello-baja { from { color: var(--ui-baja); transform: scale(0.92); } to { color: var(--ui-acento); transform: scale(1); } }
+`
 
 /**
- * Monedas del jugador (arriba a la derecha). Se re-renderiza al cambiar el estado y lee
- * `estado.dinero` directamente en cada render: no guarda copia que pueda desincronizarse.
+ * Monedas del jugador (arriba a la derecha). Lee `estado.dinero` directamente en cada render:
+ * no guarda copia del valor, solo la dirección del último cambio para el destello.
  */
 export function Estado({ almacen }: { readonly almacen: FuenteEstado }) {
-  const [, forzar] = useState(0)
+  // `cambio.id` cambia en cada variación para reiniciar la animación CSS (clave del span).
+  const [cambio, setCambio] = useState<{ dir: DireccionCambio; id: number }>({
+    dir: 'igual',
+    id: 0,
+  })
 
   useEffect(() => {
     let previo = almacen.estado.dinero
     return almacen.suscribir(() => {
       const actual = almacen.estado.dinero
-      if (actual !== previo) {
-        previo = actual
-        forzar((n) => n + 1)
-      }
+      if (actual === previo) return
+      const dir = direccionCambio(previo, actual)
+      previo = actual
+      setCambio((c) => ({ dir, id: c.id + 1 }))
     })
   }, [almacen])
 
@@ -45,7 +60,21 @@ export function Estado({ almacen }: { readonly almacen: FuenteEstado }) {
         userSelect: 'none',
       }}
     >
-      <span style={{ color: 'var(--ui-acento)' }}>{formatearMonedas(almacen.estado.dinero)}</span>
+      <style>{ESTILOS}</style>
+      <span
+        key={cambio.id}
+        style={{
+          display: 'inline-block',
+          transformOrigin: 'right center',
+          color: 'var(--ui-acento)',
+          animation:
+            cambio.dir === 'igual'
+              ? undefined
+              : `destello-${cambio.dir} ${DURACION_DESTELLO_MS}ms ease-out`,
+        }}
+      >
+        {formatearMonedas(almacen.estado.dinero)}
+      </span>
     </div>
   )
 }

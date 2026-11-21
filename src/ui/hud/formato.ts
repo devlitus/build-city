@@ -58,6 +58,16 @@ export function formatearMonedas(n: number): string {
   return entero < 0 ? `-${digitos}` : digitos
 }
 
+export type DireccionCambio = 'sube' | 'baja' | 'igual'
+
+/** Hacia dónde ha cambiado el dinero (decide el color de la animación). */
+export function direccionCambio(anterior: number, actual: number): DireccionCambio {
+  return actual > anterior ? 'sube' : actual < anterior ? 'baja' : 'igual'
+}
+
+/** Duración visual (ms) del destello de las monedas al cambiar; el CSS usa el mismo valor. */
+export const DURACION_DESTELLO_MS = 500
+
 export function vistasIguales(a: VistaReloj, b: VistaReloj): boolean {
   return (
     a.hora === b.hora &&
