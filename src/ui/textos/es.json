@@ -11,6 +11,14 @@
     "velocidad": "x{velocidad}",
     "etiqueta": "Reloj del juego"
   },
+  "energia": {
+    "etiqueta": "Energía del granjero",
+    "nombre": "Energía",
+    "valor": "{actual} / {maximo}"
+  },
+  "desmayo": {
+    "etiqueta": "Te has desmayado de cansancio"
+  },
   "avisos": {
     "plantonPerdido": "Mochila llena: el plantón se ha perdido.",
     "inventarioLleno": "La mochila está llena."
