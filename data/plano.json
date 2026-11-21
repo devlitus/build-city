@@ -1,0 +1,10 @@
+{
+  "rejilla": { "opacidad": 0.35, "separacion": 0.08 },
+  "lindes": {
+    "opacidadOtras": 0.55,
+    "opacidadPropias": 1,
+    "separacion": 0.18,
+    "pasoMuestreo": 0.5
+  },
+  "desaturacion": { "cantidad": 0.3, "duracionTransicion": 0.4 }
+}
