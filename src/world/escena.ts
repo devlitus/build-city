@@ -24,6 +24,7 @@ import { crearTerceraPersona } from './camaras/tercera-persona'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
+import { crearCapaPlano } from './plano/plano'
 
 export interface Escena {
   escena: Scene
@@ -80,7 +81,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   let instanteAnterior = performance.now()
 
   // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
-  escena.add(crearTerreno(valle, semilla))
+  const terreno = crearTerreno(valle, semilla)
+  escena.add(terreno)
   escena.add(horizonte.objeto)
   const altura = crearAltura(valle, semilla)
   escena.add(crearPueblo(valle, altura))
@@ -99,6 +101,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   )
   // La pose real la fija la cámara en tercera persona en cada fotograma.
   const terceraPersona = crearTerceraPersona(camara, renderer.domElement, altura)
+
+  const plano = crearCapaPlano(lector, camara, renderer.domElement, terreno, altura)
+  escena.add(plano.objeto)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -130,6 +135,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       // Antes que la vegetación, que usa la cámara ya colocada.
       const mirado = terceraPersona.actualizar(dt, pies)
       vegetacion.actualizar(dt, camara)
+      plano.actualizar()
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -138,6 +144,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
     },
     destruir: () => {
       terceraPersona.destruir()
+      plano.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
