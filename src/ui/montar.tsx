@@ -5,6 +5,7 @@ import { cargarPaleta, colorHex } from '../world/paleta'
 import { Reloj } from './hud/Reloj'
 import { Herramientas } from './hud/Herramientas'
 import { Avisos } from './hud/Avisos'
+import { Aviso } from './hud/Aviso'
 
 const COLORES_UI = ['panel', 'texto', 'apagado', 'acento', 'linea'] as const
 
@@ -21,6 +22,7 @@ export function montarUi(contenedor: HTMLElement, almacen: FuenteEstado): void {
       <Reloj almacen={almacen} />
       <Herramientas almacen={almacen} />
       <Avisos almacen={almacen} />
+      <Aviso almacen={almacen} />
     </>,
     contenedor,
   )
