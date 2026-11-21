@@ -27,7 +27,7 @@ export function textoFecha(estado: Pick<EstadoJuego, 'dia'>): string {
 
 /** "Pausa" si el tiempo está detenido; si no, "x1", "x2"... */
 export function textoVelocidad(
-  estado: Pick<EstadoJuego, 'pausado' | 'velocidad' | 'modo'>,
+  estado: Pick<EstadoJuego, 'pausado' | 'velocidad' | 'modo' | 'pausarEnPlano'>,
 ): string {
   return tiempoDetenido(estado)
     ? t('reloj.pausa')
