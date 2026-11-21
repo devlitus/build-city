@@ -7,8 +7,8 @@
     "mieDireccional": 0.85,
     "escala": 450000
   },
-  "exposicion": 0.9,
-  "intensidadSol": 3.2,
-  "intensidadHemisferio": 0.35,
-  "intensidadEntorno": 0.8
+  "exposicion": 0.55,
+  "intensidadSol": 2.2,
+  "intensidadHemisferio": 0.1,
+  "intensidadEntorno": 0.25
 }

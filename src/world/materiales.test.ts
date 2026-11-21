@@ -8,6 +8,8 @@ import {
   CATALOGO_MATERIALES,
   escalaRepeticion,
   esquemaMateriales,
+  hexARgb,
+  srgbALineal,
   tinteSobreTextura,
 } from './materiales-datos'
 import { paletaJuego } from './paleta'
@@ -78,6 +80,23 @@ describe('catálogo de materiales', () => {
     const t = f.material('terreno')
     expect(t.vertexColors).toBe(true)
     expect(t.map).toBe(m.map)
+  })
+
+  it('el tinte por vértice sale en lineal y, por el color medio de la textura, da el color de paleta', () => {
+    const f = fabrica()
+    const objetivo = hexARgb('#8fbf5c')
+    const media = hexARgb(CATALOGO_MATERIALES.materiales['terreno']?.colorMedio ?? '#000000')
+    const tinte = f.tinteDeVertice('terreno', objetivo)
+    for (let c = 0; c < 3; c++) {
+      expect((tinte[c] ?? 0) * srgbALineal(media[c] ?? 0)).toBeCloseTo(
+        srgbALineal(objetivo[c] ?? 0),
+        8,
+      )
+    }
+    // Sin textura, el tinte es el propio color convertido a lineal (no el sRGB tal cual).
+    const plano = f.tinteDeVertice('crema', objetivo)
+    expect(plano[1]).toBeCloseTo(srgbALineal(objetivo[1]), 10)
+    expect(plano[1]).toBeLessThan(objetivo[1])
   })
 
   it('el tinte reproduce el color objetivo sobre la textura', () => {
