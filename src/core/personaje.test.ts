@@ -15,7 +15,8 @@ describe('MoverPersonaje: velocidades', () => {
   it('andar y correr usan sus velocidades', () => {
     const e = libre(42)
     const paso = (corre: boolean | undefined) => {
-      const r = aplicarComando(e, { tipo: 'MoverPersonaje', dx: 0, dy: -1, ms: 200, corre })
+      const base = { tipo: 'MoverPersonaje', dx: 0, dy: -1, ms: 200 } as const
+      const r = aplicarComando(e, corre === undefined ? base : { ...base, corre })
       if (!r.ok) throw new Error(r.error)
       return e.personaje.y - r.estado.personaje.y
     }
