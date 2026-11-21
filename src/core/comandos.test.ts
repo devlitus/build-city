@@ -254,7 +254,7 @@ describe('CambiarModo (M2-05)', () => {
   it('tiempoDetenido: pausa o Plano', () => {
     expect(tiempoDetenido(inicial)).toBe(false)
     expect(tiempoDetenido(plano)).toBe(true)
-    expect(tiempoDetenido({ pausado: true, modo: 'vida' })).toBe(true)
-    expect(tiempoDetenido({ pausado: true, modo: 'plano' })).toBe(true)
+    expect(tiempoDetenido({ pausado: true, modo: 'vida', pausarEnPlano: true })).toBe(true)
+    expect(tiempoDetenido({ pausado: true, modo: 'plano', pausarEnPlano: true })).toBe(true)
   })
 })
