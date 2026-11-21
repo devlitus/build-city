@@ -39,5 +39,7 @@
   "uiTexto": "#efe8d4",
   "uiApagado": "#a9ad9a",
   "uiAcento": "#f0c27a",
-  "uiLinea": "#313a2b"
+  "uiLinea": "#313a2b",
+  "uiSube": "#8fd16f",
+  "uiBaja": "#e07a5f"
 }

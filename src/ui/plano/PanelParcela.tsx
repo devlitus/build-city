@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'preact/hooks'
 import type { CanalSeleccionParcela } from '../../juego/seleccion-parcela'
 import type { FuenteDespacho } from '../fuente'
+import { formatearMonedas } from '../hud/formato'
 import { t } from '../textos'
 import { datosPanelParcela } from './panel-parcela'
 
-const monedas = (n: number) => t('parcela.monedas', { n: n.toLocaleString('es-ES') })
+const monedas = (n: number) => t('parcela.monedas', { n: formatearMonedas(n) })
 
 const estiloBoton = (activo: boolean) => ({
   padding: '6px 12px',
@@ -72,7 +73,7 @@ export function PanelParcela({
       aria-label={t('parcela.etiqueta')}
       style={{
         position: 'fixed',
-        top: '14px',
+        top: '72px',
         right: '14px',
         width: '260px',
         padding: '12px 14px',
@@ -105,7 +106,7 @@ export function PanelParcela({
       )}
       {d.motivo !== undefined && (
         <div style={{ marginTop: '6px', color: 'var(--ui-apagado)' }}>
-          {t(`parcela.motivo.${d.motivo}`, { falta: d.falta.toLocaleString('es-ES') })}
+          {t(`parcela.motivo.${d.motivo}`, { falta: formatearMonedas(d.falta) })}
         </div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>

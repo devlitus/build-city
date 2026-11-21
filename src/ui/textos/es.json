@@ -11,6 +11,9 @@
     "velocidad": "x{velocidad}",
     "etiqueta": "Reloj del juego"
   },
+  "estado": {
+    "monedas": "Monedas"
+  },
   "parcela": {
     "titulo": "Parcela {fila}-{columna}",
     "tipo": "Terreno",
