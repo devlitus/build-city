@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 import {
   aplicarComando,
-  casillaBloqueada,
+  circuloSolapaBloqueo,
   casillasRio,
   claveCasilla,
   CONFIG_PERSONAJE,
@@ -19,16 +19,10 @@ const M = CONFIG_PERSONAJE.tamanoCaja / 2
 const ini = (semilla: number, configValle?: ConfigValle): EstadoJuego =>
   crearEstadoInicial({ semilla, dineroInicial: 0, ...(configValle ? { configValle } : {}) })
 
+/** El personaje es un círculo (M2-T01): no solapa ninguna casilla bloqueada. */
 function cajaLibre(e: EstadoJuego): boolean {
-  const mapa = mapaTransitabilidad(e)
   const { x, y } = e.personaje
-  const esquinas = [
-    [x - M, y - M],
-    [x + M - 1e-9, y - M],
-    [x - M, y + M - 1e-9],
-    [x + M - 1e-9, y + M - 1e-9],
-  ] as const
-  return esquinas.every(([a, b]) => !casillaBloqueada(mapa, Math.floor(a), Math.floor(b)))
+  return !circuloSolapaBloqueo(mapaTransitabilidad(e), x, y, CONFIG_PERSONAJE.radio)
 }
 
 function mover(e: EstadoJuego, dx: number, dy: number, ms: number): EstadoJuego {
@@ -184,7 +178,7 @@ describe('rompedor M2-02: colisiones', () => {
           const e = ini(9)
           const f = mover(e, dx, dy, ms)
           const d = Math.hypot(f.personaje.x - e.personaje.x, f.personaje.y - e.personaje.y)
-          const tope = (CONFIG_PERSONAJE.velocidadCasillasPorSegundo * Math.min(ms, 250)) / 1000
+          const tope = (CONFIG_PERSONAJE.velocidadAndar * Math.min(ms, 250)) / 1000
           return d <= tope + 1e-9
         },
       ),

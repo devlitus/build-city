@@ -90,8 +90,12 @@ export const EsquemaConfigTiempo = v.pipe(
 export type ConfigTiempo = v.InferOutput<typeof EsquemaConfigTiempo>
 
 export const EsquemaConfigPersonaje = v.strictObject({
-  /** Velocidad al andar en recto, en casillas por segundo. */
-  velocidadCasillasPorSegundo: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(30)),
+  /** Velocidad al andar en recto, en metros (casillas) por segundo. */
+  velocidadAndar: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(30)),
+  /** Velocidad al correr, en metros (casillas) por segundo. */
+  velocidadCorrer: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(30)),
+  /** Radio del círculo de colisión del personaje, en casillas (< 0,5 para caber por pasillos de una). */
+  radio: v.pipe(v.number(), v.finite(), v.minValue(0.05), v.maxValue(0.475)),
   /** Lado de la caja de colisión (cuadrada), en casillas; < 1 para caber por pasillos de una casilla. */
   tamanoCaja: v.pipe(v.number(), v.minValue(0.1), v.maxValue(0.95)),
   /** Lado del valle donde está el pueblo: allí aparece el personaje (la entrada del valle). */

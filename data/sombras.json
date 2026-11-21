@@ -1,0 +1,8 @@
+{
+  "semiancho": 35,
+  "mapa": 2048,
+  "near": 1,
+  "far": 160,
+  "bias": -0.0004,
+  "normalBias": 0.05
+}

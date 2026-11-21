@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { avanzarAcumulador, minutosDelPaso } from './bucle'
+import { alfaDelAcumulador, avanzarAcumulador, minutosDelPaso } from './bucle'
 import { CONFIG_BUCLE } from './config-bucle'
 
 describe('avanzarAcumulador', () => {
@@ -51,5 +51,14 @@ describe('minutosDelPaso', () => {
 
   it('en Modo Plano no avanza', () => {
     expect(minutosDelPaso({ ...base, modo: 'plano' }, 60_000, 0).minutos).toBe(0)
+  })
+})
+
+describe('alfaDelAcumulador', () => {
+  it('es la fracción del paso fijo transcurrida, acotada a [0, 1]', () => {
+    expect(alfaDelAcumulador(0, 50)).toBe(0)
+    expect(alfaDelAcumulador(20, 50)).toBeCloseTo(0.4, 9)
+    expect(alfaDelAcumulador(80, 50)).toBe(1)
+    expect(alfaDelAcumulador(Number.NaN, 50)).toBe(1)
   })
 })

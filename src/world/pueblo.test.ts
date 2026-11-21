@@ -34,7 +34,7 @@ describe('datos del pueblo', () => {
   it('la plaza está a menos de 1 minuto andando del centro', () => {
     const c = centroPlaza(valle)
     const distancia = Math.hypot(c.x, c.z)
-    expect(distancia).toBeLessThanOrEqual(personajeJson.velocidadCasillasPorSegundo * 60)
+    expect(distancia).toBeLessThanOrEqual(personajeJson.velocidadAndar * 60)
   })
 
   it('el primer edificio está a 80 m o menos del borde sur', () => {
