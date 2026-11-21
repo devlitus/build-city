@@ -16,6 +16,8 @@ import {
   HERRAMIENTAS,
   ladoValle,
   mapaTransitabilidad,
+  personajeAlDespertar,
+  personajeEnAparicion,
   comprobarDormir,
   comprobarUsarHerramienta,
   type Comando,
@@ -233,6 +235,32 @@ describe('Dormir', () => {
 })
 
 describe('desmayo y energía', () => {
+  it('el desmayo reduce la energía inicial del día siguiente', () => {
+    const r = aplicarComando(con(limpio, { minutoDelDia: 1560, energia: 100 }), {
+      tipo: 'AvanzarTiempo',
+      minutos: 1,
+    })
+    expect(r.estado.energia).toBeLessThan(ENERGIA_MAXIMA)
+    expect(r.estado.energia).toBe(ENERGIA_TRAS_DESMAYO)
+  })
+
+  it('tras el desmayo el personaje queda en el punto de despertar (la aparición sin casa)', () => {
+    const lejos = con(limpio, {
+      minutoDelDia: 1560,
+      personaje: { x: 10.5, y: 10.5, orientacion: 'norte' },
+    })
+    const r = aplicarComando(lejos, { tipo: 'AvanzarTiempo', minutos: 1 })
+    expect(r.estado.personaje).toEqual(personajeEnAparicion(limpio.aparicion))
+    expect(r.estado.personaje).toEqual(personajeAlDespertar(lejos))
+  })
+
+  it('con casa terminada despierta junto a su puerta', () => {
+    const c = conCasa(con(limpio, { minutoDelDia: 1560 }))
+    const r = aplicarComando(c, { tipo: 'AvanzarTiempo', minutos: 1 })
+    expect(r.estado.personaje).toEqual(personajeAlDespertar(r.estado))
+    expect(r.estado.personaje).not.toEqual(personajeEnAparicion(c.aparicion))
+  })
+
   it('a las 02:00 deja la energía en el 50 % del máximo, también si había más', () => {
     for (const energia of [0, 10, 100]) {
       const r = aplicarComando(con(limpio, { minutoDelDia: 1560, energia }), {
