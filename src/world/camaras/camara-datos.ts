@@ -31,11 +31,39 @@ export const esquemaCamara = v.pipe(
     rapidezSeguimiento: estrictoPositivo,
     /** Distancia mínima (m) entre la cámara y el terreno bajo ella. */
     margenTerreno: v.pipe(v.number(), v.minValue(0)),
+    /** Duración (s) de la transición de cámara entre Vida y Plano. */
+    transicionDuracion: estrictoPositivo,
+    /** Cámara orbital del Modo Plano (comparte `sensibilidad` y `pasoZoom`). */
+    plano: v.object({
+      inclinacion: v.object({
+        min: v.pipe(v.number(), v.minValue(0), v.maxValue(medioPi)),
+        max: v.pipe(v.number(), v.minValue(0), v.maxValue(medioPi)),
+        inicial: v.number(),
+      }),
+      distancia: v.object({
+        inicial: estrictoPositivo,
+        min: estrictoPositivo,
+        max: estrictoPositivo,
+      }),
+    }),
   }),
   v.check((c) => c.inclinacion.min < c.inclinacion.max, 'inclinacion.min debe ser menor que max'),
   v.check(
     (c) => c.inclinacion.inicial >= c.inclinacion.min && c.inclinacion.inicial <= c.inclinacion.max,
     'inclinacion.inicial fuera de los límites',
+  ),
+  v.check(
+    (c) =>
+      c.plano.inclinacion.min < c.plano.inclinacion.max &&
+      c.plano.inclinacion.inicial >= c.plano.inclinacion.min &&
+      c.plano.inclinacion.inicial <= c.plano.inclinacion.max,
+    'plano.inclinacion inválida',
+  ),
+  v.check(
+    (c) =>
+      c.plano.distancia.min <= c.plano.distancia.inicial &&
+      c.plano.distancia.inicial <= c.plano.distancia.max,
+    'plano.distancia.inicial fuera de [min, max]',
   ),
   v.check(
     (c) => c.distancia.min <= c.distancia.inicial && c.distancia.inicial <= c.distancia.max,

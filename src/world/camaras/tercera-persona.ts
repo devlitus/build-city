@@ -1,6 +1,7 @@
 import type { PerspectiveCamera } from 'three'
 import type { FuncionAltura } from '../terreno/altura'
 import { DATOS_CAMARA, type DatosCamara } from './camara-datos'
+import type { Pose } from './transicion'
 import {
   acercar,
   alturaMinimaCamara,
@@ -26,6 +27,8 @@ export interface TerceraPersona {
    * que mira (con su altura real), que usan las sombras.
    */
   actualizar(dt: number, pies: Punto3): Punto3
+  /** Pose (posición y punto mirado) calculada en la última `actualizar`, aunque esté deshabilitada. */
+  readonly pose: Pose
   destruir(): void
 }
 
@@ -47,6 +50,7 @@ export function crearTerceraPersona(
   let arrastrando = false
   let movido = false
   let seguido: Punto3 | null = null
+  let ultimaPose: Pose = { posicion: { x: 0, y: 0, z: 0 }, objetivo: { x: 0, y: 0, z: 0 } }
 
   const bloqueado = (): boolean => document.pointerLockElement === elemento
   const girar = (dx: number, dy: number): void => {
@@ -133,12 +137,16 @@ export function crearTerceraPersona(
           }
         : pies
       const mirado = puntoHombro(seguido, yaw, datos.alturaHombro, datos.desplazamientoLateral)
-      if (!habilitada) return mirado
       const p = posicionOrbita(mirado, yaw, inclinacion, distancia)
       const y = alturaMinimaCamara(p.y, altura(p.x, p.z), datos.margenTerreno)
+      ultimaPose = { posicion: { x: p.x, y, z: p.z }, objetivo: mirado }
+      if (!habilitada) return mirado
       camara.position.set(p.x, y, p.z)
       camara.lookAt(mirado.x, mirado.y, mirado.z)
       return mirado
+    },
+    get pose() {
+      return ultimaPose
     },
     destruir() {
       habilitada = false
