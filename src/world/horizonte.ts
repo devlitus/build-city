@@ -8,11 +8,11 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
-  MeshStandardMaterial,
   Quaternion,
   Vector3,
   type Object3D,
 } from 'three'
+import { materialDe } from './materiales'
 import { color } from './paleta'
 import { PARAMETROS_HORIZONTE, type ParametrosHorizonte } from './horizonte-parametros'
 import { hashEnteros, ruidoValor } from './terreno/ruido'
@@ -77,34 +77,27 @@ function crearAnillo(radioInterior: number, p: ParametrosHorizonte): Mesh {
       indices.push(a, c, b, b, c, d)
     }
   }
-  const indexada = new BufferGeometry()
-  indexada.setAttribute('position', new BufferAttribute(pos, 3))
-  indexada.setIndex(indices)
-  const g = indexada.toNonIndexed()
-  indexada.dispose()
+  // Geometría indexada: los vértices se comparten y las normales salen suaves.
+  const g = new BufferGeometry()
+  g.setAttribute('position', new BufferAttribute(pos, 3))
+  g.setIndex(indices)
 
-  const posiciones = g.getAttribute('position')
-  const colores = new Float32Array(posiciones.count * 3)
+  // Color por vértice según la altura: roca abajo, nieve por encima del umbral.
+  const colores = new Float32Array(na * (nr + 1) * 3)
   const roca = new Color(color('montana'))
   const rocaAlta = new Color(color('roca'))
   const nieve = new Color(color('nieve'))
   const c = new Color()
   const limiteNieve = p.alturaPicos * p.umbralNieve
-  for (let f = 0; f < posiciones.count; f += 3) {
-    const hm = (posiciones.getY(f) + posiciones.getY(f + 1) + posiciones.getY(f + 2)) / 3
-    if (hm >= limiteNieve) c.copy(nieve)
-    else c.copy(roca).lerp(rocaAlta, Math.min(1, Math.max(0, hm / limiteNieve)))
-    for (let v = 0; v < 3; v++) c.toArray(colores, (f + v) * 3)
+  for (let k = 0; k < na * (nr + 1); k++) {
+    const h = pos[k * 3 + 1] ?? 0
+    if (h >= limiteNieve) c.copy(nieve)
+    else c.copy(roca).lerp(rocaAlta, Math.min(1, Math.max(0, h / limiteNieve)))
+    c.toArray(colores, k * 3)
   }
   g.setAttribute('color', new BufferAttribute(colores, 3))
   g.computeVertexNormals()
-  const material = new MeshStandardMaterial({
-    vertexColors: true,
-    flatShading: true,
-    roughness: 1,
-    metalness: 0,
-  })
-  return new Mesh(g, material)
+  return new Mesh(g, materialDe('montana'))
 }
 
 /** Nubes: una `InstancedMesh` cuyas instancias avanzan hacia +x y reaparecen por el otro lado. */
@@ -113,13 +106,11 @@ function crearNubes(p: ParametrosHorizonte): {
   actualizar(dt: number): void
 } {
   const n = p.nubes
-  const material = new MeshStandardMaterial({
-    color: color('nube'),
-    flatShading: true,
-    roughness: 1,
-    metalness: 0,
-  })
-  const malla = new InstancedMesh(new IcosahedronGeometry(1, 1), material, Math.max(1, n.cantidad))
+  const malla = new InstancedMesh(
+    new IcosahedronGeometry(1, 1),
+    materialDe('nube'),
+    Math.max(1, n.cantidad),
+  )
   malla.count = n.cantidad
   malla.instanceMatrix.setUsage(DynamicDrawUsage)
   malla.frustumCulled = false
@@ -195,10 +186,9 @@ export function crearHorizonte(
     objeto: grupo,
     actualizar: nubes.actualizar,
     destruir() {
+      // Los materiales son del catálogo (compartidos): solo se liberan las geometrías.
       anillo.geometry.dispose()
-      ;(anillo.material as MeshStandardMaterial).dispose()
       nubes.malla.geometry.dispose()
-      ;(nubes.malla.material as MeshStandardMaterial).dispose()
       nubes.malla.dispose()
     },
   }
