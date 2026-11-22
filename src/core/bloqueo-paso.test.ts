@@ -90,9 +90,10 @@ describe('bloquea-paso', () => {
   it('cuatro cajas alrededor de la aparición: la última la encierra y se rechaza', () => {
     let e = aparte(abierto())
     const { x, y } = ap(e)
+    // La caja mide 2×1: la de la izquierda se ancla dos casillas antes para tocar la aparición.
     for (const [dx, dy] of [
       [1, 0],
-      [-1, 0],
+      [-2, 0],
       [0, 1],
     ] as const) {
       expect(motivo(e, 'caja-envio', x + dx, y + dy)).toBe('valida')
@@ -110,7 +111,7 @@ describe('bloquea-paso', () => {
     const px = a.x + 6
     const py = a.y
     e = { ...e, personaje: { ...e.personaje, x: px + 0.5, y: py + 0.5 } }
-    e = caja(e, px - 1, py)
+    e = caja(e, px - 2, py)
     e = caja(e, px + 1, py)
     e = caja(e, px, py - 1)
     expect(motivo(e, 'caja-envio', px, py + 1)).toBe('bloquea-paso')
@@ -130,9 +131,13 @@ describe('bloquea-paso', () => {
   it('una huella que ocupa la propia casilla de la bolsa no cuenta como perdida', () => {
     const e0 = abierto()
     const { x, y, dx, dy } = esquina(e0)
-    const e = { ...e0, obstaculos: [{ x: x + dx, y, tipo: 'roca' as const, variante: 0 }] }
-    expect(motivo(e, 'caja-envio', x, y)).toBe('valida')
-    expect(motivo(e, 'caja-envio', x, y + dy)).toBe('bloquea-paso')
+    // La caja mide 2×1 (eje x): la roca va en vertical y la única salida de la bolsa es la
+    // casilla horizontal. `ancla(c)` da la x de una caja que cubre la casilla `c` y la siguiente
+    // alejándose de la esquina.
+    const ancla = (c: number) => (dx > 0 ? c : c + dx)
+    const e = { ...e0, obstaculos: [{ x, y: y + dy, tipo: 'roca' as const, variante: 0 }] }
+    expect(motivo(e, 'caja-envio', ancla(x), y)).toBe('valida')
+    expect(motivo(e, 'caja-envio', ancla(x + dx), y)).toBe('bloquea-paso')
   })
 
   it('mover: ignorarId quita antes el edificio; deja de encerrar o pasaría a encerrar', () => {
@@ -175,7 +180,7 @@ describe('bloquea-paso', () => {
     const { x, y } = ap(e)
     for (const [dx, dy] of [
       [1, 0],
-      [-1, 0],
+      [-2, 0],
       [0, 1],
     ] as const) {
       e = caja(e, x + dx, y + dy)
@@ -215,8 +220,8 @@ describe('unico-ya-existe en segunda posición', () => {
       tipo: 'PintarZona',
       x0: hx,
       y0: hy,
-      x1: hx + 5,
-      y1: hy + 5,
+      x1: hx + 6,
+      y1: hy + 4,
       zona: 'vivienda',
     })
     e = ok(e, { tipo: 'Construir', tipoEdificio: 'casa', x: hx, y: hy })

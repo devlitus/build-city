@@ -11,6 +11,7 @@
     "alturaMinima": 6
   },
   "malla": { "radioColinas": 100 },
+  "zocalo": { "margen": 0.15, "colorPaleta": "piedra", "voladizo": 0.05 },
   "agua": {
     "opacidad": 0.72,
     "brillo": 0.1,

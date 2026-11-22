@@ -62,7 +62,7 @@ const S = sitioCasa(limpio)
 const casa = (obra: Edificio['obra']): Edificio => ({ id: 1, tipo: 'casa', x: S.x, y: S.y, obra })
 const conCasa = (e: EstadoJuego, terminada = true): EstadoJuego =>
   con(e, { edificios: [casa(terminada ? null : { diaInicio: 1, diaFin: 5 })] })
-const puerta = { x: S.x + 2, y: S.y + 3 }
+const puerta = { x: S.x + 3, y: S.y + 5 }
 const en = (e: EstadoJuego, x: number, y: number): EstadoJuego =>
   con(e, { personaje: { x: x + 0.5, y: y + 0.5, orientacion: 'sur' } })
 const aparicion = { x: Math.floor(base.aparicion.x), y: Math.floor(base.aparicion.y) }
@@ -181,6 +181,19 @@ describe('Dormir', () => {
       expect(comprobarDormir(en(c, puerta.x + dx, puerta.y + dy))).toBeUndefined()
     }
     expect(comprobarDormir(en(c, puerta.x + 2, puerta.y))).toBe('lejos-de-la-cama')
+  })
+  it('sin casa, con la tienda terminada la cama es la puerta de la tienda (M5-T02)', () => {
+    const tienda: Edificio = { id: 1, tipo: 'tienda', x: S.x, y: S.y, obra: null }
+    const t = con(limpio, { edificios: [tienda] })
+    const puertaTienda = { x: S.x + 1, y: S.y + 3 }
+    expect(casillaDeCama(t)).toEqual(puertaTienda)
+    expect(comprobarDormir(en(t, puertaTienda.x, puertaTienda.y))).toBeUndefined()
+    expect(comprobarDormir(en(t, puertaTienda.x + 1, puertaTienda.y + 1))).toBeUndefined()
+    expect(comprobarDormir(en(t, puertaTienda.x + 2, puertaTienda.y))).toBe('lejos-de-la-cama')
+    expect(comprobarDormir(en(t, aparicion.x, aparicion.y))).toBe('lejos-de-la-cama')
+    const r = ejecutar(en(t, puertaTienda.x, puertaTienda.y), { tipo: 'Dormir' })
+    expect(r.ok).toBe(true)
+    expect(r.estado.personaje).toMatchObject({ x: puertaTienda.x + 0.5, y: puertaTienda.y + 0.5 })
   })
   it('una casa en obra no cuenta: la cama sigue siendo la aparición', () => {
     expect(casillaDeCama(conCasa(limpio, false))).toEqual(aparicion)

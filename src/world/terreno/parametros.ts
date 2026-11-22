@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { paletaJuego } from '../paleta'
 import terrenoJson from '../../../data/terreno.json'
 
 const positivo = v.pipe(v.number(), v.minValue(0))
@@ -25,6 +26,14 @@ export const esquemaTerreno = v.pipe(
     malla: v.object({
       /** Metros de colinas dibujados más allá del borde del valle (se redondea a trozos enteros). */
       radioColinas: positivo,
+    }),
+    zocalo: v.object({
+      /** Metros que el zócalo baja por debajo del punto más bajo del terreno de la huella. */
+      margen: positivo,
+      /** Nombre del color de `data/paleta.json` del zócalo. */
+      colorPaleta: v.pipe(v.string(), v.minLength(1)),
+      /** Metros que el zócalo sobresale de la huella por cada lado. */
+      voladizo: positivo,
     }),
     agua: v.object({
       /** Opacidad de la superficie (0 a 1). */
@@ -75,6 +84,10 @@ export const esquemaTerreno = v.pipe(
   v.check(
     (t) => t.alturaBase + t.ruidoParcela.amplitud - t.cauce.profundidad < t.nivelAgua,
     'El fondo del cauce debe quedar por debajo del nivel del agua',
+  ),
+  v.check(
+    (t) => Object.hasOwn(paletaJuego, t.zocalo.colorPaleta),
+    'zocalo.colorPaleta debe existir en data/paleta.json',
   ),
 )
 

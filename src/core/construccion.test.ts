@@ -12,6 +12,8 @@ import {
   EsquemaConfigEdificios,
   ladoValle,
   mapaTransitabilidad,
+  casillasOcupadas,
+  huellaDe,
   MOTIVOS_COLOCACION,
   moverPersonaje,
   VERSION_FORMATO,
@@ -20,6 +22,7 @@ import {
   type EstadoJuego,
   type MotivoColocacion,
   type Personaje,
+  type Rotacion,
   type TipoEdificio,
 } from './index'
 import { casillasRio } from './rio'
@@ -88,8 +91,8 @@ describe('catálogo de edificios (data/edificios.json)', () => {
     expect(reembolsoDemolicion).toBe(0.5)
     expect(CONFIG_EDIFICIOS.redondeoReembolso).toBe('abajo')
     expect(ed.casa).toMatchObject({
-      ancho: 4,
-      alto: 3,
+      ancho: 7,
+      alto: 5,
       zonas: ['vivienda'],
       coste: { dinero: 0, madera: 0, piedra: 0 },
       dias: 3,
@@ -97,7 +100,7 @@ describe('catálogo de edificios (data/edificios.json)', () => {
       demolible: false,
     })
     expect(ed['caja-envio']).toMatchObject({
-      ancho: 1,
+      ancho: 2,
       alto: 1,
       coste: { dinero: 50, madera: 20, piedra: 0 },
       dias: 1,
@@ -106,8 +109,8 @@ describe('catálogo de edificios (data/edificios.json)', () => {
     })
     expect(ed['caja-envio'].zonas).toEqual(['vivienda', 'almacen'])
     expect(ed.cobertizo).toMatchObject({
-      ancho: 3,
-      alto: 2,
+      ancho: 4,
+      alto: 3,
       zonas: ['almacen'],
       coste: { dinero: 300, madera: 50, piedra: 10 },
       dias: 2,
@@ -140,7 +143,20 @@ describe('catálogo de edificios (data/edificios.json)', () => {
     ['demolible ausente', (o) => delete o.edificios.casa.demolible],
     ['falta un tipo', (o) => Reflect.deleteProperty(o.edificios, 'cobertizo')],
     ['tipo extra', (o) => (o.edificios.torre = o.edificios.casa)],
-    ['campo extra', (o) => (o.edificios.casa.altura = 3)],
+    ['campo extra', (o) => (o.edificios.casa.color = 'rojo')],
+    ['altura 0', (o) => (o.edificios.casa.altura = 0)],
+    ['altura string', (o) => (o.edificios.casa.altura = '5')],
+    ['sin altura', (o) => delete o.edificios.casa.altura],
+    ['niveles no es lista', (o) => (o.edificios.cobertizo.niveles = 'granero')],
+    ['sin niveles', (o) => delete o.edificios.cobertizo.niveles],
+    [
+      'nivel sin nombre',
+      (o) => (o.edificios.cobertizo.niveles = [{ ancho: 8, alto: 6, altura: 8 }]),
+    ],
+    [
+      'nivel con huella decimal',
+      (o) => (o.edificios.cobertizo.niveles = [{ nombre: 'g', ancho: 8.5, alto: 6, altura: 8 }]),
+    ],
     ['lote negativo', (o) => (o.materialesIniciales.madera = -1)],
     ['lote decimal', (o) => (o.materialesIniciales.piedra = 1.5)],
     ['reembolso > 1', (o) => (o.reembolsoDemolicion = 1.5)],
@@ -233,18 +249,18 @@ describe('colocacionValida: casos válidos y motivos', () => {
     const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'cobertizo', x: ALM.x, y: ALM.y })
     const casos: Array<[number, number, string]> = [
       [0, 0, 'ocupada'],
-      [2, 1, 'ocupada'],
+      [3, 2, 'ocupada'],
       [-1, -1, 'valida'],
-      [3, 1, 'valida'],
-      [1, 2, 'valida'],
+      [4, 1, 'valida'],
+      [1, 3, 'valida'],
     ]
     for (const [dx, dy, esperado] of casos) {
       expect(motivo(e, 'caja-envio', ALM.x + dx, ALM.y + dy)).toBe(esperado)
     }
     // Una casa solapada solo por una esquina también choca.
-    expect(motivo(e, 'cobertizo', ALM.x + 2, ALM.y + 1)).toBe('ocupada')
+    expect(motivo(e, 'cobertizo', ALM.x + 3, ALM.y + 2)).toBe('ocupada')
     // Pegado (adyacente) sí se puede.
-    expect(motivo(e, 'caja-envio', ALM.x + 3, ALM.y)).toBe('valida')
+    expect(motivo(e, 'caja-envio', ALM.x + 4, ALM.y)).toBe('valida')
   })
 
   it('aparicion: no se construye en la casilla de aparición', () => {
@@ -255,7 +271,8 @@ describe('colocacionValida: casos válidos y motivos', () => {
     }
     expect(motivo(e, 'caja-envio', VIV.x + 2, VIV.y)).toBe('aparicion')
     expect(motivo(e, 'casa', VIV.x, VIV.y)).toBe('aparicion')
-    expect(motivo(e, 'casa', VIV.x + 3, VIV.y)).toBe('valida')
+    // La casa (7×5) no cabe a la derecha de la aparición dentro de la vivienda: va una fila debajo.
+    expect(motivo(e, 'casa', VIV.x, VIV.y + 1)).toBe('valida')
   })
 
   it('personaje: la huella toca la caja de colisión, no solo su casilla central', () => {
@@ -269,14 +286,15 @@ describe('colocacionValida: casos válidos y motivos', () => {
     expect(motivo(pj(cx + 0.5, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('personaje')
     // Con el borde de la caja cruzando a la casilla vecina también choca.
     expect(motivo(pj(cx + 1 - m + 0.01, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('personaje')
-    expect(motivo(pj(cx + 1 + m - 0.01, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('personaje')
+    // La caja mide 2×1: su borde derecho está en cx + 2.
+    expect(motivo(pj(cx + 2 + m - 0.01, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('personaje')
     expect(motivo(pj(cx + 0.5, VIV.y - m + 0.01), 'caja-envio', cx, VIV.y)).toBe('personaje')
     // Otra fila bien lejos: libre.
     expect(motivo(pj(cx + 0.5, VIV.y + 0.5), 'caja-envio', cx, VIV.y + 3)).toBe('valida')
-    // Dos casillas más allá: libre.
-    expect(motivo(pj(cx + 2.5, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('valida')
+    // Una casilla libre de por medio: libre.
+    expect(motivo(pj(cx + 3.5, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('valida')
     // Tocando justo el borde (pegado, sin solape) no cuenta.
-    expect(motivo(pj(cx + 1 + m, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('valida')
+    expect(motivo(pj(cx + 2 + m, VIV.y + 0.5), 'caja-envio', cx, VIV.y)).toBe('valida')
   })
 
   it('zona-incompatible: sin zona, zona equivocada o mezcla', () => {
@@ -304,13 +322,13 @@ describe('colocacionValida: casos válidos y motivos', () => {
 
   it('unico-ya-existe: la casa es única, también mientras está en obra', () => {
     const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'casa', x: VIV.x, y: VIV.y })
-    expect(motivo(e, 'casa', VIV.x, VIV.y + 4)).toBe('unico-ya-existe')
+    expect(motivo(e, 'casa', VIV.x, VIV.y + 5)).toBe('unico-ya-existe')
     // Terminada también cuenta.
     const t = { ...e, edificios: e.edificios.map((b) => ({ ...b, obra: null })) }
-    expect(motivo(t, 'casa', VIV.x, VIV.y + 4)).toBe('unico-ya-existe')
+    expect(motivo(t, 'casa', VIV.x, VIV.y + 5)).toBe('unico-ya-existe')
     // Los no únicos se pueden repetir.
     const c = ok(lim, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: VIV.x, y: VIV.y })
-    expect(motivo(c, 'caja-envio', VIV.x + 1, VIV.y)).toBe('valida')
+    expect(motivo(c, 'caja-envio', VIV.x + 2, VIV.y)).toBe('valida')
   })
 
   it('fondos-insuficientes y materiales-insuficientes, con el límite exacto', () => {
@@ -368,12 +386,12 @@ describe('colocacionValida: casos válidos y motivos', () => {
     expect(motivo({ ...c, dinero: 0 }, 'caja-envio', VIV.x + 1, VIV.y)).toBe('ocupada')
     expect(motivo({ ...c, dinero: 0 }, 'cobertizo', VIV.x + 1, VIV.y)).toBe('ocupada')
     // zona-incompatible gana a costes.
-    expect(motivo({ ...c, dinero: 0 }, 'cobertizo', VIV.x, VIV.y + 4)).toBe('zona-incompatible')
+    expect(motivo({ ...c, dinero: 0 }, 'cobertizo', VIV.x, VIV.y + 5)).toBe('zona-incompatible')
     // único gana a todo lo demás salvo el tipo desconocido (ocupada, zona, costes).
     expect(motivo({ ...c, dinero: 0 }, 'casa', ALM.x, ALM.y)).toBe('unico-ya-existe')
     expect(motivo({ ...c, dinero: 0 }, 'casa', VIV.x + 1, VIV.y)).toBe('unico-ya-existe')
     expect(motivo({ ...c, dinero: 0 }, 'casa', -5, -5)).toBe('unico-ya-existe')
-    expect(motivo({ ...c, dinero: 0 }, 'casa', VIV.x, VIV.y + 4)).toBe('unico-ya-existe')
+    expect(motivo({ ...c, dinero: 0 }, 'casa', VIV.x, VIV.y + 5)).toBe('unico-ya-existe')
     // Todas son alcanzables y distintas.
     const vistos = new Set<MotivoColocacion>()
     for (const m of MOTIVOS_COLOCACION) vistos.add(m)
@@ -463,7 +481,7 @@ describe('comando Construir', () => {
 
   it('los ids crecen y no se reutilizan', () => {
     const a = ok(lim, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: VIV.x, y: VIV.y })
-    const b = ok(a, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: VIV.x + 1, y: VIV.y })
+    const b = ok(a, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: VIV.x + 2, y: VIV.y })
     expect(b.edificios.map((e) => e.id)).toEqual([1, 2])
     expect(b.siguienteIdEdificio).toBe(3)
   })
@@ -566,10 +584,10 @@ describe('edificios y obras bloquean el paso', () => {
     expect(casillaBloqueada(antes, ALM.x, ALM.y)).toBe(false)
     const despues = mapaTransitabilidad(e)
     expect(despues).not.toBe(antes)
-    for (let y = 0; y < 2; y++)
-      for (let x = 0; x < 3; x++) expect(casillaBloqueada(despues, ALM.x + x, ALM.y + y)).toBe(true)
-    expect(casillaBloqueada(despues, ALM.x + 3, ALM.y)).toBe(false)
-    expect(casillaBloqueada(despues, ALM.x, ALM.y + 2)).toBe(false)
+    for (let y = 0; y < 3; y++)
+      for (let x = 0; x < 4; x++) expect(casillaBloqueada(despues, ALM.x + x, ALM.y + y)).toBe(true)
+    expect(casillaBloqueada(despues, ALM.x + 4, ALM.y)).toBe(false)
+    expect(casillaBloqueada(despues, ALM.x, ALM.y + 3)).toBe(false)
     // La caché sigue funcionando para la misma lista, y el mapa viejo no se ha contaminado.
     expect(mapaTransitabilidad(e)).toBe(despues)
     expect(mapaTransitabilidad(lim)).toBe(antes)
@@ -590,22 +608,22 @@ describe('edificios y obras bloquean el paso', () => {
     // Y sin el edificio sí cruza esa casilla.
     let q = inicio
     for (let i = 0; i < 40; i++) q = moverPersonaje(lim, q, 1, 0, 250)
-    expect(q.x).toBeGreaterThan(ALM.x + 3)
+    expect(q.x).toBeGreaterThan(ALM.x + 4)
   })
 
   it('buscarCamino rodea los edificios y nunca pisa su huella', () => {
     const desde = { x: ALM.x - 1.5, y: ALM.y + 0.5 }
-    const hasta = { x: ALM.x + 4.5, y: ALM.y + 0.5 }
+    const hasta = { x: ALM.x + 5.5, y: ALM.y + 0.5 }
     const ruta = buscarCamino(e, desde, hasta)
     expect(ruta.length).toBeGreaterThan(5)
     for (const p of ruta) {
       const cx = Math.floor(p.x)
       const cy = Math.floor(p.y)
-      const dentro = cx >= ALM.x && cx < ALM.x + 3 && cy >= ALM.y && cy < ALM.y + 2
+      const dentro = cx >= ALM.x && cx < ALM.x + 4 && cy >= ALM.y && cy < ALM.y + 3
       expect(dentro).toBe(false)
     }
     const fin = ruta.at(-1) as { x: number; y: number }
-    expect(Math.floor(fin.x)).toBe(ALM.x + 4)
+    expect(Math.floor(fin.x)).toBe(ALM.x + 5)
     // Destino dentro del edificio: acaba en una casilla libre.
     const alDentro = buscarCamino(e, desde, { x: ALM.x + 1.5, y: ALM.y + 0.5 })
     const f = alDentro.at(-1) as { x: number; y: number }
@@ -618,9 +636,9 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
 
   it('casillaConEdificio refleja la huella y tolera coordenadas raras', () => {
     expect(casillaConEdificio(e, ALM.x, ALM.y)).toBe(true)
-    expect(casillaConEdificio(e, ALM.x + 2, ALM.y + 1)).toBe(true)
-    expect(casillaConEdificio(e, ALM.x + 3, ALM.y)).toBe(false)
-    expect(casillaConEdificio(e, ALM.x, ALM.y + 2)).toBe(false)
+    expect(casillaConEdificio(e, ALM.x + 3, ALM.y + 2)).toBe(true)
+    expect(casillaConEdificio(e, ALM.x + 4, ALM.y)).toBe(false)
+    expect(casillaConEdificio(e, ALM.x, ALM.y + 3)).toBe(false)
     expect(casillaConEdificio(lim, ALM.x, ALM.y)).toBe(false)
     for (const n of [-1, LADO, 0.5, NaN]) expect(casillaConEdificio(e, n, 0)).toBe(false)
   })
@@ -630,18 +648,18 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
       tipo: 'PintarZona',
       x0: ALM.x - 1,
       y0: ALM.y - 1,
-      x1: ALM.x + 3,
-      y1: ALM.y + 2,
+      x1: ALM.x + 4,
+      y1: ALM.y + 3,
       zona: 'cultivo',
     })
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    for (let y = ALM.y; y < ALM.y + 2; y++)
-      for (let x = ALM.x; x < ALM.x + 3; x++) expect(zonaEn(r.estado, x, y)).toBe('almacen')
+    for (let y = ALM.y; y < ALM.y + 3; y++)
+      for (let x = ALM.x; x < ALM.x + 4; x++) expect(zonaEn(r.estado, x, y)).toBe('almacen')
     expect(zonaEn(r.estado, ALM.x - 1, ALM.y - 1)).toBe('cultivo')
-    expect(zonaEn(r.estado, ALM.x + 3, ALM.y)).toBe('cultivo')
-    // 5×4 = 20 casillas del rectángulo menos 6 de la huella.
-    expect(r.eventos).toEqual([{ tipo: 'zonas-cambiadas', casillas: 14 }])
+    expect(zonaEn(r.estado, ALM.x + 4, ALM.y)).toBe('cultivo')
+    // 6×5 = 30 casillas del rectángulo menos 12 de la huella.
+    expect(r.eventos).toEqual([{ tipo: 'zonas-cambiadas', casillas: 18 }])
   })
 
   it('pintar solo bajo la obra se rechaza: sin-casillas-validas, mismo estado', () => {
@@ -649,8 +667,8 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
       tipo: 'PintarZona',
       x0: ALM.x,
       y0: ALM.y,
-      x1: ALM.x + 2,
-      y1: ALM.y + 1,
+      x1: ALM.x + 3,
+      y1: ALM.y + 2,
       zona: 'cultivo',
     })
     expect(r).toMatchObject({ ok: false, error: 'sin-casillas-validas' })
@@ -663,21 +681,21 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
       tipo: 'BorrarZona',
       x0: ALM.x - 1,
       y0: ALM.y,
-      x1: ALM.x + 3,
+      x1: ALM.x + 4,
       y1: ALM.y,
     })
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(zonaEn(r.estado, ALM.x, ALM.y)).toBe('almacen')
-    expect(zonaEn(r.estado, ALM.x + 2, ALM.y)).toBe('almacen')
+    expect(zonaEn(r.estado, ALM.x + 3, ALM.y)).toBe('almacen')
     expect(zonaEn(r.estado, ALM.x - 1, ALM.y)).toBeUndefined()
-    expect(zonaEn(r.estado, ALM.x + 3, ALM.y)).toBeUndefined()
+    expect(zonaEn(r.estado, ALM.x + 4, ALM.y)).toBeUndefined()
     const solo = aplicarComando(t, {
       tipo: 'BorrarZona',
       x0: ALM.x,
       y0: ALM.y,
-      x1: ALM.x + 2,
-      y1: ALM.y + 1,
+      x1: ALM.x + 3,
+      y1: ALM.y + 2,
     })
     expect(solo).toMatchObject({ ok: false, error: 'sin-casillas-validas' })
   })
@@ -698,5 +716,200 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
       expect(r).toMatchObject({ ok: false, error: 'estado-invalido' })
       expect(r.estado).toBe(malo)
     }
+  })
+})
+
+describe('M5-T03: rotación y validación de la colocación', () => {
+  it('obra-iniciada y edificio-movido llevan la rotación (ausente si es 0)', () => {
+    const g = aplicarComando(lim, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(g.ok && g.eventos[0]).toMatchObject({ tipo: 'obra-iniciada', rotacion: 1 })
+    const n = aplicarComando(lim, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+    })
+    expect(n.ok && n.eventos[0]).not.toHaveProperty('rotacion')
+    const t = ok(lim, { tipo: 'Construir', tipoEdificio: 'cobertizo', x: ALM.x, y: ALM.y })
+    const terminado = { ...t, edificios: t.edificios.map((b) => ({ ...b, obra: null })) }
+    const m = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 3,
+    })
+    expect(m.ok && m.eventos[0]).toMatchObject({ tipo: 'edificio-movido', rotacion: 3 })
+  })
+
+  const colocar = (e: EstadoJuego, t: TipoEdificio, x: number, y: number, rotacion: Rotacion) =>
+    colocacionValida(e, t, x, y, { rotacion })
+  const motivoRot = (e: EstadoJuego, t: TipoEdificio, x: number, y: number, r: Rotacion) => {
+    const v = colocar(e, t, x, y, r)
+    return v.valida ? 'valida' : v.motivo
+  }
+
+  it('girar intercambia la huella', () => {
+    const casa = CONFIG_EDIFICIOS.edificios.casa // 7×5
+    expect(huellaDe(casa, 10, 20, 0)).toEqual({ x0: 10, y0: 20, x1: 16, y1: 24 })
+    expect(huellaDe(casa, 10, 20, 1)).toEqual({ x0: 10, y0: 20, x1: 14, y1: 26 })
+    expect(huellaDe(casa, 10, 20, 2)).toEqual({ x0: 10, y0: 20, x1: 16, y1: 24 })
+    expect(huellaDe(casa, 10, 20, 3)).toEqual({ x0: 10, y0: 20, x1: 14, y1: 26 })
+    expect(huellaDe(casa, 10, 20)).toEqual(huellaDe(casa, 10, 20, 0))
+    // Las casillas que ocupa la obra son las de la huella girada.
+    const r = ok(lim, { tipo: 'Construir', tipoEdificio: 'casa', x: VIV.x, y: VIV.y, rotacion: 1 })
+    const ocupadas = casillasOcupadas(r.edificios, LADO)
+    expect(ocupadas.size).toBe(35)
+    expect(ocupadas.get((VIV.y + 6) * LADO + VIV.x + 4)).toBe(1)
+    expect(ocupadas.has((VIV.y + 4) * LADO + VIV.x + 5)).toBe(false)
+  })
+
+  it('solape con edificio se rechaza', () => {
+    // Solo con el giro que lo provoca.
+    // Obra de caja-envio 2×1 en (ALM.x, ALM.y + 3).
+    const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: ALM.x, y: ALM.y + 3 })
+    // Cobertizo 4×3 sin girar acaba en y+2; girado (3×4) llega a y+3 y choca.
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 0)).toBe('valida')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 1)).toBe('ocupada')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 2)).toBe('valida')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 3)).toBe('ocupada')
+    const r = aplicarComando(e, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(r).toMatchObject({ ok: false, error: 'ocupada' })
+  })
+
+  it('solape con obstáculo se rechaza', () => {
+    // Solo con el giro que lo provoca.
+    const e = {
+      ...lim,
+      obstaculos: [{ x: ALM.x, y: ALM.y + 3, tipo: 'roca' as const, variante: 0 }],
+    }
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 0)).toBe('valida')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 1)).toBe('obstaculo')
+  })
+
+  it('solape con río se rechaza con la huella girada', () => {
+    const k = [...aguaSet][0] as number
+    const ax = k % LADO
+    const ay = Math.floor(k / LADO)
+    // Esquina justo encima de la casilla de agua: la huella girada (alto 4) la cubre.
+    const v = colocar(lim, 'cobertizo', ax, ay - 3, 1)
+    expect(v.valida).toBe(false)
+    if (!v.valida) expect(['agua', 'no-propia', 'fuera-del-valle']).toContain(v.motivo)
+  })
+
+  it('zona incompatible se rechaza', () => {
+    // Con el giro que cruza el límite de zonas.
+    // La vivienda ocupa px..px+C/2-1. La casa 7×5 sin girar cruzaría hacia el almacén;
+    // girada (5×7) cabe justo; un paso más a la derecha vuelve a cruzar.
+    const x = px + C / 2 - 5
+    expect(motivoRot(lim, 'casa', x, VIV.y, 0)).toBe('zona-incompatible')
+    expect(motivoRot(lim, 'casa', x, VIV.y, 1)).toBe('valida')
+    expect(motivoRot(lim, 'casa', x + 1, VIV.y, 1)).toBe('zona-incompatible')
+  })
+
+  it('sin materiales se rechaza y no cobra', () => {
+    const e = { ...lim, materiales: { madera: 49, piedra: 10 } }
+    const r = aplicarComando(e, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(r).toMatchObject({ ok: false, error: 'materiales-insuficientes' })
+    expect(r.estado).toBe(e)
+    expect(r.estado.dinero).toBe(lim.dinero)
+  })
+
+  it('colocación válida cobra exactamente el coste', () => {
+    for (const rotacion of [0, 1, 2, 3] as const) {
+      const r = aplicarComando(lim, {
+        tipo: 'Construir',
+        tipoEdificio: 'cobertizo',
+        x: ALM.x,
+        y: ALM.y,
+        rotacion,
+      })
+      expect(r.ok).toBe(true)
+      expect(r.estado.dinero).toBe(lim.dinero - 300)
+      expect(r.estado.materiales).toEqual({ madera: 80 - 50, piedra: 20 - 10 })
+      const b = r.estado.edificios[0]
+      expect(b?.rotacion ?? 0).toBe(rotacion)
+      expect(b?.pagado).toEqual({ dinero: 300, madera: 50, piedra: 10 })
+    }
+  })
+
+  it('borde del valle: la huella girada que se sale por un lado se rechaza', () => {
+    // Casa 7×5. Sin girar cabe en x = LADO-7; girada (5×7) cabe en y = LADO-7.
+    expect(motivoRot(lim, 'casa', 0, LADO - 6, 0)).not.toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', 0, LADO - 6, 1)).toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', 0, LADO - 7, 1)).not.toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', LADO - 5, 0, 0)).toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', LADO - 5, 0, 1)).not.toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', LADO - 4, 0, 1)).toBe('fuera-del-valle')
+  })
+
+  it('borde de la parcela: la huella girada que invade otra parcela se rechaza', () => {
+    const y = py + C - 5
+    expect(motivoRot(lim, 'casa', VIV.x, y, 0)).toBe('valida')
+    expect(['no-propia', 'fuera-del-valle']).toContain(motivoRot(lim, 'casa', VIV.x, y, 1))
+  })
+
+  it('rotación no válida: parametro-invalido en Construir y rechazo en colocacionValida', () => {
+    for (const rotacion of [4, -1, 1.5, NaN, '1', null]) {
+      const r = aplicarComando(lim, {
+        tipo: 'Construir',
+        tipoEdificio: 'caja-envio',
+        x: VIV.x,
+        y: VIV.y,
+        rotacion: rotacion as never,
+      })
+      expect(r).toMatchObject({ ok: false, error: 'parametro-invalido' })
+      const v = colocacionValida(lim, 'caja-envio', VIV.x, VIV.y, { rotacion: rotacion as never })
+      expect(v.valida).toBe(false)
+    }
+  })
+
+  it('MoverEdificio recoloca girado con las mismas reglas y sin cobrar', () => {
+    const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'cobertizo', x: ALM.x, y: ALM.y })
+    const terminado = { ...e, edificios: e.edificios.map((b) => ({ ...b, obra: null })) }
+    const g = ok(terminado, { tipo: 'MoverEdificio', id: 1, x: ALM.x, y: ALM.y, rotacion: 1 })
+    expect(g.edificios[0]?.rotacion).toBe(1)
+    expect(g.dinero).toBe(terminado.dinero)
+    // Sin `rotacion` conserva el giro.
+    const m = ok(g, { tipo: 'MoverEdificio', id: 1, x: ALM.x + 1, y: ALM.y })
+    expect(m.edificios[0]?.rotacion).toBe(1)
+    // Volver a 0 quita el campo.
+    const v = ok(m, { tipo: 'MoverEdificio', id: 1, x: ALM.x + 1, y: ALM.y, rotacion: 0 })
+    expect(v.edificios[0]).not.toHaveProperty('rotacion')
+    // Una rotación que no cabe se rechaza con el motivo del núcleo.
+    const fuera = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: py + C - 3,
+      rotacion: 1,
+    })
+    expect(fuera.ok).toBe(false)
+    const malo = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 7 as never,
+    })
+    expect(malo).toMatchObject({ ok: false, error: 'parametro-invalido' })
   })
 })

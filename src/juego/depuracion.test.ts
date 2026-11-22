@@ -51,7 +51,7 @@ describe('comandosCultivoEnParcelasPropias', () => {
 })
 
 describe('instalarAtajosDepuracion', () => {
-  it('F6 pinta cultivo en las parcelas propias y se puede quitar', () => {
+  it('F6 ya no hace nada (las zonas se pintan con la herramienta Zonas, M5-T01) y se puede quitar', () => {
     const parcelas = base.valle.parcelas.map((p, i) =>
       i === 0 ? { ...p, estado: 'propia' as const } : p,
     )
@@ -62,11 +62,10 @@ describe('instalarAtajosDepuracion', () => {
       removeEventListener: (t: string) => oyentes.delete(t),
     }
     const quitar = instalarAtajosDepuracion(almacen, objetivo as never)
-    const tecla = { code: 'F6', repeat: false, preventDefault: () => {} }
-    oyentes.get('keydown')?.(tecla as unknown as KeyboardEvent)
-    const lado = ladoValle(almacen.estado.valle)
-    expect(almacen.estado.zonas.includes(CARACTER_ZONA.cultivo)).toBe(true)
-    expect(almacen.estado.zonas).toHaveLength(lado * lado)
+    const antes = almacen.estado
+    oyentes.get('keydown')?.({ code: 'F6', repeat: false, preventDefault: () => {} } as never)
+    expect(almacen.estado).toBe(antes)
+    expect(almacen.estado.zonas.includes(CARACTER_ZONA.cultivo)).toBe(false)
     quitar()
     expect(oyentes.size).toBe(0)
   })

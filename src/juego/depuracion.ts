@@ -18,9 +18,6 @@ import type { Almacen } from './almacen'
 
 type ComandoPintar = Extract<Comando, { tipo: 'PintarZona' }>
 
-/** Tecla del atajo de desarrollo que pinta zona de cultivo en las parcelas propias. */
-export const TECLA_PINTAR_CULTIVO = 'F6'
-
 /** Tecla del atajo de desarrollo que llena la granja de cultivos para medir el rendimiento. */
 export const TECLA_GRANJA_LLENA = 'F7'
 
@@ -34,7 +31,7 @@ const CADA_REGADA = 3
 
 /**
  * Comandos `PintarZona` (zona cultivo) que cubren cada parcela propia entera (esquinas inclusivas
- * en casillas globales). Pura. Solo para el atajo de desarrollo: la UI de zonas llega con M5.
+ * en casillas globales). Pura. Solo para el atajo de desarrollo F7 (`estadoGranjaLlena`).
  */
 export function comandosCultivoEnParcelasPropias(
   valle: Pick<Valle, 'parcelas' | 'parcelasPorLado' | 'casillasPorParcela'>,
@@ -160,27 +157,18 @@ export function estadoGranjaLlena(
 }
 
 /**
- * Solo desarrollo: **F6** pinta zona de cultivo en todas las parcelas propias para poder arar sin
- * la UI de zonas; **F7** deja la granja con 2.000 cultivos (prueba de rendimiento). Devuelve la
- * función que quita el oyente.
+ * Solo desarrollo: **F7** deja la granja con 2.000 cultivos (prueba de rendimiento). Las zonas se
+ * pintan con la herramienta Zonas del Modo Plano (M5-T01). Devuelve la función que quita el oyente.
  */
 export function instalarAtajosDepuracion(
-  almacen: Pick<Almacen, 'estado' | 'despachar' | 'reemplazarEstadoDepuracion'>,
+  almacen: Pick<Almacen, 'estado' | 'reemplazarEstadoDepuracion'>,
   objetivo: Pick<Window, 'addEventListener' | 'removeEventListener'> = window,
 ): () => void {
   const alPulsar = (e: KeyboardEvent): void => {
-    if (e.repeat) return
-    if (e.code === TECLA_GRANJA_LLENA) {
-      e.preventDefault()
-      const lleno = estadoGranjaLlena(almacen.estado)
-      if (lleno) almacen.reemplazarEstadoDepuracion(lleno)
-      return
-    }
-    if (e.code !== TECLA_PINTAR_CULTIVO) return
+    if (e.repeat || e.code !== TECLA_GRANJA_LLENA) return
     e.preventDefault()
-    for (const comando of comandosCultivoEnParcelasPropias(almacen.estado.valle)) {
-      almacen.despachar(comando)
-    }
+    const lleno = estadoGranjaLlena(almacen.estado)
+    if (lleno) almacen.reemplazarEstadoDepuracion(lleno)
   }
   objetivo.addEventListener('keydown', alPulsar)
   return () => objetivo.removeEventListener('keydown', alPulsar)

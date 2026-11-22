@@ -6,5 +6,7 @@
     "separacion": 0.18,
     "pasoMuestreo": 0.5
   },
-  "desaturacion": { "cantidad": 0.3, "duracionTransicion": 0.4 }
+  "desaturacion": { "cantidad": 0.3, "duracionTransicion": 0.4 },
+  "fantasma": { "opacidad": 0.5, "altura": 2.5, "separacion": 0.05 },
+  "zonas": { "opacidad": 0.45, "opacidadVistaPrevia": 0.6, "separacion": 0.1 }
 }

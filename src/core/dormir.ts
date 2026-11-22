@@ -1,7 +1,8 @@
 import { defEdificio, edificiosValidos } from './edificios'
 import { energiaValida } from './energia'
 import type { EstadoJuego } from './estado'
-import { casaTerminada, personajeAlDespertar, puertaDe } from './obras'
+import { rotacionDe } from './edificios'
+import { hogarTerminado, personajeAlDespertar, puertaDe } from './obras'
 
 /** Motivos por los que `Dormir` se rechaza (los textos están en `src/ui/textos/es.json`). */
 export type ErrorDormir =
@@ -39,12 +40,12 @@ export function casillaDeCama(estado: EstadoJuego): { x: number; y: number } {
   return { x: Math.floor(p.x), y: Math.floor(p.y) }
 }
 
-/** Casilla de la puerta de la casa terminada de menor id (sin casa, la de la aparición). */
+/** Casilla de la puerta de la casa terminada de menor id (sin casa, la de la tienda o la aparición). */
 export function casillaDePuerta(estado: EstadoJuego): { x: number; y: number } {
-  const casa = casaTerminada(estado)
+  const casa = hogarTerminado(estado)
   const def = casa && defEdificio(casa.tipo)
   if (!casa || !def) return casillaDeCama(estado)
-  const puerta = puertaDe(def, casa.x, casa.y)
+  const puerta = puertaDe(def, casa.x, casa.y, rotacionDe(casa))
   return { x: puerta.x, y: puerta.y }
 }
 

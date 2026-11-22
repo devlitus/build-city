@@ -24,6 +24,22 @@ export const esquemaPlano = v.object({
     cantidad: opacidad,
     duracionTransicion: v.pipe(v.number(), v.minValue(0)),
   }),
+  fantasma: v.object({
+    /** Opacidad de la caja del fantasma de colocación. */
+    opacidad,
+    /** Altura (m) de la caja sobre el punto más alto de la huella. */
+    altura: positivo,
+    /** Separación (m) de la base sobre ese punto, para que no parpadee con el suelo. */
+    separacion: v.pipe(v.number(), v.minValue(0)),
+  }),
+  zonas: v.object({
+    /** Opacidad de la capa de color de las zonas pintadas. */
+    opacidad,
+    /** Opacidad de la vista previa del rectángulo mientras se arrastra. */
+    opacidadVistaPrevia: opacidad,
+    /** Altura (m) de la capa sobre el suelo. */
+    separacion: v.pipe(v.number(), v.minValue(0)),
+  }),
 })
 
 export type DatosPlano = v.InferOutput<typeof esquemaPlano>

@@ -1,6 +1,7 @@
 import { CONFIG_PERSONAJE } from './datos/personaje'
 import type { DefEdificio } from './datos/esquemas'
-import { casillasOcupadas, defEdificio, huellaDe } from './edificios'
+import { casillasOcupadas, defEdificio, esRotacion, huellaDe } from './edificios'
+import type { Rotacion } from './edificios'
 import type { EstadoJuego } from './estado'
 import { aguaBloqueada, ladoValle } from './mapa'
 import { claveCasilla } from './rio'
@@ -51,6 +52,8 @@ export interface OpcionesColocacion {
   readonly ignorarId?: number
   /** No comprobar dinero ni materiales (mover un edificio no cuesta). */
   readonly ignorarCostes?: boolean
+  /** Giro en cuartos de vuelta (por defecto 0); `(x, y)` es la esquina de la huella ya girada. */
+  readonly rotacion?: Rotacion
 }
 
 /** Parte del estado que necesita `colocacionValida`. */
@@ -232,7 +235,8 @@ export function faltaPagar(
 
 /**
  * Única fuente de las reglas de colocación de edificios (GDD §6.3–6.5). Pura; nunca lanza con
- * un estado coherente. `(x, y)` es la esquina superior izquierda de la huella. Orden de los
+ * un estado coherente. `(x, y)` es la esquina superior izquierda de la huella ya girada
+ * (`opciones.rotacion`). Orden de los
  * motivos en `MOTIVOS_COLOCACION`. Sirve también para mover (`ignorarId`, `ignorarCostes`).
  */
 export function colocacionValida(
@@ -249,7 +253,10 @@ export function colocacionValida(
   const { valle } = estado
   const lado = ladoValle(valle)
   if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y)) return no('fuera-del-valle')
-  const h = huellaDe(def, x, y)
+  // Un giro que no es 0–3 se trata como las coordenadas no enteras: no cabe en ningún sitio.
+  const rotacion: unknown = opciones.rotacion === undefined ? 0 : opciones.rotacion
+  if (!esRotacion(rotacion)) return no('fuera-del-valle')
+  const h = huellaDe(def, x, y, rotacion)
   if (h.x0 < 0 || h.y0 < 0 || h.x1 >= lado || h.y1 >= lado) return no('fuera-del-valle')
 
   const c = valle.casillasPorParcela

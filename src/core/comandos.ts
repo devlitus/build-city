@@ -7,7 +7,17 @@ import { nivelRegaderaDe, type EventoPlantaMarchita } from './riego'
 import { empezarDiaSiguiente, type ObraTerminada } from './obras'
 import { comprobarDormir, type ErrorDormir } from './dormir'
 import { colocacionValida, type MotivoColocacion } from './construccion'
-import { defEdificio, edificiosValidos, huellaDe, type Coste, type TipoEdificio } from './edificios'
+import {
+  defEdificio,
+  edificiosValidos,
+  esRotacion,
+  huellaDe,
+  rotacionDe,
+  type Coste,
+  type Edificio,
+  type Rotacion,
+  type TipoEdificio,
+} from './edificios'
 import { ladoValle } from './mapa'
 import { sinLabrar } from './tierra'
 import { reembolso } from './reembolso'
@@ -70,23 +80,28 @@ export type Comando =
   /**
    * Empieza la obra de un edificio con la esquina superior izquierda en la casilla (x, y).
    * Solo en Modo Plano; cobra dinero y materiales (reglas en `colocacionValida`).
+   * `rotacion` (cuartos de vuelta, por defecto 0) gira la huella: `(x, y)` es la esquina de la
+   * huella ya girada.
    */
   | {
       readonly tipo: 'Construir'
       readonly tipoEdificio: TipoEdificio
       readonly x: number
       readonly y: number
+      readonly rotacion?: Rotacion
     }
   /**
    * Mueve un edificio terminado para que su esquina superior izquierda quede en (x, y). Gratis e
    * instantáneo; mismas reglas de colocación que `Construir` (sin costes y sin chocar consigo
-   * mismo). Una obra no se puede mover. Solo en Modo Plano.
+   * mismo). Una obra no se puede mover. Solo en Modo Plano. `rotacion` opcional recoloca el
+   * edificio girado (`(x, y)` es la esquina de la huella ya girada); sin ella conserva su giro.
    */
   | {
       readonly tipo: 'MoverEdificio'
       readonly id: number
       readonly x: number
       readonly y: number
+      readonly rotacion?: Rotacion
     }
   /** Demuele un edificio terminado y devuelve parte de lo pagado (`reembolso`). La casa no se puede. Solo en Modo Plano. */
   | { readonly tipo: 'DemolerEdificio'; readonly id: number }
@@ -138,6 +153,8 @@ export type EventoJuego =
       readonly tipoEdificio: TipoEdificio
       readonly x: number
       readonly y: number
+      /** Giro en cuartos de vuelta; ausente = 0. */
+      readonly rotacion?: Rotacion
     }
   /** El edificio `id` se movió y su esquina está ahora en (x, y). */
   | {
@@ -146,6 +163,8 @@ export type EventoJuego =
       readonly tipoEdificio: TipoEdificio
       readonly x: number
       readonly y: number
+      /** Giro en cuartos de vuelta tras moverlo; ausente = 0. */
+      readonly rotacion?: Rotacion
     }
   /** El edificio terminado `id` se demolió; `reembolso` es lo que se devolvió. */
   | {
@@ -225,13 +244,19 @@ export function comprobarConstruir(
   tipoEdificio: unknown,
   x: number,
   y: number,
+  rotacion: unknown = 0,
 ): ErrorComando | undefined {
-  if (typeof tipoEdificio !== 'string' || !Number.isSafeInteger(x) || !Number.isSafeInteger(y)) {
+  if (
+    typeof tipoEdificio !== 'string' ||
+    !Number.isSafeInteger(x) ||
+    !Number.isSafeInteger(y) ||
+    !esRotacion(rotacion)
+  ) {
     return 'parametro-invalido'
   }
   if (estado.modo !== 'plano') return 'solo-en-plano'
   if (!estadoDeEdificiosValido(estado)) return 'estado-invalido'
-  const r = colocacionValida(estado, tipoEdificio, x, y)
+  const r = colocacionValida(estado, tipoEdificio, x, y, { rotacion })
   if (!r.valida) return r.motivo
   const def = defEdificio(tipoEdificio)
   if (!def) return 'tipo-desconocido'
@@ -249,15 +274,21 @@ export function comprobarMover(
   id: unknown,
   x: number,
   y: number,
+  rotacion?: unknown,
 ): ErrorComando | undefined {
   if (typeof id !== 'number' || !Number.isSafeInteger(id)) return 'parametro-invalido'
   if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y)) return 'parametro-invalido'
+  if (rotacion !== undefined && !esRotacion(rotacion)) return 'parametro-invalido'
   if (estado.modo !== 'plano') return 'solo-en-plano'
   if (!estadoDeEdificiosValido(estado)) return 'estado-invalido'
   const e = estado.edificios.find((b) => b.id === id)
   if (!e) return 'edificio-inexistente'
   if (e.obra !== null) return 'en-obra'
-  const r = colocacionValida(estado, e.tipo, x, y, { ignorarId: id, ignorarCostes: true })
+  const r = colocacionValida(estado, e.tipo, x, y, {
+    ignorarId: id,
+    ignorarCostes: true,
+    rotacion: rotacion ?? rotacionDe(e),
+  })
   return r.valida ? undefined : r.motivo
 }
 
@@ -302,14 +333,20 @@ function tierraSinHuella(
   def: ReturnType<typeof defEdificio>,
   x: number,
   y: number,
+  rotacion: Rotacion,
 ): string {
   if (!def || typeof estado.tierra !== 'string') return estado.tierra
   const lado = ladoValle(estado.valle)
-  const h = huellaDe(def, x, y)
+  const h = huellaDe(def, x, y, rotacion)
   const indices: number[] = []
   for (let cy = h.y0; cy <= h.y1; cy++)
     for (let cx = h.x0; cx <= h.x1; cx++) indices.push(cy * lado + cx)
   return sinLabrar(estado.tierra, indices)
+}
+
+/** El giro se guarda solo si no es 0: los edificios sin girar conservan la forma de siempre. */
+function conRotacion(rotacion: Rotacion): { rotacion?: Rotacion } {
+  return rotacion === 0 ? {} : { rotacion }
 }
 
 const SIN_EVENTOS: readonly EventoJuego[] = Object.freeze([])
@@ -439,7 +476,8 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
     }
     case 'Construir': {
       const { tipoEdificio, x, y } = comando
-      const error = comprobarConstruir(estado, tipoEdificio, x, y)
+      const rotacion = comando.rotacion === undefined ? 0 : comando.rotacion
+      const error = comprobarConstruir(estado, tipoEdificio, x, y, rotacion)
       if (error) return { ok: false, estado, error }
       const def = defEdificio(tipoEdificio)
       // Aserto: `comprobarConstruir` ya devuelve 'tipo-desconocido' si no hay definición; esta rama no se alcanza
@@ -451,11 +489,13 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       const ny = y + 0
       return {
         ok: true,
-        eventos: [{ tipo: 'obra-iniciada', id, tipoEdificio, x: nx, y: ny }],
+        eventos: [
+          { tipo: 'obra-iniciada', id, tipoEdificio, x: nx, y: ny, ...conRotacion(rotacion) },
+        ],
         estado: {
           ...estado,
           // Construir sobre tierra arada vacía la limpia (sobre una planta no se llega: `ocupada`).
-          tierra: tierraSinHuella(estado, def, nx, ny),
+          tierra: tierraSinHuella(estado, def, nx, ny, rotacion),
           dinero: estado.dinero - def.coste.dinero,
           materiales: {
             madera: estado.materiales.madera - def.coste.madera,
@@ -468,6 +508,7 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
               tipo: tipoEdificio,
               x: nx,
               y: ny,
+              ...conRotacion(rotacion),
               obra: { diaInicio: estado.dia, diaFin },
               pagado: { ...def.coste },
             },
@@ -478,21 +519,39 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
     }
     case 'MoverEdificio': {
       const { id, x, y } = comando
-      const error = comprobarMover(estado, id, x, y)
+      const error = comprobarMover(estado, id, x, y, comando.rotacion)
       if (error) return { ok: false, estado, error }
       const e = estado.edificios.find((b) => b.id === id)
       if (!e) return { ok: false, estado, error: 'edificio-inexistente' }
       // Soltarlo donde ya está no cambia nada.
-      if (e.x === x && e.y === y) return { ok: true, estado, eventos: SIN_EVENTOS }
+      const rotacion = comando.rotacion ?? rotacionDe(e)
+      if (e.x === x && e.y === y && rotacion === rotacionDe(e)) {
+        return { ok: true, estado, eventos: SIN_EVENTOS }
+      }
       const nx = x + 0 // -0 se normaliza a 0
       const ny = y + 0
       return {
         ok: true,
-        eventos: [{ tipo: 'edificio-movido', id, tipoEdificio: e.tipo, x: nx, y: ny }],
+        eventos: [
+          {
+            tipo: 'edificio-movido',
+            id,
+            tipoEdificio: e.tipo,
+            x: nx,
+            y: ny,
+            ...conRotacion(rotacion),
+          },
+        ],
         estado: {
           ...estado,
-          tierra: tierraSinHuella(estado, defEdificio(e.tipo), nx, ny),
-          edificios: estado.edificios.map((b) => (b.id === id ? { ...b, x: nx, y: ny } : b)),
+          tierra: tierraSinHuella(estado, defEdificio(e.tipo), nx, ny, rotacion),
+          edificios: estado.edificios.map((b) => {
+            if (b.id !== id) return b
+            const movido: { -readonly [K in keyof Edificio]: Edificio[K] } = { ...b, x: nx, y: ny }
+            if (rotacion === 0) delete movido.rotacion
+            else movido.rotacion = rotacion
+            return movido
+          }),
         },
       }
     }

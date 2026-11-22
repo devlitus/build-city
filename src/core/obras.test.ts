@@ -66,12 +66,12 @@ function sitioCasa(e: EstadoJuego): { x: number; y: number } {
 const S = sitioCasa(limpio)
 
 describe('puertaDe', () => {
-  it('la casa 4x3 en (x, y) tiene la puerta en (x+2, y+3)', () => {
-    expect(puertaDe(defEdificio('casa')!, 10, 20)).toEqual({ x: 12, y: 23 })
+  it('la casa 7x5 en (x, y) tiene la puerta en (x+3, y+5)', () => {
+    expect(puertaDe(defEdificio('casa')!, 10, 20)).toEqual({ x: 13, y: 25 })
   })
   it('es genérica con la huella', () => {
     expect(puertaDe({ ancho: 1, alto: 1 }, 5, 5)).toEqual({ x: 5, y: 6 })
-    expect(puertaDe(defEdificio('cobertizo')!, 5, 5)).toEqual({ x: 6, y: 7 })
+    expect(puertaDe(defEdificio('cobertizo')!, 5, 5)).toEqual({ x: 7, y: 8 })
   })
 })
 
@@ -164,55 +164,55 @@ describe('D9: despertar en la puerta de la casa', () => {
     expect(enObra.estado.personaje).toEqual(enAparicion)
   })
 
-  it('casa terminada: despierta en (x+2, y+3), centrado y mirando al sur', () => {
+  it('casa terminada: despierta en (x+3, y+5), centrado y mirando al sur', () => {
     const e = casaTerminada(
       { ...limpio, personaje: { x: 0.5, y: 0.5, orientacion: 'norte' } },
       S.x,
       S.y,
     )
-    expect(avanzar(e).estado.personaje).toEqual(centro(S.x + 2, S.y + 3))
+    expect(avanzar(e).estado.personaje).toEqual(centro(S.x + 3, S.y + 5))
   })
 
   it('casa que termina esa misma noche: ya despierta en su puerta', () => {
     const r = avanzar(con(limpio, [edif(1, 'casa', S.x, S.y, 1, 1)]))
     expect(r.estado.edificios[0]!.obra).toBeNull()
-    expect(r.estado.personaje).toEqual(centro(S.x + 2, S.y + 3))
+    expect(r.estado.personaje).toEqual(centro(S.x + 3, S.y + 5))
   })
 
   it('puerta con un árbol: la casilla libre más cercana (empate ⇒ menor y, luego menor x)', () => {
-    const arbol: Obstaculo = { tipo: 'arbol', x: S.x + 2, y: S.y + 3, variante: 0 }
+    const arbol: Obstaculo = { tipo: 'arbol', x: S.x + 3, y: S.y + 5, variante: 0 }
     const e = casaTerminada({ ...limpio, obstaculos: [arbol] }, S.x, S.y)
     const p = personajeAlDespertar(e)
-    expect(p).toEqual(centro(S.x + 1, S.y + 3))
+    expect(p).toEqual(centro(S.x + 2, S.y + 5))
     expect(libreEn(e, p)).toBe(true)
   })
 
   it('puerta ocupada por otro edificio', () => {
     const e = con(limpio, [
       edif(1, 'casa', S.x, S.y, null),
-      edif(2, 'caja-envio', S.x + 2, S.y + 3, null),
+      edif(2, 'caja-envio', S.x + 3, S.y + 5, null),
     ])
-    expect(personajeAlDespertar(e)).toEqual(centro(S.x + 1, S.y + 3))
+    expect(personajeAlDespertar(e)).toEqual(centro(S.x + 2, S.y + 5))
   })
 
   it('anillo 1 entero ocupado: pasa al anillo 2, nunca a una casilla bloqueada', () => {
-    const lista: Edificio[] = [edif(1, 'casa', S.x, S.y, null)]
-    let id = 2
-    for (let y = S.y - 1; y <= S.y + 3; y++)
-      for (let x = S.x - 1; x <= S.x + 4; x++)
-        if (y === S.y - 1 || y === S.y + 3 || x === S.x - 1 || x === S.x + 4)
-          lista.push(edif(id++, 'caja-envio', x, y, null))
-    const e = con(limpio, lista)
+    // Ninguna caja mide 1×1 y taparían el anillo 2: el anillo 1 se cierra con rocas.
+    const rocas: Obstaculo[] = []
+    for (let y = S.y - 1; y <= S.y + 5; y++)
+      for (let x = S.x - 1; x <= S.x + 7; x++)
+        if (y === S.y - 1 || y === S.y + 5 || x === S.x - 1 || x === S.x + 7)
+          rocas.push({ tipo: 'roca', x, y, variante: 0 })
+    const e = con({ ...limpio, obstaculos: rocas }, [edif(1, 'casa', S.x, S.y, null)])
     const p = personajeAlDespertar(e)
     expect(libreEn(e, p)).toBe(true)
-    expect(p).toEqual(centro(S.x + 2, S.y + 4))
+    expect(p).toEqual(centro(S.x + 3, S.y + 6))
   })
 
   it('casa rodeada sin camino desde la aparición: la aparición', () => {
     const rocas: Obstaculo[] = []
     for (let y = 0; y < LADO; y++)
       for (let x = 0; x < LADO; x++) {
-        const enHuella = x >= S.x && x <= S.x + 3 && y >= S.y && y <= S.y + 2
+        const enHuella = x >= S.x && x <= S.x + 6 && y >= S.y && y <= S.y + 4
         const enAparicion = x === Math.floor(base.aparicion.x) && y === Math.floor(base.aparicion.y)
         if (!enHuella && !enAparicion) rocas.push({ tipo: 'roca', x, y, variante: 0 })
       }
@@ -234,8 +234,49 @@ describe('D9: despertar en la puerta de la casa', () => {
     expect(huellaDe(def, x, y).y1).toBe(LADO - 1)
     const e = casaTerminada(limpio, x, y)
     const p = personajeAlDespertar(e)
-    // Puerta (x+2, LADO) fuera del valle; la más cercana (dist² 5) es (x+4, LADO-1).
-    expect(p).toEqual(centro(x + 4, LADO - 1))
+    // Puerta (x+3, LADO) fuera del valle; (x-1, LADO-1) y (x+7, LADO-1) empatan (dist² 17) y
+    // gana la de menor x.
+    expect(p).toEqual(centro(x - 1, LADO - 1))
+    expect(libreEn(e, p)).toBe(true)
+  })
+})
+
+describe('M5-T02: sin casa, despertar en la tienda de campaña (deuda #123)', () => {
+  const tienda = (id: number, diaInicio: number | null = null) =>
+    edif(id, 'tienda', S.x, S.y, diaInicio, 1)
+
+  it('tienda terminada sin casa: despierta en su puerta (x+1, y+3)', () => {
+    const e = con({ ...limpio, personaje: { x: 0.5, y: 0.5, orientacion: 'norte' } }, [tienda(1)])
+    expect(puertaDe(defEdificio('tienda')!, S.x, S.y)).toEqual({ x: S.x + 1, y: S.y + 3 })
+    expect(avanzar(e).estado.personaje).toEqual(centro(S.x + 1, S.y + 3))
+  })
+
+  it('tienda en obra: sigue despertando en la aparición', () => {
+    const e = con(limpio, [edif(1, 'tienda', S.x, S.y, 1, 3)])
+    expect(avanzar(e).estado.personaje).toEqual(enAparicion)
+  })
+
+  it('tienda que termina esa misma noche: ya despierta en su puerta', () => {
+    const r = avanzar(con(limpio, [tienda(1, 1)]))
+    expect(r.estado.edificios[0]!.obra).toBeNull()
+    expect(r.estado.personaje).toEqual(centro(S.x + 1, S.y + 3))
+  })
+
+  it('con casa y tienda terminadas gana la casa, aunque la tienda tenga menor id', () => {
+    const e = con(limpio, [tienda(1), edif(2, 'casa', S.x + 10, S.y, null)])
+    expect(personajeAlDespertar(e)).toEqual(centro(S.x + 13, S.y + 5))
+  })
+
+  it('con la casa en obra y la tienda terminada: despierta en la tienda', () => {
+    const e = con(limpio, [tienda(1), edif(2, 'casa', S.x + 10, S.y, 1, 3)])
+    expect(personajeAlDespertar(e)).toEqual(centro(S.x + 1, S.y + 3))
+  })
+
+  it('puerta de la tienda con un árbol: la casilla libre más cercana', () => {
+    const arbol: Obstaculo = { tipo: 'arbol', x: S.x + 1, y: S.y + 3, variante: 0 }
+    const e = con({ ...limpio, obstaculos: [arbol] }, [tienda(1)])
+    const p = personajeAlDespertar(e)
+    expect(p).toEqual(centro(S.x, S.y + 3))
     expect(libreEn(e, p)).toBe(true)
   })
 })

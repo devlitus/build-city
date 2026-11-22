@@ -9,6 +9,10 @@ import {
   instalarEntrada,
   instalarUsoHerramienta,
 } from './juego/entrada'
+import { instalarTeclasHerramientaPlano, herramientaPlano } from './juego/herramienta-plano'
+import { enlazarConstruccion } from './juego/colocacion'
+import { enlazarEdicion } from './juego/edicion-plano'
+import { edificioElegido } from './juego/edificio-elegido'
 import { instalarEleccionSemilla } from './juego/semillas'
 import { instalarTeclaModo } from './juego/modo'
 import { instalarTeclasTiempo } from './juego/tiempo'
@@ -33,7 +37,7 @@ if (contenedor) {
     })
   }
 
-  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8) y F6 pinta zona Cultivo.
+  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8) y F7 llena la granja.
   if (import.meta.env.DEV) {
     void import('./juego/depuracion-regadera').then((m) => m.instalarAtajoRegadera(almacen))
     void import('./juego/depuracion').then((m) => m.instalarAtajosDepuracion(almacen))
@@ -60,6 +64,9 @@ if (contenedor) {
     () => document.pointerLockElement === renderer.domElement,
   )
   instalarTeclaModo(almacen)
+  instalarTeclasHerramientaPlano(almacen)
+  enlazarConstruccion(edificioElegido, herramientaPlano)
+  enlazarEdicion(herramientaPlano)
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)
   const ui = document.getElementById('ui')

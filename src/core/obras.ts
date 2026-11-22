@@ -1,6 +1,14 @@
 import { CONFIG_PERSONAJE } from './datos/personaje'
 import { CONFIG_TIEMPO } from './datos/tiempo'
-import { defEdificio, huellaDe, type Edificio, type Obra, type TipoEdificio } from './edificios'
+import {
+  defEdificio,
+  huellaDe,
+  rotacionDe,
+  type Edificio,
+  type Obra,
+  type Rotacion,
+  type TipoEdificio,
+} from './edificios'
 import { crecerPlantones } from './recursos'
 import { energiaAlEmpezarDia, type MotivoCambioDeDia } from './energia'
 import type { EstadoJuego } from './estado'
@@ -21,6 +29,18 @@ export interface ObraTerminada {
  */
 export function diasRestantes(obra: Obra, dia: number): number {
   return Math.max(0, obra.diaFin - dia)
+}
+
+/**
+ * Avance de la obra de un edificio el día `dia`, en [0, 1]: 0 el día que empieza, 1 al llegar
+ * `diaFin`. Sin obra (terminado) es 1. Una obra de duración nula cuenta como terminada.
+ */
+export function progresoObra(edificio: Pick<Edificio, 'obra'>, dia: number): number {
+  const obra = edificio.obra
+  if (obra === null) return 1
+  const total = obra.diaFin - obra.diaInicio
+  if (!(total > 0)) return 1
+  return Math.min(1, Math.max(0, (dia - obra.diaInicio) / total))
 }
 
 /**
@@ -49,16 +69,31 @@ export function terminarObras(estado: EstadoJuego): {
 }
 
 /**
- * Casilla de la puerta de un edificio con esquina `(x, y)`: la casilla justo debajo del centro
- * del borde inferior de la huella, `(x + floor(ancho / 2), y + alto)`. Casa 4×3 en (x, y) ⇒
- * `(x + 2, y + 3)`.
+ * Casilla de la puerta de un edificio con esquina `(x, y)` (de la huella ya girada): la casilla
+ * justo fuera del centro del lado al que mira. Con rotación 0 mira al sur (+y): casa 7×5 en
+ * (x, y) ⇒ `(x + 3, y + 5)`. Cada cuarto de vuelta lo gira en sentido horario: 1 al oeste,
+ * 2 al norte, 3 al este. En un lado de longitud par el centro se refleja al girar (es la
+ * misma casilla del muro, vista girada).
  */
 export function puertaDe(
   def: { readonly ancho: number; readonly alto: number },
   x: number,
   y: number,
+  rotacion: Rotacion = 0,
 ): { x: number; y: number } {
-  return { x: x + Math.floor(def.ancho / 2), y: y + def.alto }
+  const h = huellaDe(def, x, y, rotacion)
+  const an = h.x1 - h.x0 + 1
+  const al = h.y1 - h.y0 + 1
+  switch (rotacion) {
+    case 0:
+      return { x: x + Math.floor(an / 2), y: y + al }
+    case 1:
+      return { x: x - 1, y: y + Math.floor(al / 2) }
+    case 2:
+      return { x: x + an - 1 - Math.floor(an / 2), y: y - 1 }
+    default:
+      return { x: x + an, y: y + al - 1 - Math.floor(al / 2) }
+  }
 }
 
 /** ¿Cabe la caja de colisión centrada en la casilla `(cx, cy)` sin tocar nada bloqueado? */
@@ -92,9 +127,22 @@ export function casaTerminada(estado: EstadoJuego): Edificio | undefined {
     .sort((a, b) => a.id - b.id)[0]
 }
 
+/** La tienda de campaña terminada de menor id (el hogar provisional sin casa), si hay alguna. */
+export function tiendaTerminada(estado: EstadoJuego): Edificio | undefined {
+  return estado.edificios
+    .filter((e) => e.tipo === 'tienda' && e.obra === null)
+    .sort((a, b) => a.id - b.id)[0]
+}
+
+/** Donde vive el personaje: la casa terminada o, sin casa, la tienda terminada. */
+export function hogarTerminado(estado: EstadoJuego): Edificio | undefined {
+  return casaTerminada(estado) ?? tiendaTerminada(estado)
+}
+
 /**
  * Dónde despierta el personaje al empezar un día, con las obras ya actualizadas: en la puerta
- * de la casa terminada (la de menor id) o, si no hay, en la aparición.
+ * de la casa terminada (la de menor id) o, si no hay casa, en la de la tienda terminada; sin
+ * ninguna de las dos, en la aparición.
  *
  * Si la puerta (`puertaDe`) no es transitable (el mapa ya marca como bloqueado lo no
  * alcanzable desde la aparición), se busca alrededor de la huella: anillos de distancia
@@ -104,7 +152,7 @@ export function casaTerminada(estado: EstadoJuego): Edificio | undefined {
  */
 export function personajeAlDespertar(estado: EstadoJuego): Personaje {
   const aparicion = personajeEnAparicion(estado.aparicion)
-  const casa = casaTerminada(estado)
+  const casa = hogarTerminado(estado)
   const def = casa && defEdificio(casa.tipo)
   if (!casa || !def) return aparicion
   const mapa = mapaTransitabilidad(estado)
@@ -113,9 +161,10 @@ export function personajeAlDespertar(estado: EstadoJuego): Personaje {
     y: y + 0.5,
     orientacion: ORIENTACION_INICIAL,
   })
-  const puerta = puertaDe(def, casa.x, casa.y)
+  const rot = rotacionDe(casa)
+  const puerta = puertaDe(def, casa.x, casa.y, rot)
   if (casillaLibre(mapa, puerta.x, puerta.y)) return en(puerta.x, puerta.y)
-  const h = huellaDe(def, casa.x, casa.y)
+  const h = huellaDe(def, casa.x, casa.y, rot)
   // Defensa en profundidad: nunca más allá del valle, pase lo que pase con x, y.
   for (let d = 1; d <= mapa.lado; d++) {
     let mejor = null as { x: number; y: number; dist: number } | null

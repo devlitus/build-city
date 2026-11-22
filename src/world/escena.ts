@@ -7,6 +7,7 @@ import {
   SRGBColorSpace,
   WebGLRenderer,
 } from 'three'
+import type { Comando } from '../core'
 import type { LectorEstado } from '../juego/almacen'
 import { crearCielo } from './cielo'
 import { DATOS_CIELO } from './cielo-datos'
@@ -31,6 +32,7 @@ import { crearCapaPlano } from './plano/plano'
 import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 import { crearSueloCultivo } from './cultivos/suelo'
 import { crearIndicador } from './cultivos/indicador'
+import { crearEdificios } from './edificios/edificios'
 import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
 export interface Escena {
@@ -55,7 +57,10 @@ export interface Escena {
 }
 
 /** Crea el lienzo three.js dentro del contenedor, con luces, terreno y redimensionado. */
-export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & FuenteEventos): Escena {
+export function crearEscena(
+  contenedor: HTMLElement,
+  lector: LectorEstado & FuenteEventos & { despachar(comando: Comando): unknown },
+): Escena {
   const { valle, semilla } = lector.estado
   const lado = ladoMetros(valle)
 
@@ -129,6 +134,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   escena.add(plantas.objeto)
   const indicador = crearIndicador(lector, altura)
   escena.add(indicador.objeto)
+  const edificios = crearEdificios(lector, altura)
+  escena.add(edificios.objeto)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -167,6 +174,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       sueloCultivo.actualizar()
       plantas.actualizar(dt)
       indicador.actualizar()
+      edificios.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -181,6 +189,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       sueloCultivo.destruir()
       plantas.destruir()
       indicador.destruir()
+      edificios.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
-import { aplicarComando, crearEstadoInicial, ladoValle, type Comando } from '../../src/core'
+import {
+  aplicarComando,
+  crearEstadoInicial,
+  defEdificio,
+  ladoValle,
+  type Comando,
+} from '../../src/core'
 import { aguaBloqueada } from '../../src/core/mapa'
 
 /**
@@ -58,8 +64,9 @@ describe('bloquea-paso: conectividad', () => {
         for (let i = 0; i < cerrada.length; i++) cerrada[i] = agua[i] as number
         for (const o of e.obstaculos) cerrada[o.y * lado + o.x] = 1
         for (const b of e.edificios) {
-          const an = b.tipo === 'cobertizo' ? 3 : 1
-          const al = b.tipo === 'cobertizo' ? 2 : 1
+          const def = defEdificio(b.tipo)
+          const an = def?.ancho ?? 1
+          const al = def?.alto ?? 1
           for (let y = b.y; y < b.y + al; y++)
             for (let x = b.x; x < b.x + an; x++) cerrada[y * lado + x] = 1
         }

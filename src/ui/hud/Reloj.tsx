@@ -8,6 +8,9 @@ import { vistaReloj, vistasIguales, type VistaReloj } from './formato'
  * (y por tanto re-renderiza) cuando cambia algún texto mostrado, p. ej. un minuto de juego.
  * Los colores son variables CSS `--ui-*` que `montar.tsx` genera desde `data/paleta.json`.
  */
+/** Alto reservado arriba a la izquierda por el reloj (hora, fecha, velocidad), en px. */
+export const ALTO_RELOJ = 96
+
 export function Reloj({ almacen }: { readonly almacen: FuenteEstado }) {
   const [vista, setVista] = useState<VistaReloj>(() => vistaReloj(almacen.estado))
 

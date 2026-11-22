@@ -14,6 +14,69 @@
   "estado": {
     "monedas": "Monedas"
   },
+  "catalogo": {
+    "titulo": "Construir",
+    "etiqueta": "Catálogo de edificios",
+    "huella": "{ancho}×{alto} casillas · {dias} d de obra",
+    "gratis": "Gratis",
+    "falta": "falta {n}",
+    "dinero": "monedas",
+    "madera": "madera",
+    "piedra": "piedra",
+    "unico": "Ya tienes uno.",
+    "edificio": {
+      "casa": "Casa",
+      "tienda": "Tienda de campaña",
+      "caja-envio": "Caja de envío",
+      "cobertizo": "Cobertizo"
+    }
+  },
+  "construir": {
+    "ayuda": "Clic: construir · R: girar · Esc: cancelar",
+    "falta": "Falta: {lista}",
+    "faltaDinero": "{n} monedas",
+    "faltaMadera": "{n} madera",
+    "faltaPiedra": "{n} piedra",
+    "motivo": {
+      "tipo-desconocido": "Edificio desconocido",
+      "unico-ya-existe": "Ya tienes uno",
+      "fuera-del-valle": "Fuera del valle",
+      "no-propia": "Fuera de tus parcelas",
+      "agua": "Hay agua",
+      "obstaculo": "Hay un árbol o una roca",
+      "ocupada": "Ocupado",
+      "aparicion": "Es el punto de aparición",
+      "personaje": "Estás en medio",
+      "zona-incompatible": "Zona no compatible",
+      "bloquea-paso": "Bloquearía el paso",
+      "fondos-insuficientes": "Faltan monedas",
+      "materiales-insuficientes": "Faltan materiales",
+      "solo-en-plano": "Solo se construye en el Modo Plano",
+      "estado-invalido": "No se puede construir aquí",
+      "limite-de-dia": "No se puede construir aquí",
+      "parametro-invalido": "No se puede construir aquí",
+      "edificio-inexistente": "Ese edificio ya no existe",
+      "en-obra": "Una obra no se puede mover"
+    }
+  },
+  "mover": {
+    "ayuda": "Clic en un edificio para cogerlo · Esc: cancelar",
+    "ayudaCogido": "Clic: soltar aquí (gratis) · R: girar · Esc: dejarlo donde estaba"
+  },
+  "acciones": {
+    "etiqueta": "Confirmar demolición",
+    "ayuda": "Clic en un edificio para demolerlo · Esc: cancelar",
+    "demoler": "¿Demoler {nombre}?",
+    "cancelarObra": "¿Cancelar la obra de {nombre}?",
+    "devuelve": "Se devuelve: {lista}",
+    "nada": "No se devuelve nada",
+    "dinero": "{n} monedas",
+    "madera": "{n} madera",
+    "piedra": "{n} piedra",
+    "noDemolible": "{nombre} no se puede demoler",
+    "confirmar": "Confirmar",
+    "cancelar": "Cancelar"
+  },
   "parcela": {
     "titulo": "Parcela {fila}-{columna}",
     "tipo": "Terreno",
@@ -37,6 +100,16 @@
       "parametro-invalido": "Parcela no válida.",
       "precio-invalido": "No se puede calcular el precio."
     }
+  },
+  "zonas": {
+    "etiqueta": "Herramienta de zonas",
+    "titulo": "Zonas (Z)",
+    "ayuda": "Arrastra para pintar un rectángulo. Esc para salir.",
+    "cultivo": "Cultivo",
+    "huerto": "Huerto",
+    "vivienda": "Vivienda",
+    "almacen": "Almacén",
+    "borrar": "Borrar"
   },
   "energia": {
     "etiqueta": "Energía del granjero",
