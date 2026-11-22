@@ -29,7 +29,7 @@ if (contenedor) {
   let contarFps: (() => void) | undefined
   if (import.meta.env.DEV) {
     void import('./world/contador-fps').then((m) => {
-      contarFps = m.crearContadorFps(contenedor)
+      contarFps = m.crearContadorFps(contenedor, renderer.info)
     })
   }
 
