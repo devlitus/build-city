@@ -761,7 +761,10 @@ describe('M5-T03: rotación y validación de la colocación', () => {
   })
 
   it('solape con obstáculo se rechaza (solo con el giro que lo provoca)', () => {
-    const e = { ...lim, obstaculos: [{ x: ALM.x, y: ALM.y + 3, tipo: 'roca' as const, variante: 0 }] }
+    const e = {
+      ...lim,
+      obstaculos: [{ x: ALM.x, y: ALM.y + 3, tipo: 'roca' as const, variante: 0 }],
+    }
     expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 0)).toBe('valida')
     expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 1)).toBe('obstaculo')
   })
