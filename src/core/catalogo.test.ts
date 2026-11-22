@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- aserciones de catálogo conocido en tests */
 import { describe, expect, it } from 'vitest'
+import * as v from 'valibot'
 import {
+  CONFIG_EDIFICIOS,
+  EsquemaConfigEdificios,
+  materialesQueFaltan,
+  type TipoEdificio,
   catalogo,
   crearEstadoInicial,
   defEdificio,
@@ -107,5 +112,63 @@ describe('entradaCatalogo con dinero corrupto', () => {
       expect(e.motivo).toBe('fondos-insuficientes')
       expect(e.faltan.dinero).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('catálogo del MVP 3D (M5-T02)', () => {
+  it('los datos cumplen el esquema', () => {
+    expect(v.safeParse(EsquemaConfigEdificios, CONFIG_EDIFICIOS).success).toBe(true)
+    expect([...TIPOS_EDIFICIO]).toEqual(['casa', 'tienda', 'caja-envio', 'cobertizo'])
+    for (const t of TIPOS_EDIFICIO) {
+      const d = defEdificio(t)!
+      expect(d.altura).toBeGreaterThan(0)
+      expect(Array.isArray(d.niveles)).toBe(true)
+    }
+  })
+
+  it('las huellas y alturas son las del GDD §7.4', () => {
+    const medidas = (t: TipoEdificio) => {
+      const d = defEdificio(t)!
+      return [d.ancho, d.alto, d.altura]
+    }
+    expect(medidas('tienda')).toEqual([3, 3, 1.8])
+    expect(medidas('caja-envio')).toEqual([2, 1, 1])
+    expect(medidas('cobertizo')).toEqual([4, 3, 3.5])
+    expect(medidas('casa')).toEqual([7, 5, 5])
+  })
+
+  it('la tienda es barata, rápida y de vivienda', () => {
+    const t = defEdificio('tienda')!
+    expect(t.zonas).toEqual(['vivienda'])
+    expect(t.dias).toBe(1)
+    expect(t.coste).toEqual({ dinero: 100, madera: 10, piedra: 0 })
+    expect(t.unico).toBe(false)
+    expect(t.demolible).toBe(true)
+  })
+
+  it('los niveles de mejora previstos van en los datos y no cambian la huella base', () => {
+    const cob = defEdificio('cobertizo')!
+    expect(cob.niveles.map((n) => n.nombre)).toEqual(['granero', 'granero-grande'])
+    expect(cob.niveles[0]).toMatchObject({ ancho: 8, alto: 6, altura: 8 })
+    expect(defEdificio('casa')!.niveles).toEqual([])
+  })
+
+  it('materialesQueFaltan con inventario parcial', () => {
+    const parcial = con({ dinero: 120, materiales: { madera: 30, piedra: 4 } })
+    expect(materialesQueFaltan(parcial, 'cobertizo')).toEqual({
+      dinero: 180,
+      madera: 20,
+      piedra: 6,
+    })
+    expect(materialesQueFaltan(parcial, 'tienda')).toEqual({ dinero: 0, madera: 0, piedra: 0 })
+    expect(materialesQueFaltan(parcial, 'caja-envio')).toEqual({ dinero: 0, madera: 0, piedra: 0 })
+    expect(materialesQueFaltan(parcial, 'casa')).toEqual({ dinero: 0, madera: 0, piedra: 0 })
+  })
+
+  it('la casa 7×5 cabe en una parcela del valle inicial', () => {
+    const { casillasPorParcela: c } = base.valle
+    const casa = defEdificio('casa')!
+    expect(casa.ancho).toBeLessThanOrEqual(c)
+    expect(casa.alto).toBeLessThanOrEqual(c)
   })
 })

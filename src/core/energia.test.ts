@@ -62,7 +62,7 @@ const S = sitioCasa(limpio)
 const casa = (obra: Edificio['obra']): Edificio => ({ id: 1, tipo: 'casa', x: S.x, y: S.y, obra })
 const conCasa = (e: EstadoJuego, terminada = true): EstadoJuego =>
   con(e, { edificios: [casa(terminada ? null : { diaInicio: 1, diaFin: 5 })] })
-const puerta = { x: S.x + 2, y: S.y + 3 }
+const puerta = { x: S.x + 3, y: S.y + 5 }
 const en = (e: EstadoJuego, x: number, y: number): EstadoJuego =>
   con(e, { personaje: { x: x + 0.5, y: y + 0.5, orientacion: 'sur' } })
 const aparicion = { x: Math.floor(base.aparicion.x), y: Math.floor(base.aparicion.y) }

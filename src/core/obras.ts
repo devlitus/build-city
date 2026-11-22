@@ -50,8 +50,8 @@ export function terminarObras(estado: EstadoJuego): {
 
 /**
  * Casilla de la puerta de un edificio con esquina `(x, y)`: la casilla justo debajo del centro
- * del borde inferior de la huella, `(x + floor(ancho / 2), y + alto)`. Casa 4×3 en (x, y) ⇒
- * `(x + 2, y + 3)`.
+ * del borde inferior de la huella, `(x + floor(ancho / 2), y + alto)`. Casa 7×5 en (x, y) ⇒
+ * `(x + 3, y + 5)`.
  */
 export function puertaDe(
   def: { readonly ancho: number; readonly alto: number },
@@ -92,9 +92,22 @@ export function casaTerminada(estado: EstadoJuego): Edificio | undefined {
     .sort((a, b) => a.id - b.id)[0]
 }
 
+/** La tienda de campaña terminada de menor id (el hogar provisional sin casa), si hay alguna. */
+export function tiendaTerminada(estado: EstadoJuego): Edificio | undefined {
+  return estado.edificios
+    .filter((e) => e.tipo === 'tienda' && e.obra === null)
+    .sort((a, b) => a.id - b.id)[0]
+}
+
+/** Donde vive el personaje: la casa terminada o, sin casa, la tienda terminada. */
+export function hogarTerminado(estado: EstadoJuego): Edificio | undefined {
+  return casaTerminada(estado) ?? tiendaTerminada(estado)
+}
+
 /**
  * Dónde despierta el personaje al empezar un día, con las obras ya actualizadas: en la puerta
- * de la casa terminada (la de menor id) o, si no hay, en la aparición.
+ * de la casa terminada (la de menor id) o, si no hay casa, en la de la tienda terminada; sin
+ * ninguna de las dos, en la aparición.
  *
  * Si la puerta (`puertaDe`) no es transitable (el mapa ya marca como bloqueado lo no
  * alcanzable desde la aparición), se busca alrededor de la huella: anillos de distancia
@@ -104,7 +117,7 @@ export function casaTerminada(estado: EstadoJuego): Edificio | undefined {
  */
 export function personajeAlDespertar(estado: EstadoJuego): Personaje {
   const aparicion = personajeEnAparicion(estado.aparicion)
-  const casa = casaTerminada(estado)
+  const casa = hogarTerminado(estado)
   const def = casa && defEdificio(casa.tipo)
   if (!casa || !def) return aparicion
   const mapa = mapaTransitabilidad(estado)

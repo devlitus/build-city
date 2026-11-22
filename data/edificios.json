@@ -7,8 +7,9 @@
   "redondeoReembolso": "abajo",
   "edificios": {
     "casa": {
-      "ancho": 4,
-      "alto": 3,
+      "ancho": 7,
+      "alto": 5,
+      "altura": 5,
       "zonas": ["vivienda"],
       "coste": {
         "dinero": 0,
@@ -17,11 +18,28 @@
       },
       "dias": 3,
       "unico": true,
-      "demolible": false
+      "demolible": false,
+      "niveles": []
+    },
+    "tienda": {
+      "ancho": 3,
+      "alto": 3,
+      "altura": 1.8,
+      "zonas": ["vivienda"],
+      "coste": {
+        "dinero": 100,
+        "madera": 10,
+        "piedra": 0
+      },
+      "dias": 1,
+      "unico": false,
+      "demolible": true,
+      "niveles": []
     },
     "caja-envio": {
-      "ancho": 1,
+      "ancho": 2,
       "alto": 1,
+      "altura": 1,
       "zonas": ["vivienda", "almacen"],
       "coste": {
         "dinero": 50,
@@ -30,11 +48,13 @@
       },
       "dias": 1,
       "unico": false,
-      "demolible": true
+      "demolible": true,
+      "niveles": []
     },
     "cobertizo": {
-      "ancho": 3,
-      "alto": 2,
+      "ancho": 4,
+      "alto": 3,
+      "altura": 3.5,
       "zonas": ["almacen"],
       "coste": {
         "dinero": 300,
@@ -43,7 +63,11 @@
       },
       "dias": 2,
       "unico": false,
-      "demolible": true
+      "demolible": true,
+      "niveles": [
+        { "nombre": "granero", "ancho": 8, "alto": 6, "altura": 8 },
+        { "nombre": "granero-grande", "ancho": 8, "alto": 6, "altura": 8 }
+      ]
     }
   }
 }

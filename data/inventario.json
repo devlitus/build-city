@@ -2,6 +2,7 @@
   "capacidadBase": 12,
   "ranurasPorEdificio": {
     "casa": 0,
+    "tienda": 0,
     "caja-envio": 0,
     "cobertizo": 12
   },

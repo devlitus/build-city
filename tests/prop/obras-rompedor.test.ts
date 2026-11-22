@@ -34,6 +34,8 @@ const RICO = 1_000_000_000
 const MUCHO = { madera: 1_000_000, piedra: 1_000_000 }
 const FIN = CONFIG_TIEMPO.horaFin
 const def = (t: TipoEdificio) => CONFIG_EDIFICIOS.edificios[t]
+/** Huella de la casa, siempre leída del catálogo. */
+const CASA = def('casa')
 
 function nuevo(semilla: number): EstadoJuego {
   const e = crearEstadoInicial({ semilla, dineroInicial: RICO, materialesIniciales: MUCHO })
@@ -190,8 +192,8 @@ describe('M4-03 rompedor: momento exacto de terminar', () => {
         tipo: 'PintarZona',
         x0: s.x,
         y0: s.y,
-        x1: s.x + 3,
-        y1: s.y + 2,
+        x1: s.x + def(tipo).ancho - 1,
+        y1: s.y + def(tipo).alto - 1,
         zona: def(tipo).zonas[0],
       }).estado
       e = cmd(e, { tipo: 'CambiarModo', modo: 'plano' }).estado
@@ -293,7 +295,7 @@ describe('M4-03 rompedor: momento exacto de terminar', () => {
       tipo: 'PintarZona',
       x0: c.x,
       y0: c.y,
-      x1: c.x,
+      x1: c.x + 1,
       y1: c.y,
       zona: 'vivienda',
     }).estado
@@ -310,28 +312,32 @@ describe('M4-03 rompedor: dónde se despierta', () => {
       fc.property(
         fc.integer({ min: 0, max: sitios.length - 1 }),
         fc.array(
-          fc.record({ dx: fc.integer({ min: -3, max: 6 }), dy: fc.integer({ min: -3, max: 5 }) }),
+          fc.record({
+            dx: fc.integer({ min: -3, max: CASA.ancho + 2 }),
+            dy: fc.integer({ min: -3, max: CASA.alto + 2 }),
+          }),
           { maxLength: 25 },
         ),
         fc.array(
           fc.record({
             tipo: fc.constantFrom<TipoEdificio>('caja-envio', 'cobertizo'),
-            dx: fc.integer({ min: -4, max: 6 }),
-            dy: fc.integer({ min: -3, max: 5 }),
+            dx: fc.integer({ min: -4, max: CASA.ancho + 2 }),
+            dy: fc.integer({ min: -3, max: CASA.alto + 2 }),
           }),
           { maxLength: 4 },
         ),
         fc.boolean(),
         (i, rocas, otros, borde) => {
           const s = borde
-            ? (sitios.filter((p) => p.x === 0 || p.y === 0 || p.x === LADO - 4 || p.y === LADO - 3)[
-                i % 50
-              ] ?? sitios[i]!)
+            ? (sitios.filter(
+                (p) =>
+                  p.x === 0 || p.y === 0 || p.x === LADO - CASA.ancho || p.y === LADO - CASA.alto,
+              )[i % 50] ?? sitios[i]!)
             : sitios[i]!
           const ax = Math.floor(BASE.aparicion.x)
           const ay = Math.floor(BASE.aparicion.y)
           const enCasa = (x: number, y: number) =>
-            x >= s.x && x < s.x + 4 && y >= s.y && y < s.y + 3
+            x >= s.x && x < s.x + CASA.ancho && y >= s.y && y < s.y + CASA.alto
           const obst: Obstaculo[] = [...BASE.obstaculos]
           for (const r of rocas) {
             const x = s.x + r.dx
@@ -371,11 +377,11 @@ describe('M4-03 rompedor: dónde se despierta', () => {
     for (const k of BASE.cauce.vados) {
       const vx = k % lado
       const vy = (k - vx) / lado
-      const cx = vx - 2
-      const cy = vy - 3
+      const cx = vx - Math.floor(CASA.ancho / 2)
+      const cy = vy - CASA.alto
       let ok = cx >= 0 && cy >= 0
-      for (let y = cy; ok && y < cy + 3; y++)
-        for (let x = cx; ok && x < cx + 4; x++) ok = !agua.has(y * lado + x)
+      for (let y = cy; ok && y < cy + CASA.alto; y++)
+        for (let x = cx; ok && x < cx + CASA.ancho; x++) ok = !agua.has(y * lado + x)
       if (!ok) continue
       const e: EstadoJuego = {
         ...BASE,
@@ -398,11 +404,11 @@ describe('M4-03 rompedor: dónde se despierta', () => {
       for (const k of b.cauce.vados) {
         const vx = k % lado
         const vy = (k - vx) / lado
-        const cx = vx - 2
-        const cy = vy - 3
+        const cx = vx - Math.floor(CASA.ancho / 2)
+        const cy = vy - CASA.alto
         let ok = cx >= 0 && cy >= 0
-        for (let y = cy; ok && y < cy + 3; y++)
-          for (let x = cx; ok && x < cx + 4; x++) ok = !ag.has(y * lado + x)
+        for (let y = cy; ok && y < cy + CASA.alto; y++)
+          for (let x = cx; ok && x < cx + CASA.ancho; x++) ok = !ag.has(y * lado + x)
         if (!ok) continue
         const e: EstadoJuego = {
           ...b,
@@ -424,9 +430,9 @@ describe('M4-03 rompedor: dónde se despierta', () => {
   it('casa totalmente rodeada por rocas (anillo 1 y 2 cerrados): despierta fuera, alcanzable, igual que el oráculo', () => {
     const s = sitiosCasa(BASE).find((p) => p.x > 10 && p.y > 10 && p.x < 80 && p.y < 60)!
     const obst: Obstaculo[] = []
-    for (let y = s.y - 2; y <= s.y + 4; y++)
-      for (let x = s.x - 2; x <= s.x + 5; x++) {
-        const dentro = x >= s.x && x < s.x + 4 && y >= s.y && y < s.y + 3
+    for (let y = s.y - 2; y <= s.y + CASA.alto + 1; y++)
+      for (let x = s.x - 2; x <= s.x + CASA.ancho + 1; x++) {
+        const dentro = x >= s.x && x < s.x + CASA.ancho && y >= s.y && y < s.y + CASA.alto
         if (!dentro) obst.push({ tipo: 'roca', x, y, variante: 0 })
       }
     const e: EstadoJuego = {
@@ -446,9 +452,9 @@ describe('M4-03 rompedor: dónde se despierta', () => {
     const s = sitiosCasa(e).find((p) => {
       // Puerta con vecinos O, E, S y un margen libres.
       const v = alcanzablesPropio(e)
-      for (let y = p.y - 1; y <= p.y + 5; y++)
-        for (let x = p.x - 2; x <= p.x + 6; x++) {
-          const enC = x >= p.x && x < p.x + 4 && y >= p.y && y < p.y + 3
+      for (let y = p.y - 1; y <= p.y + CASA.alto + 2; y++)
+        for (let x = p.x - 2; x <= p.x + CASA.ancho + 2; x++) {
+          const enC = x >= p.x && x < p.x + CASA.ancho && y >= p.y && y < p.y + CASA.alto
           if (!enC && (x < 0 || y < 0 || x >= LADO || y >= LADO || v[y * LADO + x] !== 1))
             return false
         }
@@ -458,8 +464,8 @@ describe('M4-03 rompedor: dónde se despierta', () => {
       tipo: 'PintarZona',
       x0: s.x - 2,
       y0: s.y - 1,
-      x1: s.x + 6,
-      y1: s.y + 5,
+      x1: s.x + CASA.ancho + 2,
+      y1: s.y + CASA.alto + 2,
       zona: 'vivienda',
     }).estado
     e = cmd(e, { tipo: 'CambiarModo', modo: 'plano' }).estado
@@ -468,13 +474,14 @@ describe('M4-03 rompedor: dónde se despierta', () => {
     e = rc.estado
     for (let k = 0; k < 3; k++) e = desmayar(e).estado
     expect(e.edificios[0]!.obra).toBeNull()
-    const px = s.x + 2
-    const py = s.y + 3
+    const px = s.x + Math.floor(CASA.ancho / 2)
+    const py = s.y + CASA.alto
     expect([e.personaje.x, e.personaje.y]).toEqual([px + 0.5, py + 0.5])
     e = { ...e, modo: 'plano' }
     const intentos: (string | true)[] = []
+    // La caja mide 2×1: la de la izquierda se ancla dos casillas antes para tocar la puerta.
     for (const [x, y] of [
-      [px - 1, py],
+      [px - 2, py],
       [px + 1, py],
       [px, py + 1],
     ] as const) {
