@@ -1,5 +1,7 @@
 import { CULTIVOS } from './datos/claves'
 import { CONFIG_CULTIVOS } from './datos/cultivos'
+import { CONFIG_ENERGIA } from './datos/energia'
+import { CONFIG_HERRAMIENTAS } from './datos/herramientas'
 import type { EstadoJuego } from './estado'
 import { ladoValle } from './mapa'
 import { cultivoDeEstacion, defCultivo, diasHastaMadurar } from './cultivos'
@@ -15,6 +17,30 @@ import {
   tierraValida,
   type Planta,
 } from './tierra'
+
+/** Nivel de la regadera del estado: 1 si falta el campo (estados antiguos); otro valor, `undefined` (inválido). */
+export function nivelRegaderaDe(estado: EstadoJuego): 1 | 2 | undefined {
+  const n: unknown = estado.nivelRegadera
+  if (n === undefined || n === 1) return 1
+  return n === 2 ? 2 : undefined
+}
+
+/** Lado del cuadrado que riega la regadera de ese nivel (`data/herramientas.json`). */
+export function ladoRegadera(nivel: 1 | 2): number {
+  return nivel === 1
+    ? CONFIG_HERRAMIENTAS.regadera.niveles[0].lado
+    : CONFIG_HERRAMIENTAS.regadera.niveles[1].lado
+}
+
+/**
+ * Energía que gasta un uso de la regadera de ese nivel. El nivel 1 sigue siendo
+ * `data/energia.json` (`costes.regadera`); el resto, `data/herramientas.json`.
+ */
+export function costeRegadera(nivel: 1 | 2): number {
+  return nivel === 1
+    ? CONFIG_ENERGIA.costes.regadera
+    : CONFIG_HERRAMIENTAS.regadera.niveles[1].energia
+}
 
 /** Hecho: la casilla arada (x, y) se regó hoy (con o sin planta). */
 export interface EventoTierraRegada {
@@ -70,6 +96,76 @@ export function motivoNoRegar(estado: EstadoJuego, x: number, y: number): ErrorR
   if (p?.[5] === 1) return 'planta-marchita'
   if (p && esMadura(p)) return 'planta-madura'
   return undefined
+}
+
+/** ¿La casilla (x, y) está dentro del valle y es de una parcela propia? */
+function esDeParcelaPropia(estado: EstadoJuego, x: number, y: number): boolean {
+  const { valle } = estado
+  const lado = ladoValle(valle)
+  if (x < 0 || y < 0 || x >= lado || y >= lado) return false
+  const c = valle.casillasPorParcela
+  return (
+    valle.parcelas[Math.floor(y / c) * valle.parcelasPorLado + Math.floor(x / c)]?.estado ===
+    'propia'
+  )
+}
+
+/** Casillas que puede mojar la regadera del estado centrada en (x, y), en orden de fila. */
+function casillasRegables(
+  estado: EstadoJuego,
+  x: number,
+  y: number,
+): readonly { readonly x: number; readonly y: number }[] {
+  const radio = (ladoRegadera(nivelRegaderaDe(estado) ?? 1) - 1) / 2
+  const r: { x: number; y: number }[] = []
+  for (let cy = y - radio; cy <= y + radio; cy++) {
+    for (let cx = x - radio; cx <= x + radio; cx++) {
+      if (esDeParcelaPropia(estado, cx, cy) && !motivoNoRegar(estado, cx, cy)) {
+        r.push({ x: cx, y: cy })
+      }
+    }
+  }
+  return r
+}
+
+/**
+ * Por qué la regadera del estado no puede usarse sobre (x, y), o `undefined` si puede. Nivel 1:
+ * `motivoNoRegar` de la casilla. Nivel 2: se acepta si al menos una casilla del 3×3 se puede regar
+ * (las demás se saltan sin error); si ninguna, el motivo de la casilla central.
+ */
+export function motivoNoRegarConNivel(
+  estado: EstadoJuego,
+  x: number,
+  y: number,
+): ErrorRiego | undefined {
+  const nivel = nivelRegaderaDe(estado)
+  if (nivel === undefined) return 'estado-invalido'
+  const centro = motivoNoRegar(estado, x, y)
+  if (nivel === 1 || !centro) return centro
+  return casillasRegables(estado, x, y).length > 0 ? undefined : centro
+}
+
+/**
+ * Efecto de la regadera del estado sobre (x, y): nivel 1, una casilla (`regar`); nivel 2, todas
+ * las casillas aradas, secas y de parcelas propias del 3×3 centrado (un `tierra-regada` por casilla,
+ * en orden de fila). La energía, una sola vez, la gasta `usarHerramienta`.
+ */
+export function regarConNivel(estado: EstadoJuego, x: number, y: number): ResultadoRiego {
+  if (nivelRegaderaDe(estado) !== 2) return regar(estado, x, y)
+  const casillas = casillasRegables(estado, x, y)
+  if (casillas.length === 0) return { ok: true, estado, eventos: [] }
+  const lado = ladoValle(estado.valle)
+  const celdas = estado.tierra.split('')
+  for (const c of casillas) celdas[c.y * lado + c.x] = CARACTER_REGADA
+  return {
+    ok: true,
+    estado: { ...estado, tierra: celdas.join('') },
+    eventos: casillas.map((c) => ({
+      tipo: 'tierra-regada' as const,
+      x: sinCeroNegativo(c.x),
+      y: sinCeroNegativo(c.y),
+    })),
+  }
 }
 
 export interface ResultadoRiego {

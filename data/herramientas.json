@@ -1,4 +1,7 @@
 {
   "alcance": 1.6,
-  "anguloCono": 100
+  "anguloCono": 100,
+  "regadera": {
+    "niveles": [{ "lado": 1 }, { "lado": 3, "energia": 5 }]
+  }
 }

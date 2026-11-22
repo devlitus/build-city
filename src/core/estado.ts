@@ -44,6 +44,9 @@ import {
  * `plantas` (una tupla por casilla plantada). Sin migración: sigue sin haber partidas guardadas.
  * M4-T01: se añade `pausarEnPlano` (ajuste) sin subir la versión (los tests del Rompedor fijan 11);
  * sigue sin haber partidas guardadas.
+ * M7-T05: se añade `nivelRegadera` (1 | 2) sin subir la versión (los tests del Rompedor fijan 11):
+ * un estado sin el campo se lee como nivel 1 (`nivelRegaderaDe`). Deuda #127: al fijar el guardado
+ * (M7) habrá que decidir la política de versiones.
  */
 export const VERSION_FORMATO = 11
 
@@ -84,6 +87,8 @@ export interface EstadoJuego {
   readonly herramienta: Herramienta
   /** Semilla que planta la herramienta «semillas» (un objeto del inventario), o `null` si no hay ninguna elegida. */
   readonly semillaElegida: ObjetoId | null
+  /** Nivel de la regadera: 1 riega una casilla, 2 el 3×3 (ver `data/herramientas.json`). Ausente = 1. */
+  readonly nivelRegadera?: 1 | 2
   /** Parcelas compradas hasta ahora; cada una encarece las siguientes (`precioParcela`). */
   readonly comprasHechas: number
   readonly valle: Valle
@@ -178,6 +183,7 @@ export function crearEstadoInicial(opciones: OpcionesNuevaPartida): EstadoJuego 
     inventario: inventario.map((r) => ({ ...r })),
     herramienta: CONFIG_INVENTARIO.herramientaInicial,
     semillaElegida: null,
+    nivelRegadera: 1,
     comprasHechas: 0,
     valle,
     zonas: zonasVacias(ladoValle(valle)),
