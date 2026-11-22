@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   defEdificio,
+  type DefEdificio,
   edificiosValidos,
   esRotacion,
   girar,
@@ -9,8 +10,8 @@ import {
   ROTACIONES,
 } from './index'
 
-const casa = defEdificio('casa')! // 7×5
-const caja = defEdificio('caja-envio')! // 2×1
+const casa = defEdificio('casa') as DefEdificio // 7×5
+const caja = defEdificio('caja-envio') as DefEdificio // 2×1
 
 describe('rotación de edificios', () => {
   it('esRotacion solo acepta 0, 1, 2 y 3', () => {

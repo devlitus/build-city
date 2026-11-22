@@ -8,6 +8,8 @@ import {
   crearEstadoInicial,
   huellaDe,
   defEdificio,
+  type Edificio,
+  type DefEdificio,
   ladoValle,
   rotacionDe,
   type Comando,
@@ -103,7 +105,7 @@ describe('rotación: el veredicto y el comando coinciden', () => {
             rotacion: o.rotacion,
           }
           if (o.mover && e.edificios.length > 0) {
-            const b = e.edificios[Math.abs(o.x) % e.edificios.length]!
+            const b = e.edificios[Math.abs(o.x) % e.edificios.length] as Edificio
             // Las obras no se mueven: se terminan a mano para poder moverlas.
             e = { ...e, edificios: e.edificios.map((q) => ({ ...q, obra: null })) }
             cmd = { tipo: 'MoverEdificio', id: b.id, x, y, rotacion: o.rotacion }
@@ -113,7 +115,7 @@ describe('rotación: el veredicto y el comando coinciden', () => {
           // Ninguna casilla repetida entre edificios, ni con obstáculos, río o plantas.
           const vistas = new Set<number>()
           for (const b of e.edificios) {
-            const h = huellaDe(defEdificio(b.tipo)!, b.x, b.y, rotacionDe(b))
+            const h = huellaDe(defEdificio(b.tipo) as DefEdificio, b.x, b.y, rotacionDe(b))
             expect(h.x0 >= 0 && h.y0 >= 0 && h.x1 < lado && h.y1 < lado).toBe(true)
             for (let j = h.y0; j <= h.y1; j++)
               for (let i = h.x0; i <= h.x1; i++) {
