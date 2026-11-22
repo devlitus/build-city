@@ -33,7 +33,9 @@ if (contenedor) {
     })
   }
 
+  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8) y F6 pinta zona Cultivo.
   if (import.meta.env.DEV) {
+    void import('./juego/depuracion-regadera').then((m) => m.instalarAtajoRegadera(almacen))
     void import('./juego/depuracion').then((m) => m.instalarAtajosDepuracion(almacen))
   }
 
