@@ -26,6 +26,7 @@ import { crearDirectorCamara } from './camaras/director'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
+import { crearPlantasMundo } from './cultivos/instancias'
 import { crearCapaPlano } from './plano/plano'
 import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 import { crearEfectos, type FuenteEventos } from './efectos/efectos'
@@ -120,6 +121,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   escena.add(plano.objeto)
   const parcelasMundo = crearParcelasMundo(lector, altura)
   escena.add(parcelasMundo.objeto)
+  const plantas = crearPlantasMundo(lector, altura)
+  escena.add(plantas.objeto)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -155,6 +158,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       efectos.actualizar(dt)
       plano.actualizar()
       parcelasMundo.actualizar(dt)
+      plantas.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -166,6 +170,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       camaraPlano.destruir()
       plano.destruir()
       parcelasMundo.destruir()
+      plantas.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
