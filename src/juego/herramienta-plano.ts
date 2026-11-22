@@ -1,5 +1,6 @@
 import type { Comando, EstadoJuego, Zona } from '../core'
 import type { LectorEstado, Suscriptor } from './almacen'
+import { colocacion } from './colocacion'
 import type { TeclaEntrada } from './tiempo'
 
 /**
@@ -77,7 +78,7 @@ export const herramientaPlano: CanalHerramientaPlano = crearCanalHerramientaPlan
 /**
  * Herramienta que corresponde a una tecla en Modo Plano (pura), o `undefined` si no hace nada.
  * Z activa Zonas; Esc vuelve a Parcelas. Ignora repetición y combinaciones con Ctrl/Alt/Meta.
- * R, M, X y 1–9 están reservadas para otras herramientas.
+ * M, X y 1–9 están reservadas para otras herramientas (R gira el fantasma: `esTeclaGirar`).
  */
 export function herramientaDeTecla(
   tecla: TeclaEntrada,
@@ -88,6 +89,20 @@ export function herramientaDeTecla(
   if (tecla.code === 'KeyZ') return 'zonas'
   if (tecla.code === 'Escape') return 'parcelas'
   return undefined
+}
+
+/**
+ * ¿Esta tecla gira el fantasma 90°? Solo R, en Modo Plano con la herramienta Construir; ignora
+ * repetición y combinaciones con Ctrl/Alt/Meta. Pura.
+ */
+export function esTeclaGirar(
+  tecla: TeclaEntrada,
+  estado: Pick<EstadoJuego, 'modo'>,
+  herramienta: HerramientaPlano,
+): boolean {
+  if (estado.modo !== 'plano' || herramienta !== 'construir') return false
+  if (tecla.repeat || tecla.altKey || tecla.ctrlKey || tecla.metaKey) return false
+  return tecla.code === 'KeyR'
 }
 
 /** Comando `PintarZona` o `BorrarZona` de un rectángulo de casillas según la zona elegida. */
@@ -117,9 +132,14 @@ export function instalarTeclasHerramientaPlano(
   almacen: LectorEstado & { suscribir(suscriptor: Suscriptor): () => void },
   canal: CanalHerramientaPlano = herramientaPlano,
   objetivo: Pick<Window, 'addEventListener' | 'removeEventListener'> = window,
+  girarFantasma: () => void = () => colocacion.girar(),
 ): () => void {
   const alPulsar = (e: KeyboardEvent): void => {
     if (enCampoDeTexto(e.target)) return
+    if (esTeclaGirar(e, almacen.estado, canal.herramienta)) {
+      girarFantasma()
+      return
+    }
     const h = herramientaDeTecla(e, almacen.estado)
     if (h) canal.elegirHerramienta(h)
   }
