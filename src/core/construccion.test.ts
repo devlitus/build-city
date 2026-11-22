@@ -12,6 +12,8 @@ import {
   EsquemaConfigEdificios,
   ladoValle,
   mapaTransitabilidad,
+  casillasOcupadas,
+  huellaDe,
   MOTIVOS_COLOCACION,
   moverPersonaje,
   VERSION_FORMATO,
@@ -20,6 +22,7 @@ import {
   type EstadoJuego,
   type MotivoColocacion,
   type Personaje,
+  type Rotacion,
   type TipoEdificio,
 } from './index'
 import { casillasRio } from './rio'
@@ -713,5 +716,200 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
       expect(r).toMatchObject({ ok: false, error: 'estado-invalido' })
       expect(r.estado).toBe(malo)
     }
+  })
+})
+
+describe('M5-T03: rotación y validación de la colocación', () => {
+  it('obra-iniciada y edificio-movido llevan la rotación (ausente si es 0)', () => {
+    const g = aplicarComando(lim, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(g.ok && g.eventos[0]).toMatchObject({ tipo: 'obra-iniciada', rotacion: 1 })
+    const n = aplicarComando(lim, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+    })
+    expect(n.ok && n.eventos[0]).not.toHaveProperty('rotacion')
+    const t = ok(lim, { tipo: 'Construir', tipoEdificio: 'cobertizo', x: ALM.x, y: ALM.y })
+    const terminado = { ...t, edificios: t.edificios.map((b) => ({ ...b, obra: null })) }
+    const m = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 3,
+    })
+    expect(m.ok && m.eventos[0]).toMatchObject({ tipo: 'edificio-movido', rotacion: 3 })
+  })
+
+  const colocar = (e: EstadoJuego, t: TipoEdificio, x: number, y: number, rotacion: Rotacion) =>
+    colocacionValida(e, t, x, y, { rotacion })
+  const motivoRot = (e: EstadoJuego, t: TipoEdificio, x: number, y: number, r: Rotacion) => {
+    const v = colocar(e, t, x, y, r)
+    return v.valida ? 'valida' : v.motivo
+  }
+
+  it('girar intercambia la huella', () => {
+    const casa = CONFIG_EDIFICIOS.edificios.casa // 7×5
+    expect(huellaDe(casa, 10, 20, 0)).toEqual({ x0: 10, y0: 20, x1: 16, y1: 24 })
+    expect(huellaDe(casa, 10, 20, 1)).toEqual({ x0: 10, y0: 20, x1: 14, y1: 26 })
+    expect(huellaDe(casa, 10, 20, 2)).toEqual({ x0: 10, y0: 20, x1: 16, y1: 24 })
+    expect(huellaDe(casa, 10, 20, 3)).toEqual({ x0: 10, y0: 20, x1: 14, y1: 26 })
+    expect(huellaDe(casa, 10, 20)).toEqual(huellaDe(casa, 10, 20, 0))
+    // Las casillas que ocupa la obra son las de la huella girada.
+    const r = ok(lim, { tipo: 'Construir', tipoEdificio: 'casa', x: VIV.x, y: VIV.y, rotacion: 1 })
+    const ocupadas = casillasOcupadas(r.edificios, LADO)
+    expect(ocupadas.size).toBe(35)
+    expect(ocupadas.get((VIV.y + 6) * LADO + VIV.x + 4)).toBe(1)
+    expect(ocupadas.has((VIV.y + 4) * LADO + VIV.x + 5)).toBe(false)
+  })
+
+  it('solape con edificio se rechaza', () => {
+    // Solo con el giro que lo provoca.
+    // Obra de caja-envio 2×1 en (ALM.x, ALM.y + 3).
+    const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: ALM.x, y: ALM.y + 3 })
+    // Cobertizo 4×3 sin girar acaba en y+2; girado (3×4) llega a y+3 y choca.
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 0)).toBe('valida')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 1)).toBe('ocupada')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 2)).toBe('valida')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 3)).toBe('ocupada')
+    const r = aplicarComando(e, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(r).toMatchObject({ ok: false, error: 'ocupada' })
+  })
+
+  it('solape con obstáculo se rechaza', () => {
+    // Solo con el giro que lo provoca.
+    const e = {
+      ...lim,
+      obstaculos: [{ x: ALM.x, y: ALM.y + 3, tipo: 'roca' as const, variante: 0 }],
+    }
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 0)).toBe('valida')
+    expect(motivoRot(e, 'cobertizo', ALM.x, ALM.y, 1)).toBe('obstaculo')
+  })
+
+  it('solape con río se rechaza con la huella girada', () => {
+    const k = [...aguaSet][0] as number
+    const ax = k % LADO
+    const ay = Math.floor(k / LADO)
+    // Esquina justo encima de la casilla de agua: la huella girada (alto 4) la cubre.
+    const v = colocar(lim, 'cobertizo', ax, ay - 3, 1)
+    expect(v.valida).toBe(false)
+    if (!v.valida) expect(['agua', 'no-propia', 'fuera-del-valle']).toContain(v.motivo)
+  })
+
+  it('zona incompatible se rechaza', () => {
+    // Con el giro que cruza el límite de zonas.
+    // La vivienda ocupa px..px+C/2-1. La casa 7×5 sin girar cruzaría hacia el almacén;
+    // girada (5×7) cabe justo; un paso más a la derecha vuelve a cruzar.
+    const x = px + C / 2 - 5
+    expect(motivoRot(lim, 'casa', x, VIV.y, 0)).toBe('zona-incompatible')
+    expect(motivoRot(lim, 'casa', x, VIV.y, 1)).toBe('valida')
+    expect(motivoRot(lim, 'casa', x + 1, VIV.y, 1)).toBe('zona-incompatible')
+  })
+
+  it('sin materiales se rechaza y no cobra', () => {
+    const e = { ...lim, materiales: { madera: 49, piedra: 10 } }
+    const r = aplicarComando(e, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(r).toMatchObject({ ok: false, error: 'materiales-insuficientes' })
+    expect(r.estado).toBe(e)
+    expect(r.estado.dinero).toBe(lim.dinero)
+  })
+
+  it('colocación válida cobra exactamente el coste', () => {
+    for (const rotacion of [0, 1, 2, 3] as const) {
+      const r = aplicarComando(lim, {
+        tipo: 'Construir',
+        tipoEdificio: 'cobertizo',
+        x: ALM.x,
+        y: ALM.y,
+        rotacion,
+      })
+      expect(r.ok).toBe(true)
+      expect(r.estado.dinero).toBe(lim.dinero - 300)
+      expect(r.estado.materiales).toEqual({ madera: 80 - 50, piedra: 20 - 10 })
+      const b = r.estado.edificios[0]
+      expect(b?.rotacion ?? 0).toBe(rotacion)
+      expect(b?.pagado).toEqual({ dinero: 300, madera: 50, piedra: 10 })
+    }
+  })
+
+  it('borde del valle: la huella girada que se sale por un lado se rechaza', () => {
+    // Casa 7×5. Sin girar cabe en x = LADO-7; girada (5×7) cabe en y = LADO-7.
+    expect(motivoRot(lim, 'casa', 0, LADO - 6, 0)).not.toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', 0, LADO - 6, 1)).toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', 0, LADO - 7, 1)).not.toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', LADO - 5, 0, 0)).toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', LADO - 5, 0, 1)).not.toBe('fuera-del-valle')
+    expect(motivoRot(lim, 'casa', LADO - 4, 0, 1)).toBe('fuera-del-valle')
+  })
+
+  it('borde de la parcela: la huella girada que invade otra parcela se rechaza', () => {
+    const y = py + C - 5
+    expect(motivoRot(lim, 'casa', VIV.x, y, 0)).toBe('valida')
+    expect(['no-propia', 'fuera-del-valle']).toContain(motivoRot(lim, 'casa', VIV.x, y, 1))
+  })
+
+  it('rotación no válida: parametro-invalido en Construir y rechazo en colocacionValida', () => {
+    for (const rotacion of [4, -1, 1.5, NaN, '1', null]) {
+      const r = aplicarComando(lim, {
+        tipo: 'Construir',
+        tipoEdificio: 'caja-envio',
+        x: VIV.x,
+        y: VIV.y,
+        rotacion: rotacion as never,
+      })
+      expect(r).toMatchObject({ ok: false, error: 'parametro-invalido' })
+      const v = colocacionValida(lim, 'caja-envio', VIV.x, VIV.y, { rotacion: rotacion as never })
+      expect(v.valida).toBe(false)
+    }
+  })
+
+  it('MoverEdificio recoloca girado con las mismas reglas y sin cobrar', () => {
+    const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'cobertizo', x: ALM.x, y: ALM.y })
+    const terminado = { ...e, edificios: e.edificios.map((b) => ({ ...b, obra: null })) }
+    const g = ok(terminado, { tipo: 'MoverEdificio', id: 1, x: ALM.x, y: ALM.y, rotacion: 1 })
+    expect(g.edificios[0]?.rotacion).toBe(1)
+    expect(g.dinero).toBe(terminado.dinero)
+    // Sin `rotacion` conserva el giro.
+    const m = ok(g, { tipo: 'MoverEdificio', id: 1, x: ALM.x + 1, y: ALM.y })
+    expect(m.edificios[0]?.rotacion).toBe(1)
+    // Volver a 0 quita el campo.
+    const v = ok(m, { tipo: 'MoverEdificio', id: 1, x: ALM.x + 1, y: ALM.y, rotacion: 0 })
+    expect(v.edificios[0]).not.toHaveProperty('rotacion')
+    // Una rotación que no cabe se rechaza con el motivo del núcleo.
+    const fuera = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: py + C - 3,
+      rotacion: 1,
+    })
+    expect(fuera.ok).toBe(false)
+    const malo = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 7 as never,
+    })
+    expect(malo).toMatchObject({ ok: false, error: 'parametro-invalido' })
   })
 })

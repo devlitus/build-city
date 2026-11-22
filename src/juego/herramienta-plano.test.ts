@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   comandoDeZona,
+  esTeclaGirar,
   crearCanalHerramientaPlano,
   herramientaDeTecla,
   instalarTeclasHerramientaPlano,
@@ -89,5 +90,22 @@ describe('comandoDeZona', () => {
   it('pinta con la zona o borra', () => {
     expect(comandoDeZona('huerto', rect)).toEqual({ tipo: 'PintarZona', ...rect, zona: 'huerto' })
     expect(comandoDeZona('borrar', rect)).toEqual({ tipo: 'BorrarZona', ...rect })
+  })
+})
+
+describe('esTeclaGirar (R)', () => {
+  const plano = { modo: 'plano' as const }
+  it('solo gira en Plano con construir', () => {
+    expect(esTeclaGirar(tecla('KeyR'), plano, 'construir')).toBe(true)
+    expect(esTeclaGirar(tecla('KeyR'), plano, 'parcelas')).toBe(false)
+    expect(esTeclaGirar(tecla('KeyR'), plano, 'zonas')).toBe(false)
+    expect(esTeclaGirar(tecla('KeyR'), { modo: 'vida' }, 'construir')).toBe(false)
+  })
+  it('ignora repetición, modificadores y otras teclas (Z, Esc, M, X)', () => {
+    expect(esTeclaGirar(tecla('KeyR', { repeat: true }), plano, 'construir')).toBe(false)
+    expect(esTeclaGirar(tecla('KeyR', { ctrlKey: true }), plano, 'construir')).toBe(false)
+    for (const c of ['KeyZ', 'Escape', 'KeyM', 'KeyX', 'Digit1']) {
+      expect(esTeclaGirar(tecla(c), plano, 'construir')).toBe(false)
+    }
   })
 })

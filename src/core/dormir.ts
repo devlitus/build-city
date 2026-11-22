@@ -1,6 +1,7 @@
 import { defEdificio, edificiosValidos } from './edificios'
 import { energiaValida } from './energia'
 import type { EstadoJuego } from './estado'
+import { rotacionDe } from './edificios'
 import { hogarTerminado, personajeAlDespertar, puertaDe } from './obras'
 
 /** Motivos por los que `Dormir` se rechaza (los textos están en `src/ui/textos/es.json`). */
@@ -44,7 +45,7 @@ export function casillaDePuerta(estado: EstadoJuego): { x: number; y: number } {
   const casa = hogarTerminado(estado)
   const def = casa && defEdificio(casa.tipo)
   if (!casa || !def) return casillaDeCama(estado)
-  const puerta = puertaDe(def, casa.x, casa.y)
+  const puerta = puertaDe(def, casa.x, casa.y, rotacionDe(casa))
   return { x: puerta.x, y: puerta.y }
 }
 
