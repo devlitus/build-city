@@ -1,0 +1,12 @@
+{
+  "lado": 0.94,
+  "grosor": 0.2,
+  "alturaLosa": 0.02,
+  "surcos": 3,
+  "anchoSurco": 0.22,
+  "altoSurco": 0.07,
+  "rugosidad": 0.95,
+  "colorSeca": "tierraArada",
+  "colorRegada": "tierraRegada",
+  "capacidadInicial": 256
+}

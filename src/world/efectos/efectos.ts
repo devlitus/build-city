@@ -17,6 +17,8 @@ import {
 import { DATOS_EFECTOS, type DatosEfectos } from './efectos-datos'
 import { GestorEfectos, type Efecto } from './gestor'
 import { describirGolpe, type DescripcionGolpe } from './golpe'
+import { casillasRegadas } from './riego'
+import { casillaAMetros } from '../terreno/coordenadas'
 import { SistemaParticulas, crearRafaga } from './particulas'
 import { crearMallaParticulas } from './particulas-malla'
 import { crearSonidos, type Sonidos } from './sonidos'
@@ -140,8 +142,17 @@ export function crearEfectos(opciones: OpcionesEfectos): Efectos {
     particulas.emitir(crearRafaga(origen, cantidad, tipo, ++rafagas))
   }
 
+  /** Gotas sobre una casilla recién regada. */
+  const lanzarGotas = (x: number, y: number): void => {
+    const p = casillaAMetros(x, y, lector.estado.valle)
+    const tipo = datos.particulas.agua
+    const origen = { x: p.x, y: altura(p.x, p.z) + tipo.alturaOrigen, z: p.z }
+    particulas.emitir(crearRafaga(origen, tipo.cantidadGolpe, tipo, ++rafagas))
+  }
+
   const alEvento: Suscriptor = (n) => {
     if (!n.ok) return
+    for (const r of casillasRegadas(n.eventos)) lanzarGotas(r.x, r.y)
     for (const e of n.eventos) {
       const d = describirGolpe(e)
       if (!d) continue

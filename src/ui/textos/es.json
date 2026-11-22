@@ -83,6 +83,12 @@
     "picarRoca": "E — Picar roca",
     "quitarTocon": "E — Quitar tocón",
     "arrancarPlanton": "E — Arrancar plantón",
+    "arar": "E — Arar",
+    "plantar": "E — Plantar {cultivo}",
+    "regar": "E — Regar",
+    "cosechar": "E — Cosechar",
+    "limpiarMarchita": "E — Quitar planta marchita",
+    "plantarPlanton": "E — Plantar plantón",
     "cansancio": "Estás demasiado cansado",
     "comprarParaTalar": "Compra esta parcela para talar (Tab → Modo Plano)",
     "comprarParaPicar": "Compra esta parcela para picar (Tab → Modo Plano)",
@@ -90,6 +96,13 @@
     "madera": "+{n} madera",
     "piedra": "+{n} piedra",
     "planton": "+{n} plantón"
+  },
+  "cultivos": {
+    "patata": "patata",
+    "zanahoria": "zanahoria",
+    "lechuga": "lechuga",
+    "rabano": "rábano",
+    "fresa": "fresa"
   },
   "herramientas": {
     "etiqueta": "Barra de herramientas",

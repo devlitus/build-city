@@ -115,9 +115,33 @@ export const EsquemaConfigHerramientas = v.strictObject({
   alcance: v.pipe(v.number(), v.finite(), v.minValue(0.5), v.maxValue(3)),
   /** Apertura total del cono frontal, en grados. */
   anguloCono: v.pipe(v.number(), v.finite(), v.minValue(10), v.maxValue(180)),
+  /**
+   * Niveles de la regadera. El nivel 1 (`lado` 1) no lleva `energia`: su coste es el de
+   * `data/energia.json` (`costes.regadera`), única fuente. El nivel 2 riega un cuadrado de `lado`
+   * impar y gasta `energia` (entero ≥ 0) por uso.
+   */
+  regadera: v.strictObject({
+    niveles: v.tuple([
+      v.strictObject({ lado: v.literal(1) }),
+      v.strictObject({
+        lado: v.pipe(
+          v.number(),
+          v.safeInteger(),
+          v.minValue(1),
+          v.maxValue(9),
+          v.check((n) => n % 2 === 1, 'El lado debe ser impar'),
+        ),
+        energia: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+      }),
+    ]),
+  }),
 })
 
-export type ConfigHerramientas = v.InferOutput<typeof EsquemaConfigHerramientas>
+/** Datos completos de `data/herramientas.json`. */
+export type DatosHerramientas = v.InferOutput<typeof EsquemaConfigHerramientas>
+
+/** Alcance y cono de apuntado (lo que necesita `objetivo.ts`); `DatosHerramientas` lo cumple. */
+export type ConfigHerramientas = Pick<DatosHerramientas, 'alcance' | 'anguloCono'>
 
 /** Factor multiplicador estrictamente positivo. */
 const factorPositivo = v.pipe(
