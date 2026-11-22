@@ -21,7 +21,9 @@ import {
   CONFIG_EDIFICIOS,
   CONFIG_PERSONAJE,
   crearEstadoInicial,
+  defEdificio,
   EsquemaConfigEdificios,
+  huellaDe,
   ladoValle,
   mapaTransitabilidad,
   MOTIVOS_COLOCACION,
@@ -1005,6 +1007,11 @@ function comprobar(
   const ay = Math.floor(e.aparicion.y)
   for (const b of e.edificios) {
     const d = def(b.tipo)
+    // Huella girada (M5-T03), calculada a mano: en giros impares se cruzan ancho y fondo.
+    const giro = (b as { rotacion?: number }).rotacion ?? 0
+    expect([0, 1, 2, 3]).toContain(giro)
+    const ancho = giro % 2 === 1 ? d.alto : d.ancho
+    const fondo = giro % 2 === 1 ? d.ancho : d.alto
     dinero += d.coste.dinero
     madera += d.coste.madera
     piedra += d.coste.piedra
@@ -1019,8 +1026,8 @@ function comprobar(
       expect(fin).toBeDefined()
       expect(e.dia).toBeGreaterThanOrEqual(fin ?? Infinity)
     }
-    for (let y = b.y; y < b.y + d.alto; y++)
-      for (let x = b.x; x < b.x + d.ancho; x++) {
+    for (let y = b.y; y < b.y + fondo; y++)
+      for (let x = b.x; x < b.x + ancho; x++) {
         const k = y * lado + x
         expect(x >= 0 && y >= 0 && x < lado && y < lado).toBe(true)
         expect(vistas.has(k)).toBe(false)
@@ -1038,8 +1045,8 @@ function comprobar(
     // Construir sigue exigiendo la caja (más estricta), así que basta con que el círculo no entre.
     const { x: px, y: py } = e.personaje
     const r = CONFIG_PERSONAJE.radio
-    const dx = px - Math.max(b.x, Math.min(px, b.x + d.ancho))
-    const dy = py - Math.max(b.y, Math.min(py, b.y + d.alto))
+    const dx = px - Math.max(b.x, Math.min(px, b.x + ancho))
+    const dy = py - Math.max(b.y, Math.min(py, b.y + fondo))
     expect(dx * dx + dy * dy < r * r).toBe(false)
   }
   expect(e.edificios.filter((b) => b.tipo === 'casa').length).toBeLessThanOrEqual(1)
@@ -1060,21 +1067,52 @@ function comandoLargo(lado: number, c: number): fc.Arbitrary<unknown[]> {
     fc.integer({ min: 4 * c - 2, max: lado - 1 }),
   )
   const unico = (a: fc.Arbitrary<unknown>) => a.map((x) => [x])
-  // Macro: pinta la huella (zona a veces incompatible), pasa a Plano y construye.
+  // Macro: pinta la huella real del tipo con su giro (zona a veces incompatible), pasa a Plano y
+  // construye. La huella sale del catálogo (M5-T02: casa 7×5…) y la rotación de M5-T03; con un
+  // tipo desconocido se pinta 4×3 y con una rotación inválida, la huella sin girar.
   const obra = fc
     .record({
-      t: fc.constantFrom<unknown>('casa', 'caja-envio', 'cobertizo', 'caja-envio', 'toString'),
+      t: fc.constantFrom<unknown>(
+        'casa',
+        'tienda',
+        'caja-envio',
+        'cobertizo',
+        'caja-envio',
+        'toString',
+      ),
       x: fc.oneof(coord, fc.integer({ min: 2 * c - 3, max: 4 * c + 2 })),
       y: fc.oneof(coord, fc.integer({ min: 4 * c - 3, max: lado - 1 })),
+      rotacion: fc.oneof(
+        { weight: 6, arbitrary: fc.constantFrom<unknown>(0, 1, 2, 3, undefined) },
+        { weight: 1, arbitrary: fc.constantFrom<unknown>(4, -1, 1.5, '1') },
+      ),
       zona: fc.constantFrom('vivienda', 'almacen', 'almacen', 'cultivo'),
       pintar: fc.boolean(),
       plano: fc.boolean(),
+      comprar: fc.boolean(),
     })
-    .map(({ t, x, y, zona, pintar: p, plano: pl }) => [
-      ...(p ? [{ tipo: 'PintarZona', x0: x, y0: y, x1: x + 3, y1: y + 2, zona }] : []),
-      ...(pl ? [{ tipo: 'CambiarModo', modo: 'plano' }] : []),
-      { tipo: 'Construir', tipoEdificio: t, x, y },
-    ])
+    .map(({ t, x, y, rotacion, zona, pintar: p, plano: pl, comprar }) => {
+      const def = defEdificio(t) ?? { ancho: 4, alto: 3 }
+      const giro = rotacion === 1 || rotacion === 3 ? rotacion : 0
+      const h = huellaDe(def, x, y, giro)
+      // A veces intenta antes comprar la parcela de la esquina (puede fallar si no es adyacente):
+      // así hay obras válidas de sobra aunque las huellas del GDD sean grandes.
+      const n = lado / c
+      const parcela = Math.floor(y / c) * n + Math.floor(x / c)
+      const enValle = x >= 0 && y >= 0 && x < lado && y < lado
+      return [
+        ...(comprar && enValle ? [{ tipo: 'ComprarParcela', indice: parcela }] : []),
+        ...(p ? [{ tipo: 'PintarZona', x0: h.x0, y0: h.y0, x1: h.x1, y1: h.y1, zona }] : []),
+        ...(pl ? [{ tipo: 'CambiarModo', modo: 'plano' }] : []),
+        {
+          tipo: 'Construir',
+          tipoEdificio: t,
+          x,
+          y,
+          ...(rotacion === undefined ? {} : { rotacion }),
+        },
+      ]
+    })
   return fc.oneof(
     { weight: 8, arbitrary: obra },
     {
@@ -1193,7 +1231,9 @@ describe('partidas largas mezclando todos los comandos', () => {
         { numRuns: 150 },
       )
       // Suelo de no vacuidad: con ahorros reales solo caben unas pocas obras por partida, así que
-      // más de 10 en 150 partidas aleatorias fluctuaba (9 en ~1 de cada 25 pasadas).
+      // más de 10 en 150 partidas aleatorias fluctuaba (9 en ~1 de cada 25 pasadas). Con las
+      // huellas del GDD (M5) el generador compra antes la parcela y pinta la huella girada real:
+      // salen ~9–20 obras con ahorros reales y ~20–35 con el estado rico (#182).
       expect(construidos).toBeGreaterThan(3)
     })
   }
