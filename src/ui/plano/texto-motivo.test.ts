@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { MOTIVOS_COLOCACION } from '../../core'
+import { MOTIVOS_VEREDICTO } from '../../core'
 import { textoMotivo } from './texto-motivo'
 
 const nada = { dinero: 0, madera: 0, piedra: 0 }
 
 describe('textoMotivo', () => {
   it('cubre todos los motivos de colocación con un texto propio', () => {
-    for (const m of MOTIVOS_COLOCACION) {
+    for (const m of MOTIVOS_VEREDICTO) {
       const texto = textoMotivo(m, nada)
       expect(texto).not.toBe('')
       expect(texto).not.toContain('construir.motivo')
     }
   })
 
-  it('cada motivo tiene un texto distinto', () => {
-    const textos = MOTIVOS_COLOCACION.map((m) => textoMotivo(m, nada))
-    expect(new Set(textos).size).toBe(textos.length)
+  it('cada motivo tiene un texto distinto, salvo los tres genéricos «No se puede construir aquí»', () => {
+    const textos = MOTIVOS_VEREDICTO.map((m) => textoMotivo(m, nada))
+    expect(new Set(textos).size).toBe(textos.length - 2)
   })
 
   it('materiales y fondos dicen lo que falta', () => {

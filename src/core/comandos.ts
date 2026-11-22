@@ -148,6 +148,8 @@ export type EventoJuego =
       readonly tipoEdificio: TipoEdificio
       readonly x: number
       readonly y: number
+      /** Giro en cuartos de vuelta; ausente = 0. */
+      readonly rotacion?: Rotacion
     }
   /** El edificio `id` se movió y su esquina está ahora en (x, y). */
   | {
@@ -156,6 +158,8 @@ export type EventoJuego =
       readonly tipoEdificio: TipoEdificio
       readonly x: number
       readonly y: number
+      /** Giro en cuartos de vuelta tras moverlo; ausente = 0. */
+      readonly rotacion?: Rotacion
     }
   /** El edificio terminado `id` se demolió; `reembolso` es lo que se devolvió. */
   | {
@@ -480,7 +484,9 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       const ny = y + 0
       return {
         ok: true,
-        eventos: [{ tipo: 'obra-iniciada', id, tipoEdificio, x: nx, y: ny }],
+        eventos: [
+          { tipo: 'obra-iniciada', id, tipoEdificio, x: nx, y: ny, ...conRotacion(rotacion) },
+        ],
         estado: {
           ...estado,
           // Construir sobre tierra arada vacía la limpia (sobre una planta no se llega: `ocupada`).
@@ -521,7 +527,16 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       const ny = y + 0
       return {
         ok: true,
-        eventos: [{ tipo: 'edificio-movido', id, tipoEdificio: e.tipo, x: nx, y: ny }],
+        eventos: [
+          {
+            tipo: 'edificio-movido',
+            id,
+            tipoEdificio: e.tipo,
+            x: nx,
+            y: ny,
+            ...conRotacion(rotacion),
+          },
+        ],
         estado: {
           ...estado,
           tierra: tierraSinHuella(estado, defEdificio(e.tipo), nx, ny, rotacion),

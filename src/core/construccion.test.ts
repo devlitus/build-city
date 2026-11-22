@@ -720,6 +720,34 @@ describe('zonas y edificios (gancho casillaConEdificio)', () => {
 })
 
 describe('M5-T03: rotación y validación de la colocación', () => {
+  it('obra-iniciada y edificio-movido llevan la rotación (ausente si es 0)', () => {
+    const g = aplicarComando(lim, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 1,
+    })
+    expect(g.ok && g.eventos[0]).toMatchObject({ tipo: 'obra-iniciada', rotacion: 1 })
+    const n = aplicarComando(lim, {
+      tipo: 'Construir',
+      tipoEdificio: 'cobertizo',
+      x: ALM.x,
+      y: ALM.y,
+    })
+    expect(n.ok && n.eventos[0]).not.toHaveProperty('rotacion')
+    const t = ok(lim, { tipo: 'Construir', tipoEdificio: 'cobertizo', x: ALM.x, y: ALM.y })
+    const terminado = { ...t, edificios: t.edificios.map((b) => ({ ...b, obra: null })) }
+    const m = aplicarComando(terminado, {
+      tipo: 'MoverEdificio',
+      id: 1,
+      x: ALM.x,
+      y: ALM.y,
+      rotacion: 3,
+    })
+    expect(m.ok && m.eventos[0]).toMatchObject({ tipo: 'edificio-movido', rotacion: 3 })
+  })
+
   const colocar = (e: EstadoJuego, t: TipoEdificio, x: number, y: number, rotacion: Rotacion) =>
     colocacionValida(e, t, x, y, { rotacion })
   const motivoRot = (e: EstadoJuego, t: TipoEdificio, x: number, y: number, r: Rotacion) => {
@@ -742,7 +770,8 @@ describe('M5-T03: rotación y validación de la colocación', () => {
     expect(ocupadas.has((VIV.y + 4) * LADO + VIV.x + 5)).toBe(false)
   })
 
-  it('solape con edificio se rechaza (solo con el giro que lo provoca)', () => {
+  it('solape con edificio se rechaza', () => {
+    // Solo con el giro que lo provoca.
     // Obra de caja-envio 2×1 en (ALM.x, ALM.y + 3).
     const e = ok(lim, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: ALM.x, y: ALM.y + 3 })
     // Cobertizo 4×3 sin girar acaba en y+2; girado (3×4) llega a y+3 y choca.
@@ -760,7 +789,8 @@ describe('M5-T03: rotación y validación de la colocación', () => {
     expect(r).toMatchObject({ ok: false, error: 'ocupada' })
   })
 
-  it('solape con obstáculo se rechaza (solo con el giro que lo provoca)', () => {
+  it('solape con obstáculo se rechaza', () => {
+    // Solo con el giro que lo provoca.
     const e = {
       ...lim,
       obstaculos: [{ x: ALM.x, y: ALM.y + 3, tipo: 'roca' as const, variante: 0 }],
@@ -779,7 +809,8 @@ describe('M5-T03: rotación y validación de la colocación', () => {
     if (!v.valida) expect(['agua', 'no-propia', 'fuera-del-valle']).toContain(v.motivo)
   })
 
-  it('zona incompatible se rechaza (con el giro que cruza el límite de zonas)', () => {
+  it('zona incompatible se rechaza', () => {
+    // Con el giro que cruza el límite de zonas.
     // La vivienda ocupa px..px+C/2-1. La casa 7×5 sin girar cruzaría hacia el almacén;
     // girada (5×7) cabe justo; un paso más a la derecha vuelve a cruzar.
     const x = px + C / 2 - 5

@@ -76,6 +76,8 @@ export function crearFantasma(valle: Valle, altura: FuncionAltura): Fantasma {
         return null
       }
       const esquina = esquinaDeHuella(def, casilla, rotacion)
+      // El estado del núcleo es inmutable (cada comando crea uno nuevo), así que comparar la
+      // referencia con `===` basta para saber si cambió algo que pueda alterar el veredicto.
       if (
         actual &&
         ultimoEstado === estado &&

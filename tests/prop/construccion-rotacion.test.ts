@@ -4,7 +4,7 @@ import {
   aplicarComando,
   casillasOcupadas,
   casillasRio,
-  colocacionValida,
+  veredictoColocacion,
   crearEstadoInicial,
   huellaDe,
   defEdificio,
@@ -52,7 +52,37 @@ const orden = fc.record({
 })
 
 describe('rotación: el veredicto y el comando coinciden', () => {
-  it('Construir tiene éxito ⇔ colocacionValida es válida (con rotaciones aleatorias)', () => {
+  it('también con el día en el límite y con un estado mal formado', () => {
+    const casos: EstadoJuego[] = [
+      { ...(ESTADOS[0] as EstadoJuego), dia: Number.MAX_SAFE_INTEGER },
+      { ...(ESTADOS[1] as EstadoJuego), siguienteIdEdificio: 1.5 },
+      { ...(ESTADOS[2] as EstadoJuego), materiales: { madera: -1, piedra: 0 } },
+    ]
+    fc.assert(
+      fc.property(
+        fc.nat(2),
+        fc.integer({ min: 0, max: 159 }),
+        fc.integer({ min: 0, max: 159 }),
+        rot,
+        (i, x, y, rotacion) => {
+          const e = casos[i] as EstadoJuego
+          const v = veredictoColocacion(e, 'caja-envio', x, y, rotacion)
+          const r = aplicarComando(e, {
+            tipo: 'Construir',
+            tipoEdificio: 'caja-envio',
+            x,
+            y,
+            rotacion,
+          })
+          expect(r.ok).toBe(v.valida)
+          if (!r.ok && !v.valida) expect(r.error).toBe(v.motivo)
+        },
+      ),
+      { numRuns: 100 },
+    )
+  })
+
+  it('Construir tiene éxito ⇔ veredictoColocacion es válido (con rotaciones aleatorias)', () => {
     fc.assert(
       fc.property(fc.nat(2), fc.array(orden, { maxLength: 12 }), (si, ordenes) => {
         let e = ESTADOS[si] as EstadoJuego
@@ -66,7 +96,7 @@ describe('rotación: el veredicto y el comando coinciden', () => {
           const pi = propias[Math.abs(o.x) % propias.length] as number
           const x = (pi % e.valle.parcelasPorLado) * c + (Math.abs(o.x) % c)
           const y = Math.floor(pi / e.valle.parcelasPorLado) * c + (Math.abs(o.y) % c)
-          const v = colocacionValida(e, o.tipo, x, y, { rotacion: o.rotacion })
+          const v = veredictoColocacion(e, o.tipo, x, y, o.rotacion)
           const r = aplicarComando(e, {
             tipo: 'Construir',
             tipoEdificio: o.tipo,

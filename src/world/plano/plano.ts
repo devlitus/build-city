@@ -1,5 +1,5 @@
 import { Group, type Object3D, type PerspectiveCamera } from 'three'
-import { ladoValle, type Comando } from '../../core'
+import { ladoValle, veredictoColocacion, type Comando } from '../../core'
 import type { LectorEstado } from '../../juego/almacen'
 import { comandoDeZona, herramientaPlano } from '../../juego/herramienta-plano'
 import { colocacion } from '../../juego/colocacion'
@@ -81,8 +81,10 @@ export function crearCapaPlano(
       // Clic izquierdo sin arrastre: construye lo que muestra el fantasma, con los mismos
       // parámetros. Tras construir se puede seguir colocando otro igual (Esc o volver a elegir
       // el edificio lo cancela). El núcleo decide; el clic en rojo no envía nada.
+      // Se recalcula con el estado de ahora mismo (pudo cambiar desde el último fotograma).
       const f = fantasma.actual
-      if (f?.veredicto.valida) {
+      const ahora = f ? veredictoColocacion(lector.estado, f.tipo, f.x, f.y, f.rotacion) : null
+      if (f && ahora?.valida) {
         lector.despachar({
           tipo: 'Construir',
           tipoEdificio: f.tipo,

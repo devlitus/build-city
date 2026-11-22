@@ -13,9 +13,9 @@ export const ALTO_CATALOGO = 380
 export const TOP_CATALOGO = 14 + ALTO_RELOJ + 10
 
 /**
- * Catálogo de edificios del Modo Plano, a la izquierda. De momento el clic solo marca el
- * edificio elegido en el canal; la colocación (y Esc para desmarcar) las hace M5-T03. Salir del Modo Plano lo
- * desmarcan. Lo que falta de dinero o materiales se pinta en rojo.
+ * Catálogo de edificios del Modo Plano, a la izquierda. De momento el clic marca el
+ * edificio elegido en el canal (que activa la herramienta Construir y su fantasma; volver a
+ * hacer clic o Esc lo desmarca). Salir del Modo Plano lo desmarca. Lo que falta de dinero o materiales se pinta en rojo.
  */
 export function Catalogo({
   almacen,

@@ -50,7 +50,11 @@
       "zona-incompatible": "Zona no compatible",
       "bloquea-paso": "Bloquearía el paso",
       "fondos-insuficientes": "Faltan monedas",
-      "materiales-insuficientes": "Faltan materiales"
+      "materiales-insuficientes": "Faltan materiales",
+      "solo-en-plano": "Solo se construye en el Modo Plano",
+      "estado-invalido": "No se puede construir aquí",
+      "limite-de-dia": "No se puede construir aquí",
+      "parametro-invalido": "No se puede construir aquí"
     }
   },
   "parcela": {
