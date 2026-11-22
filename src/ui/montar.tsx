@@ -27,6 +27,8 @@ import { edificioElegido } from '../juego/edificio-elegido'
 import { Zonas } from './plano/Zonas'
 import { MotivoColocacion } from './plano/MotivoColocacion'
 import { colocacion } from '../juego/colocacion'
+import { edicionPlano } from '../juego/edicion-plano'
+import { Acciones } from './plano/Acciones'
 
 /** Monta el HUD en `contenedor` (`#ui`). Los colores salen de la paleta como variables CSS. */
 export function montarUi(contenedor: HTMLElement, almacen: FuenteDespacho): void {
@@ -47,7 +49,12 @@ export function montarUi(contenedor: HTMLElement, almacen: FuenteDespacho): void
       <PanelParcela almacen={almacen} canal={seleccionParcela} />
       <Catalogo almacen={almacen} canal={edificioElegido} />
       <Zonas almacen={almacen} canal={herramientaPlano} />
-      <MotivoColocacion colocacion={colocacion} herramienta={herramientaPlano} />
+      <MotivoColocacion
+        colocacion={colocacion}
+        herramienta={herramientaPlano}
+        edicion={edicionPlano}
+      />
+      <Acciones almacen={almacen} canal={edicionPlano} herramienta={herramientaPlano} />
     </>,
     contenedor,
   )
