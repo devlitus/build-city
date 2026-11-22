@@ -146,3 +146,19 @@ export function casillasOcupadas(
   }
   return mapa
 }
+
+/**
+ * Edificio que ocupa la casilla (x, y), o `undefined` si no hay ninguno (o está fuera del valle).
+ * Usa `casillasOcupadas`, la misma cuenta que las colocaciones. Pura.
+ */
+export function edificioEnCasilla(
+  estado: { readonly edificios: readonly Edificio[] },
+  x: number,
+  y: number,
+  lado: number,
+): Edificio | undefined {
+  if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y)) return undefined
+  if (x < 0 || y < 0 || x >= lado || y >= lado) return undefined
+  const id = casillasOcupadas(estado.edificios, lado).get(y * lado + x)
+  return id === undefined ? undefined : estado.edificios.find((e) => e.id === id)
+}

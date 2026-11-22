@@ -1,6 +1,6 @@
 import { materialesQueFaltan } from './catalogo'
 import { MOTIVOS_COLOCACION, type MotivoColocacion } from './construccion'
-import { comprobarConstruir } from './comandos'
+import { comprobarConstruir, comprobarMover } from './comandos'
 import type { Coste, Rotacion, TipoEdificio } from './edificios'
 import type { EstadoJuego } from './estado'
 
@@ -14,6 +14,9 @@ export const MOTIVOS_VEREDICTO = [
   'estado-invalido',
   'limite-de-dia',
   'parametro-invalido',
+  // Solo de mover: el edificio ya no existe o es una obra (las obras no se mueven).
+  'edificio-inexistente',
+  'en-obra',
 ] as const
 export type MotivoVeredicto = MotivoColocacion | (typeof MOTIVOS_VEREDICTO)[number]
 
@@ -43,6 +46,26 @@ export function veredictoColocacion(
     : 'estado-invalido'
   const falta = motivo === 'fondos-insuficientes' || motivo === 'materiales-insuficientes'
   return { valida: false, motivo, faltan: falta ? materialesQueFaltan(estado, tipo) : SIN_FALTAN }
+}
+
+/**
+ * Veredicto del fantasma al mover el edificio `id` a la esquina (x, y) con el giro `rotacion`.
+ * Sale de `comprobarMover`, la misma comprobación que hace `MoverEdificio`: el fantasma es azul si
+ * y solo si soltarlo ahí tendría éxito. Mover es gratis, así que `faltan` siempre es 0. Pura.
+ */
+export function veredictoMover(
+  estado: EstadoJuego,
+  id: number,
+  x: number,
+  y: number,
+  rotacion: Rotacion,
+): Veredicto {
+  const error = comprobarMover(estado, id, x, y, rotacion)
+  if (error === undefined) return { valida: true }
+  const motivo: MotivoVeredicto = (MOTIVOS_VEREDICTO as readonly string[]).includes(error)
+    ? (error as MotivoVeredicto)
+    : 'estado-invalido'
+  return { valida: false, motivo, faltan: SIN_FALTAN }
 }
 
 /** ¿Dos veredictos dicen lo mismo? (para avisar a la interfaz solo si cambia) */

@@ -54,8 +54,28 @@
       "solo-en-plano": "Solo se construye en el Modo Plano",
       "estado-invalido": "No se puede construir aquí",
       "limite-de-dia": "No se puede construir aquí",
-      "parametro-invalido": "No se puede construir aquí"
+      "parametro-invalido": "No se puede construir aquí",
+      "edificio-inexistente": "Ese edificio ya no existe",
+      "en-obra": "Una obra no se puede mover"
     }
+  },
+  "mover": {
+    "ayuda": "Clic en un edificio para cogerlo · Esc: cancelar",
+    "ayudaCogido": "Clic: soltar aquí (gratis) · R: girar · Esc: dejarlo donde estaba"
+  },
+  "acciones": {
+    "etiqueta": "Confirmar demolición",
+    "ayuda": "Clic en un edificio para demolerlo · Esc: cancelar",
+    "demoler": "¿Demoler {nombre}?",
+    "cancelarObra": "¿Cancelar la obra de {nombre}?",
+    "devuelve": "Se devuelve: {lista}",
+    "nada": "No se devuelve nada",
+    "dinero": "{n} monedas",
+    "madera": "{n} madera",
+    "piedra": "{n} piedra",
+    "noDemolible": "{nombre} no se puede demoler",
+    "confirmar": "Confirmar",
+    "cancelar": "Cancelar"
   },
   "parcela": {
     "titulo": "Parcela {fila}-{columna}",
