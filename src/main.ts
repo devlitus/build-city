@@ -11,6 +11,7 @@ import {
 } from './juego/entrada'
 import { instalarTeclasHerramientaPlano, herramientaPlano } from './juego/herramienta-plano'
 import { enlazarConstruccion } from './juego/colocacion'
+import { enlazarEdicion } from './juego/edicion-plano'
 import { edificioElegido } from './juego/edificio-elegido'
 import { instalarEleccionSemilla } from './juego/semillas'
 import { instalarTeclaModo } from './juego/modo'
@@ -65,6 +66,7 @@ if (contenedor) {
   instalarTeclaModo(almacen)
   instalarTeclasHerramientaPlano(almacen)
   enlazarConstruccion(edificioElegido, herramientaPlano)
+  enlazarEdicion(herramientaPlano)
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)
   const ui = document.getElementById('ui')

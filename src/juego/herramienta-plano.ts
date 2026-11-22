@@ -77,8 +77,8 @@ export const herramientaPlano: CanalHerramientaPlano = crearCanalHerramientaPlan
 
 /**
  * Herramienta que corresponde a una tecla en Modo Plano (pura), o `undefined` si no hace nada.
- * Z activa Zonas; Esc vuelve a Parcelas. Ignora repetición y combinaciones con Ctrl/Alt/Meta.
- * M, X y 1–9 están reservadas para otras herramientas (R gira el fantasma: `esTeclaGirar`).
+ * Z activa Zonas, M Mover y X Demoler; Esc vuelve a Parcelas. Ignora repetición y combinaciones con Ctrl/Alt/Meta.
+ * 1–9 están reservadas para otras herramientas (R gira el fantasma: `esTeclaGirar`).
  */
 export function herramientaDeTecla(
   tecla: TeclaEntrada,
@@ -87,12 +87,14 @@ export function herramientaDeTecla(
   if (estado.modo !== 'plano') return undefined
   if (tecla.repeat || tecla.altKey || tecla.ctrlKey || tecla.metaKey) return undefined
   if (tecla.code === 'KeyZ') return 'zonas'
+  if (tecla.code === 'KeyM') return 'mover'
+  if (tecla.code === 'KeyX') return 'demoler'
   if (tecla.code === 'Escape') return 'parcelas'
   return undefined
 }
 
 /**
- * ¿Esta tecla gira el fantasma 90°? Solo R, en Modo Plano con la herramienta Construir; ignora
+ * ¿Esta tecla gira el fantasma 90°? Solo R, en Modo Plano con la herramienta Construir o Mover; ignora
  * repetición y combinaciones con Ctrl/Alt/Meta. Pura.
  */
 export function esTeclaGirar(
@@ -100,7 +102,8 @@ export function esTeclaGirar(
   estado: Pick<EstadoJuego, 'modo'>,
   herramienta: HerramientaPlano,
 ): boolean {
-  if (estado.modo !== 'plano' || herramienta !== 'construir') return false
+  if (estado.modo !== 'plano' || (herramienta !== 'construir' && herramienta !== 'mover'))
+    return false
   if (tecla.repeat || tecla.altKey || tecla.ctrlKey || tecla.metaKey) return false
   return tecla.code === 'KeyR'
 }
