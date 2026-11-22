@@ -14,8 +14,10 @@ import {
 import {
   hayMarchita,
   limpiarMarchita,
-  motivoNoRegar,
-  regar,
+  costeRegadera,
+  motivoNoRegarConNivel,
+  nivelRegaderaDe,
+  regarConNivel,
   type ErrorRiego,
   type EventoMarchitaLimpiada,
   type EventoTierraRegada,
@@ -165,13 +167,19 @@ export const EFECTOS_HERRAMIENTA: Readonly<Record<Herramienta, EfectoHerramienta
     comprobar: (e, x, y) => (hayMarchita(e, x, y) ? undefined : motivoNoArar(e, x, y)),
     aplicar: (e, x, y) => (hayMarchita(e, x, y) ? limpiarMarchita(e, x, y) : arar(e, x, y)),
   },
-  regadera: { comprobar: motivoNoRegar, aplicar: regar },
+  regadera: { comprobar: motivoNoRegarConNivel, aplicar: regarConNivel },
   semillas: { comprobar: motivoNoSembrar, aplicar: plantar },
   // Mano: cosechar tiene prioridad, luego limpia una marchita y, si no hay nada de eso, planta un
   // plantón del inventario (M5-06).
   mano: encadenar(efectoCosechar, efectoLimpiarMarchita, efectoPlantarPlanton),
   hacha: efectoHacha,
   pico: efectoPico,
+}
+
+/** Energía que gasta un uso de la herramienta activa del estado (la regadera depende de su nivel). */
+export function costeUso(estado: EstadoJuego): number {
+  if (estado.herramienta === 'regadera') return costeRegadera(nivelRegaderaDe(estado) ?? 1)
+  return costeEnergia(estado.herramienta)
 }
 
 /** ¿Está la casilla (x, y) en la del personaje o en una de sus 8 vecinas? (distancia de Chebyshev ≤ 1) */
@@ -218,7 +226,7 @@ export function comprobarUsarHerramienta(
   // Orden: comunes, motivo propio del efecto y, la última, la energía; un rechazo nunca gasta.
   const motivo = EFECTOS_HERRAMIENTA[estado.herramienta].comprobar(estado, x, y)
   if (motivo) return motivo
-  if (estado.energia < costeEnergia(estado.herramienta)) return 'sin-energia'
+  if (estado.energia < costeUso(estado)) return 'sin-energia'
   return undefined
 }
 
@@ -236,7 +244,7 @@ export function usarHerramienta(estado: EstadoJuego, x: number, y: number): Resu
   if (!r.ok) return r
   return {
     ok: true,
-    estado: gastarEnergia(r.estado, costeEnergia(estado.herramienta)),
+    estado: gastarEnergia(r.estado, costeUso(estado)),
     eventos: [
       { tipo: 'herramienta-usada', herramienta: estado.herramienta, x: nx, y: ny },
       ...r.eventos,
