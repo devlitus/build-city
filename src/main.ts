@@ -9,6 +9,7 @@ import {
   instalarEntrada,
   instalarUsoHerramienta,
 } from './juego/entrada'
+import { instalarTeclasHerramientaPlano } from './juego/herramienta-plano'
 import { instalarTeclaModo } from './juego/modo'
 import { instalarTeclasTiempo } from './juego/tiempo'
 import { montarUi } from './ui/montar'
@@ -52,6 +53,7 @@ if (contenedor) {
     () => document.pointerLockElement === renderer.domElement,
   )
   instalarTeclaModo(almacen)
+  instalarTeclasHerramientaPlano(almacen)
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)
   const ui = document.getElementById('ui')
