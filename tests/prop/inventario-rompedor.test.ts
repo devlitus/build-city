@@ -210,7 +210,9 @@ const preparacion: fc.Arbitrary<Preparacion> = fc.record({
   tipoObs: fc.constantFrom('arbol', 'roca', 'planton') as fc.Arbitrary<
     'arbol' | 'roca' | 'planton'
   >,
-  golpes: fc.constantFrom(0, 0, 1, 2, 4),
+  // Más peso a 2 y 4 golpes previos: el golpe final (quitado-arbol) salía ~6 veces en 12.000
+  // y a veces ninguna (#171). 0 y 1 siguen cubriendo los golpes intermedios.
+  golpes: fc.constantFrom(0, 1, 2, 2, 4, 4),
   planton: fc.boolean(),
   cultivoPlanta: fc.constantFrom(...CULTIVOS_PRUEBA),
   tirada: fc.integer({ min: 0, max: 11 }),
