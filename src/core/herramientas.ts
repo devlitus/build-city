@@ -67,16 +67,17 @@ export interface EventoHerramientaUsada {
 /** Un golpe de hacha o pico que aún no acaba con el obstáculo; quedan `restantes` golpes. */
 export interface EventoObstaculoGolpeado {
   readonly tipo: 'obstaculo-golpeado'
-  readonly obstaculo: 'arbol' | 'roca' | 'planton'
+  readonly obstaculo: 'arbol' | 'roca' | 'planton' | 'tocon'
   readonly x: number
   readonly y: number
   readonly restantes: number
 }
 
-/** El obstáculo de (x, y) se quitó y dio `madera`, `piedra` y `plantones` (los que cupieron en el inventario). */
+/**
+ * El obstáculo de (x, y) se quitó (un árbol talado deja un `tocon` en la casilla) y dio `madera`, `piedra` y `plantones` (los que cupieron en el inventario). */
 export interface EventoObstaculoQuitado {
   readonly tipo: 'obstaculo-quitado'
-  readonly obstaculo: 'arbol' | 'roca' | 'planton'
+  readonly obstaculo: 'arbol' | 'roca' | 'planton' | 'tocon'
   readonly x: number
   readonly y: number
   readonly madera: number

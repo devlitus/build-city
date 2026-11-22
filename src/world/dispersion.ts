@@ -175,6 +175,8 @@ export interface EntornoDispersion {
   readonly datos: DatosVegetacion
   /** Cota del agua (m); por defecto la de `data/terreno.json`. */
   readonly nivelAgua?: number
+  /** Filtro del pueblo para la hierba (`crearFiltroPueblo` con `hierba.margenPueblo`); si falta se crea. */
+  readonly enPueblo?: (x: number, z: number) => boolean
 }
 
 /** Trozos que cubre la hierba: el valle y el anillo de `anilloMetros` alrededor. */
@@ -195,7 +197,7 @@ export function matasDeTrozo(trozo: Trozo, entorno: EntornoDispersion): Colocaci
   const mitad = ladoMetros(valle) / 2
   const c = valle.casillasPorParcela
   const lado = valle.parcelasPorLado * c
-  const enPueblo = crearFiltroPueblo(valle, h.margenPueblo)
+  const enPueblo = entorno.enPueblo ?? crearFiltroPueblo(valle, h.margenPueblo)
   const s = semilla ^ 0x2c1b3c6d
   const origen = casillaDeTrozo(trozo, valle)
   const salida: Colocacion[] = []

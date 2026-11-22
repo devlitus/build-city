@@ -41,5 +41,6 @@
   "uiAcento": "#f0c27a",
   "uiLinea": "#313a2b",
   "uiSube": "#8fd16f",
-  "uiBaja": "#e07a5f"
+  "uiBaja": "#e07a5f",
+  "uiAlerta": "#d9674a"
 }

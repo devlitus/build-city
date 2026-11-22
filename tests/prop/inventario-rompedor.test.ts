@@ -554,7 +554,9 @@ describe('M5-01 · rompedor del núcleo', () => {
                       ? CONFIG_RECURSOS.arbol.golpes[terreno]
                       : o.tipo === 'roca'
                         ? CONFIG_RECURSOS.roca.golpes[terreno]
-                        : 1
+                        : o.tipo === 'tocon'
+                          ? CONFIG_RECURSOS.tocon.golpes
+                          : 1
                   const dados = (o.golpes ?? 0) + 1
                   if (dados < necesarios) {
                     previsto = {
@@ -570,7 +572,12 @@ describe('M5-01 · rompedor del núcleo', () => {
                     })
                     vistos.set('golpe', (vistos.get('golpe') ?? 0) + 1)
                   } else {
-                    const madera = o.tipo === 'arbol' ? CONFIG_RECURSOS.arbol.madera[terreno] : 0
+                    const madera =
+                      o.tipo === 'arbol'
+                        ? CONFIG_RECURSOS.arbol.madera[terreno]
+                        : o.tipo === 'tocon'
+                          ? CONFIG_RECURSOS.tocon.madera
+                          : 0
                     const piedra = o.tipo === 'roca' ? CONFIG_RECURSOS.roca.piedra[terreno] : 0
                     let inv = e.inventario
                     let rng = e.rng
@@ -596,7 +603,15 @@ describe('M5-01 · rompedor del núcleo', () => {
                       ...e,
                       rng,
                       inventario: inv,
-                      obstaculos: e.obstaculos.filter((b) => b !== o),
+                      // Un árbol talado deja un tocón en su casilla.
+                      obstaculos:
+                        o.tipo === 'arbol'
+                          ? e.obstaculos.map((b) =>
+                              b === o
+                                ? { tipo: 'tocon' as const, x: o.x, y: o.y, variante: o.variante }
+                                : b,
+                            )
+                          : e.obstaculos.filter((b) => b !== o),
                       materiales: {
                         madera: e.materiales.madera + madera,
                         piedra: e.materiales.piedra + piedra,

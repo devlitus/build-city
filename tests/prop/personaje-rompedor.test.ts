@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { itRendimiento } from '../rendimiento'
 import fc from 'fast-check'
 import {
   aplicarComando,
@@ -308,7 +309,7 @@ describe('rompedor M2-02: cache y estado', () => {
 })
 
 describe('rompedor M2-02: rendimiento', () => {
-  it('MoverPersonaje < 0.5 ms por llamada y mapa en frio < 50 ms', () => {
+  itRendimiento('MoverPersonaje < 0.5 ms por llamada y mapa en frio < 50 ms', () => {
     const e = ini(1)
     const t0 = performance.now()
     mapaTransitabilidad(e)
