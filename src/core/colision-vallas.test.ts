@@ -3,7 +3,7 @@ import { buscarCamino } from './camino'
 import { circuloSolapaBloqueo } from './colision'
 import { crearEstadoInicial, type EstadoJuego } from './estado'
 import { ladoValle, mapaTransitabilidad } from './mapa'
-import { moverPersonaje } from './personaje'
+import { moverPersonaje, type Orientacion } from './personaje'
 import { CARACTER_VALLA, vallasVacias } from './vallas-estado'
 
 const R = 0.3
@@ -41,11 +41,21 @@ function conVallas(piezas: readonly Pieza[]): EstadoJuego {
 }
 const bloqueada = (e: EstadoJuego, x: number, y: number): number =>
   mapaTransitabilidad(e).bloqueada[(Y0 + y) * LADO + X0 + x] as number
-const pers = (x: number, y: number) => ({ x: X0 + x, y: Y0 + y, orientacion: 'este' as const })
+const pers = (x: number, y: number) => ({
+  x: X0 + x,
+  y: Y0 + y,
+  orientacion: 'este' as Orientacion,
+})
 
 describe('colisión con vallas y puertas', () => {
   it('las vallas empiezan vacías y no cambian el mapa inicial', () => {
-    const sin = mapaTransitabilidad({ ...libre, vallas: undefined })
+    const sin = mapaTransitabilidad({
+      valle: libre.valle,
+      cauce: libre.cauce,
+      obstaculos: libre.obstaculos,
+      edificios: libre.edificios,
+      aparicion: libre.aparicion,
+    })
     const vacias = mapaTransitabilidad({ ...libre, vallas: vallasVacias(LADO) })
     expect(Array.from(vacias.bloqueada)).toEqual(Array.from(sin.bloqueada))
     expect(inicial.vallas).toBe(vallasVacias(LADO))
@@ -112,16 +122,13 @@ describe('colisión con vallas y puertas', () => {
       Math.floor(q.x) === X0 + x && Math.floor(q.y) === Y0 + y
 
     // Pared de lado a lado de la ventana con una puerta: la ruta cruza por ella.
-    const pared: Pieza[] = Array.from({ length: 9 }, (_, y) => [
-      4,
-      y,
-      y === 4 ? 'puerta' : 'valla',
-    ])
+    const pared: Pieza[] = Array.from({ length: 9 }, (_, y) => [4, y, y === 4 ? 'puerta' : 'valla'])
     const conPuerta = conVallas(pared)
     const m1 = mapaTransitabilidad(conPuerta)
     const porPuerta = buscarCamino(conPuerta, desde, hasta)
     expect(porPuerta.some((q) => enCasilla(q, 4, 4))).toBe(true)
-    for (const q of porPuerta) expect(m1.bloqueada[Math.floor(q.y) * LADO + Math.floor(q.x)]).toBe(0)
+    for (const q of porPuerta)
+      expect(m1.bloqueada[Math.floor(q.y) * LADO + Math.floor(q.x)]).toBe(0)
     expect(enCasilla(porPuerta.at(-1) as { x: number; y: number }, 7, 4)).toBe(true)
 
     // Valla corta (filas 2..6): la ruta la rodea, es más larga y nunca pisa la valla.
