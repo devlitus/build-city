@@ -31,6 +31,28 @@
       "cobertizo": "Cobertizo"
     }
   },
+  "construir": {
+    "ayuda": "Clic: construir · R: girar · Esc: cancelar",
+    "falta": "Falta: {lista}",
+    "faltaDinero": "{n} monedas",
+    "faltaMadera": "{n} madera",
+    "faltaPiedra": "{n} piedra",
+    "motivo": {
+      "tipo-desconocido": "Edificio desconocido",
+      "unico-ya-existe": "Ya tienes uno",
+      "fuera-del-valle": "Fuera del valle",
+      "no-propia": "Fuera de tus parcelas",
+      "agua": "Hay agua",
+      "obstaculo": "Hay un árbol o una roca",
+      "ocupada": "Ocupado",
+      "aparicion": "Es el punto de aparición",
+      "personaje": "Estás en medio",
+      "zona-incompatible": "Zona no compatible",
+      "bloquea-paso": "Bloquearía el paso",
+      "fondos-insuficientes": "Faltan monedas",
+      "materiales-insuficientes": "Faltan materiales"
+    }
+  },
   "parcela": {
     "titulo": "Parcela {fila}-{columna}",
     "tipo": "Terreno",

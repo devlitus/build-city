@@ -2,10 +2,13 @@ import { Group, type Object3D, type PerspectiveCamera } from 'three'
 import { ladoValle, type Comando } from '../../core'
 import type { LectorEstado } from '../../juego/almacen'
 import { comandoDeZona, herramientaPlano } from '../../juego/herramienta-plano'
+import { colocacion } from '../../juego/colocacion'
+import { edificioElegido } from '../../juego/edificio-elegido'
 import { seleccionParcela } from '../../juego/seleccion-parcela'
 import type { FuncionAltura } from '../terreno/altura'
 import { metrosACasilla } from '../terreno/coordenadas'
 import { filtroDesaturacion } from './geometria-plano'
+import { crearFantasma } from './fantasma'
 import { crearLindes } from './lindes'
 import { DATOS_PLANO } from './plano-datos'
 import { crearRejilla } from './rejilla'
@@ -34,6 +37,7 @@ export function crearCapaPlano(
   const { valle } = lector.estado
   const seleccion = crearSeleccion(camara, lienzo, terreno, valle)
   const resaltado = crearResaltadoParcela(valle, altura)
+  const fantasma = crearFantasma(valle, altura)
 
   // Clic izquierdo sin arrastre (la cámara del plano se mueve arrastrando) sobre una parcela:
   // la anuncia al canal de selección de la UI. No decide nada de reglas.
@@ -71,14 +75,25 @@ export function crearCapaPlano(
       }
       return
     }
-    if (
-      !desde ||
-      e.button !== 0 ||
-      lector.estado.modo !== 'plano' ||
-      herramientaPlano.herramienta !== 'parcelas'
-    )
-      return
+    if (!desde || e.button !== 0 || lector.estado.modo !== 'plano') return
     if (Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > UMBRAL_ARRASTRE_PX) return
+    if (herramientaPlano.herramienta === 'construir') {
+      // Clic izquierdo sin arrastre: construye lo que muestra el fantasma, con los mismos
+      // parámetros. Tras construir se puede seguir colocando otro igual (Esc o volver a elegir
+      // el edificio lo cancela). El núcleo decide; el clic en rojo no envía nada.
+      const f = fantasma.actual
+      if (f?.veredicto.valida) {
+        lector.despachar({
+          tipo: 'Construir',
+          tipoEdificio: f.tipo,
+          x: f.x,
+          y: f.y,
+          rotacion: f.rotacion,
+        })
+      }
+      return
+    }
+    if (herramientaPlano.herramienta !== 'parcelas') return
     const bajo = seleccion.actualizar()
     if (bajo) seleccionParcela.seleccionar(bajo.indiceParcela)
   }
@@ -90,7 +105,7 @@ export function crearCapaPlano(
   const grupo = new Group()
   grupo.name = 'plano'
   const lindes = crearLindes(altura)
-  grupo.add(zonas.objeto, resaltado.objeto, rejilla.objeto, lindes.objeto)
+  grupo.add(zonas.objeto, resaltado.objeto, rejilla.objeto, lindes.objeto, fantasma.objeto)
   // Desaturación: filtro CSS del lienzo (sin coste en la escena; se quita al salir del plano).
   lienzo.style.transition = `filter ${DATOS_PLANO.desaturacion.duracionTransicion}s ease`
   let desaturado = false
@@ -120,6 +135,8 @@ export function crearCapaPlano(
         arrastre = null
         seleccion.olvidar()
         resaltado.mostrar(null)
+        fantasma.actualizar(lector.estado, null, null, 0)
+        colocacion.fijarVeredicto(null)
         return
       }
       sincronizar()
@@ -135,8 +152,19 @@ export function crearCapaPlano(
         zonas.vistaPrevia(null, herramientaPlano.zona)
       }
       const bajo = arrastre ? seleccion.actual : seleccion.actualizar()
+      // Herramienta Construir: el fantasma sigue al cursor y publica su veredicto a la UI.
+      const construyendo = herramientaPlano.herramienta === 'construir'
+      const f = fantasma.actualizar(
+        lector.estado,
+        construyendo ? edificioElegido.actual : null,
+        construyendo ? casillaBajoCursor() : null,
+        colocacion.rotacion,
+      )
+      colocacion.fijarVeredicto(f?.veredicto ?? null)
       resaltado.mostrar(
-        herramientaPlano.herramienta === 'zonas' ? null : (bajo?.indiceParcela ?? null),
+        herramientaPlano.herramienta === 'zonas' || construyendo
+          ? null
+          : (bajo?.indiceParcela ?? null),
       )
     },
     destruir() {
@@ -144,6 +172,7 @@ export function crearCapaPlano(
       lienzo.removeEventListener('pointerup', alSoltar)
       seleccion.destruir()
       resaltado.destruir()
+      fantasma.destruir()
       rejilla.destruir()
       lindes.destruir()
       zonas.destruir()

@@ -9,7 +9,9 @@ import {
   instalarEntrada,
   instalarUsoHerramienta,
 } from './juego/entrada'
-import { instalarTeclasHerramientaPlano } from './juego/herramienta-plano'
+import { instalarTeclasHerramientaPlano, herramientaPlano } from './juego/herramienta-plano'
+import { enlazarConstruccion } from './juego/colocacion'
+import { edificioElegido } from './juego/edificio-elegido'
 import { instalarTeclaModo } from './juego/modo'
 import { instalarTeclasTiempo } from './juego/tiempo'
 import { montarUi } from './ui/montar'
@@ -54,6 +56,7 @@ if (contenedor) {
   )
   instalarTeclaModo(almacen)
   instalarTeclasHerramientaPlano(almacen)
+  enlazarConstruccion(edificioElegido, herramientaPlano)
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)
   const ui = document.getElementById('ui')
