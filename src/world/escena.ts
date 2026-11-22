@@ -32,6 +32,7 @@ import { crearCapaPlano } from './plano/plano'
 import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 import { crearSueloCultivo } from './cultivos/suelo'
 import { crearIndicador } from './cultivos/indicador'
+import { crearEdificios } from './edificios/edificios'
 import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
 export interface Escena {
@@ -133,6 +134,8 @@ export function crearEscena(
   escena.add(plantas.objeto)
   const indicador = crearIndicador(lector, altura)
   escena.add(indicador.objeto)
+  const edificios = crearEdificios(lector, altura)
+  escena.add(edificios.objeto)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -171,6 +174,7 @@ export function crearEscena(
       sueloCultivo.actualizar()
       plantas.actualizar(dt)
       indicador.actualizar()
+      edificios.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -185,6 +189,7 @@ export function crearEscena(
       sueloCultivo.destruir()
       plantas.destruir()
       indicador.destruir()
+      edificios.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()

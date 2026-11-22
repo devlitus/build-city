@@ -17,6 +17,12 @@ export const esquemaObraVisual = v.object({
     fraccionTejado: fraccion,
     margen: v.pipe(v.number(), v.minValue(0)),
   }),
+  /** Nombres de color de `data/paleta.json` de las formas provisionales. */
+  colores: v.object({
+    cimientos: v.string(),
+    andamios: v.string(),
+    edificios: v.record(v.string(), v.object({ paredes: v.string(), tejado: v.string() })),
+  }),
 })
 
 export type DatosObraVisual = v.InferOutput<typeof esquemaObraVisual>

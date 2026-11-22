@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion -- aserciones de catálogo conocido en tests */
 import { describe, expect, it } from 'vitest'
 import { crearEstadoInicial, defEdificio, puertaDe, ROTACIONES, type Edificio } from '../../core'
 import { casillaAMetros } from '../terreno/coordenadas'
@@ -10,7 +11,7 @@ const casa = (rotacion?: 0 | 1 | 2 | 3): Edificio => ({
   x: 20,
   y: 30,
   obra: null,
-  rotacion,
+  ...(rotacion === undefined ? {} : { rotacion }),
 })
 
 describe('giroEdificio', () => {
