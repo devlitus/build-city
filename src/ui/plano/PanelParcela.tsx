@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import type { CanalSeleccionParcela } from '../../juego/seleccion-parcela'
 import type { FuenteDespacho } from '../fuente'
 import { formatearMonedas } from '../hud/formato'
+import { ALTO_COLUMNA_ESTADO } from '../hud/Estado'
 import { t } from '../textos'
 import { datosPanelParcela } from './panel-parcela'
 
@@ -73,7 +74,7 @@ export function PanelParcela({
       aria-label={t('parcela.etiqueta')}
       style={{
         position: 'fixed',
-        top: '72px',
+        top: `${14 + ALTO_COLUMNA_ESTADO}px`,
         right: '14px',
         width: '260px',
         padding: '12px 14px',

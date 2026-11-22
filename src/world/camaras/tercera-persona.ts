@@ -34,8 +34,8 @@ export interface TerceraPersona {
 
 /**
  * Cámara en tercera persona sobre el hombro del personaje. Órbita con el ratón: con *pointer lock*
- * (clic en el lienzo; Esc lo suelta) o, si no se puede, arrastrando con el botón. La rueda acerca
- * y aleja dentro de los límites. Sigue con suavizado exponencial y nunca baja del terreno.
+ * (clic en el lienzo; Esc lo suelta) o, si no se puede, arrastrando con el botón. Alt+rueda acerca
+ * y aleja dentro de los límites (la rueda sola elige herramienta). Sigue con suavizado exponencial y nunca baja del terreno.
  */
 export function crearTerceraPersona(
   camara: PerspectiveCamera,
@@ -99,7 +99,8 @@ export function crearTerceraPersona(
     }
   }
   const alRodar = (e: WheelEvent): void => {
-    if (!habilitada) return
+    // Solo con Alt: la rueda sola elige herramienta (`juego/entrada.ts`).
+    if (!habilitada || !e.altKey) return
     e.preventDefault()
     const factor = e.deltaY < 0 ? 1 / datos.pasoZoom : datos.pasoZoom
     distancia = limitarDistancia(distancia, factor, datos.distancia.min, datos.distancia.max)

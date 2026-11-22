@@ -161,11 +161,15 @@ describe('propiedades de talar, picar y replantar', () => {
           expect(e.materiales.madera).toBeGreaterThanOrEqual(antes.madera)
           expect(e.materiales.piedra).toBeGreaterThanOrEqual(antes.piedra)
           for (const ev of r.eventos) {
-            if (ev.tipo === 'planton-plantado') quitadas.delete(clave(ev.x, ev.y))
+            if (ev.tipo === 'planton-plantado') {
+              for (const t of ['arbol', 'planton', 'tocon']) quitadas.delete(clave(ev.x, ev.y) + t)
+            }
             if (ev.tipo !== 'obstaculo-quitado') continue
-            // Una casilla solo da botín otra vez si en medio se replantó un plantón.
-            expect(quitadas.has(clave(ev.x, ev.y))).toBe(false)
-            quitadas.add(clave(ev.x, ev.y))
+            // Una casilla solo da botín otra vez si en medio se replantó un plantón; un árbol
+            // talado deja un tocón, que da su propio botín al quitarse (clave por tipo).
+            const k = clave(ev.x, ev.y) + ev.obstaculo
+            expect(quitadas.has(k)).toBe(false)
+            quitadas.add(k)
             gana.madera += ev.madera
             gana.piedra += ev.piedra
           }

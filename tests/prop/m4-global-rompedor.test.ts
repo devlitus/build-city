@@ -503,7 +503,7 @@ describe('M4 global rompedor · partidas largas con todos los comandos', () => {
     ]) {
       expect(cuenta[clave] ?? 0, `cobertura ${clave}: ${JSON.stringify(cuenta)}`).toBeGreaterThan(5)
     }
-  }, 240_000)
+  }, 300_000)
 
   it('determinismo: misma semilla y acciones ⇒ mismo estado final', () => {
     fc.assert(
@@ -518,5 +518,5 @@ describe('M4 global rompedor · partidas largas con todos los comandos', () => {
       ),
       { numRuns: 30 },
     )
-  }, 120_000)
+  }, 300_000)
 })

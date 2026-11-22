@@ -2,7 +2,13 @@ import { crearEstadoInicial } from './core'
 import { crearAlmacen } from './juego/almacen'
 import { iniciarBucle } from './juego/bucle'
 import { CONFIG_BUCLE } from './juego/config-bucle'
-import { crearTeclas, direccionRelativa, instalarEntrada } from './juego/entrada'
+import {
+  crearTeclas,
+  direccionRelativa,
+  instalarEleccionHerramienta,
+  instalarEntrada,
+  instalarUsoHerramienta,
+} from './juego/entrada'
 import { instalarTeclaModo } from './juego/modo'
 import { instalarTeclasTiempo } from './juego/tiempo'
 import { montarUi } from './ui/montar'
@@ -36,7 +42,15 @@ if (contenedor) {
     })
   }
 
-  instalarTeclasTiempo(almacen)
+  // Se guarda para quitar el oyente al volver al menú (aún sin usar).
+  const quitarTeclasTiempo = instalarTeclasTiempo(almacen)
+  void quitarTeclasTiempo
+  instalarEleccionHerramienta(almacen)
+  instalarUsoHerramienta(
+    almacen,
+    renderer.domElement,
+    () => document.pointerLockElement === renderer.domElement,
+  )
   instalarTeclaModo(almacen)
   const teclas = crearTeclas()
   instalarEntrada(window, teclas)

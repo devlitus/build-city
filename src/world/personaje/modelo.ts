@@ -19,6 +19,8 @@ import {
 } from './animacion'
 import { DATOS_ANIMACION } from './animacion-datos'
 import { crearSeguidorAltura } from './altura'
+import { inclinacionGolpe } from './gesto'
+import { DATOS_EFECTOS } from '../efectos/efectos-datos'
 import { escalaParaAltura, personajeAMetros } from './medidas'
 import type { Punto3 } from '../camaras/orbita'
 
@@ -39,6 +41,11 @@ export interface Granjero {
    * los pies.
    */
   actualizar(dt: number, alfa?: number): Punto3
+  /**
+   * Gesto de golpear (hacha o pico) mirando al punto (x, z) en metros: gira hacia él y hace un
+   * balanceo procedural del cuerpo (el glb no trae clip de golpe). Un golpe nuevo reinicia el gesto.
+   */
+  golpear(haciaX: number, haciaZ: number): void
   destruir(): void
 }
 
@@ -66,6 +73,8 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
   let zAnterior = inicio.z
   let velocidad = 0
   let giro = 0
+  /** Segundos desde el último golpe; `Infinity` si no hay gesto en curso. */
+  let tiempoGolpe = Infinity
 
   new GLTFLoader()
     .loadAsync(RUTA_MODELO)
@@ -140,6 +149,20 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
       giro = girarHacia(giro, objetivo, DATOS_ANIMACION.giro.velocidadAngular, dt)
       raiz.rotation.y = giro
 
+      // Gesto de golpear: inclinación procedural del modelo sobre sus pies (la animación no la toca).
+      const gesto = DATOS_EFECTOS.golpeGranjero
+      if (modelo && tiempoGolpe < gesto.duracion) {
+        tiempoGolpe += dt
+        modelo.rotation.x = inclinacionGolpe(
+          tiempoGolpe,
+          gesto.duracion,
+          (gesto.inclinacion * Math.PI) / 180,
+          gesto.fraccionPreparacion,
+        )
+      } else if (modelo && modelo.rotation.x !== 0) {
+        modelo.rotation.x = 0
+      }
+
       if (!mezclador || !acciones) return pies
       const { pesos, timeScale } = elegirAnimacion(velocidad, DATOS_ANIMACION)
       // Fundido: los pesos siguen a los objetivos con la duración configurada.
@@ -151,6 +174,12 @@ export function crearGranjero(lector: LectorEstado, altura: FuncionAltura): Gran
       }
       mezclador.update(dt)
       return pies
+    },
+    golpear: (haciaX, haciaZ) => {
+      const dx = haciaX - raiz.position.x
+      const dz = haciaZ - raiz.position.z
+      if (dx !== 0 || dz !== 0) giro = Math.atan2(dx, dz)
+      tiempoGolpe = 0
     },
     destruir: () => {
       destruido = true

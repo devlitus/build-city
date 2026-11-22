@@ -28,6 +28,7 @@ import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
 import { crearCapaPlano } from './plano/plano'
 import { crearParcelasMundo } from './parcelas/parcelas-mundo'
+import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
 export interface Escena {
   escena: Scene
@@ -51,7 +52,7 @@ export interface Escena {
 }
 
 /** Crea el lienzo three.js dentro del contenedor, con luces, terreno y redimensionado. */
-export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Escena {
+export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & FuenteEventos): Escena {
   const { valle, semilla } = lector.estado
   const lado = ladoMetros(valle)
 
@@ -91,10 +92,17 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
   escena.add(crearPueblo(valle, altura))
   const agua = crearAgua(valle, altura)
   escena.add(agua)
-  const vegetacion = crearVegetacion(valle, lector.estado.obstaculos, altura, semilla)
+  const vegetacion = crearVegetacion(
+    valle,
+    lector.estado.obstaculos,
+    altura,
+    semilla,
+    lector.estado.dia,
+  )
   escena.add(vegetacion.objeto)
   const granjero = crearGranjero(lector, altura)
   escena.add(granjero.objeto)
+  const efectos = crearEfectos({ escena, lector, vegetacion, granjero, altura })
 
   const camara = new PerspectiveCamera(
     50,
@@ -142,7 +150,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       const pies = granjero.actualizar(dt, alfa)
       // Antes que la vegetación, que usa la cámara ya colocada.
       const mirado = director.actualizar(dt, pies, lector.estado.modo)
+      vegetacion.sincronizar(lector.estado.obstaculos, lector.estado.dia)
       vegetacion.actualizar(dt, camara)
+      efectos.actualizar(dt)
       plano.actualizar()
       parcelasMundo.actualizar(dt)
       instanteAnterior = ahora
@@ -159,6 +169,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado): Esce
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
+      efectos.destruir()
       vegetacion.destruir()
       granjero.destruir()
       renderer.dispose()

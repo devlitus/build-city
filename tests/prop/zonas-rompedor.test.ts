@@ -4,6 +4,7 @@
  * agua y vados, tamaño de la cadena, JSON, determinismo, estados corruptos y coste.
  */
 import { describe, expect, it } from 'vitest'
+import { itRendimiento } from '../rendimiento'
 import fc from 'fast-check'
 import {
   aplicarComando,
@@ -53,13 +54,17 @@ describe('rectángulos extremos', () => {
     expect(todo.valle.parcelas.every((p) => p.estado === 'propia')).toBe(true)
   })
 
-  it('rectángulo gigante (MAX_SAFE_INTEGER) rápido y recortado', () => {
+  itRendimiento('rectángulo gigante (MAX_SAFE_INTEGER) en menos de 500 ms', () => {
     const M = Number.MAX_SAFE_INTEGER
     const t = performance.now()
+    pintar(todo, -M, -M, M, M, 'huerto')
+    expect(performance.now() - t).toBeLessThan(500)
+  })
+
+  it('rectángulo gigante (MAX_SAFE_INTEGER) recortado', () => {
+    const M = Number.MAX_SAFE_INTEGER
     const r = pintar(todo, -M, -M, M, M, 'huerto')
-    const ms = performance.now() - t
     expect(r.ok).toBe(true)
-    expect(ms).toBeLessThan(500)
     if (r.ok) {
       expect(r.estado.zonas.length).toBe(LADO * LADO)
       const esperado = LADO * LADO - aguaDe(todo).size
@@ -412,7 +417,14 @@ describe('estado corrupto (guardado manipulado)', () => {
 })
 
 describe('coste', () => {
-  it('1000 comandos de rectángulo máximo en menos de 3 s', () => {
+  it('1000 comandos de rectángulo máximo dejan el estado coherente', () => {
+    let e = todo
+    for (let i = 0; i < 1000; i++) {
+      e = pintar(e, 0, 0, LADO - 1, LADO - 1, i % 2 ? 'cultivo' : 'huerto').estado
+    }
+    expect(e.zonas.length).toBe(LADO * LADO)
+  })
+  itRendimiento('1000 comandos de rectángulo máximo en menos de 3 s (a 96×96)', () => {
     let e = todo
     const t = performance.now()
     for (let i = 0; i < 1000; i++) {
@@ -421,7 +433,17 @@ describe('coste', () => {
     // 3 s era el presupuesto para 96×96 casillas (M1-T01: 160×160): crece con el área.
     expect(performance.now() - t).toBeLessThan(3000 * (LADO / 96) ** 2)
   })
-  it('1000 comandos de UNA casilla en menos de 1 s (recalcula el río entero cada vez)', () => {
+  it('1000 comandos de UNA casilla dejan el estado coherente', () => {
+    let e = todo
+    const agua = aguaDe(todo)
+    let x = 0
+    while (agua.has(x)) x++
+    for (let i = 0; i < 1000; i++) {
+      e = pintar(e, x, 0, x, 0, i % 2 ? 'cultivo' : 'huerto').estado
+    }
+    expect(e.zonas.length).toBe(LADO * LADO)
+  })
+  itRendimiento('1000 comandos de UNA casilla en menos de 1 s (recalcula el río entero)', () => {
     let e = todo
     const agua = aguaDe(todo)
     let x = 0
