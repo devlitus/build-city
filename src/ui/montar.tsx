@@ -21,6 +21,8 @@ const COLORES_UI = [
   'baja',
 ] as const
 import { PanelParcela } from './plano/PanelParcela'
+import { Catalogo } from './plano/Catalogo'
+import { edificioElegido } from '../juego/edificio-elegido'
 
 /** Monta el HUD en `contenedor` (`#ui`). Los colores salen de la paleta como variables CSS. */
 export function montarUi(contenedor: HTMLElement, almacen: FuenteDespacho): void {
@@ -39,6 +41,7 @@ export function montarUi(contenedor: HTMLElement, almacen: FuenteDespacho): void
       <Estado almacen={almacen} />
       <Desmayo almacen={almacen} />
       <PanelParcela almacen={almacen} canal={seleccionParcela} />
+      <Catalogo almacen={almacen} canal={edificioElegido} />
     </>,
     contenedor,
   )

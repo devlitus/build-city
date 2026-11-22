@@ -14,6 +14,23 @@
   "estado": {
     "monedas": "Monedas"
   },
+  "catalogo": {
+    "titulo": "Construir",
+    "etiqueta": "Catálogo de edificios",
+    "huella": "{ancho}×{alto} casillas · {dias} d de obra",
+    "gratis": "Gratis",
+    "falta": "falta {n}",
+    "dinero": "monedas",
+    "madera": "madera",
+    "piedra": "piedra",
+    "unico": "Ya tienes uno.",
+    "edificio": {
+      "casa": "Casa",
+      "tienda": "Tienda de campaña",
+      "caja-envio": "Caja de envío",
+      "cobertizo": "Cobertizo"
+    }
+  },
   "parcela": {
     "titulo": "Parcela {fila}-{columna}",
     "tipo": "Terreno",
