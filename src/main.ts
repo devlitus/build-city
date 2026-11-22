@@ -32,6 +32,11 @@ if (contenedor) {
     })
   }
 
+  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8, compra en el pueblo).
+  if (import.meta.env.DEV) {
+    void import('./juego/depuracion-regadera').then((m) => m.instalarAtajoRegadera(almacen))
+  }
+
   // Con F2 manda la cámara libre de depuración: la de tercera persona se detiene y WASD solo
   // mueve la cámara libre (el personaje se queda quieto).
   let camaraLibre: CamaraDepuracion | undefined

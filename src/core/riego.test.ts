@@ -8,6 +8,8 @@ import {
   aplicarComando,
   crearEstadoInicial,
   CONFIG_CULTIVOS,
+  CONFIG_ENERGIA,
+  CONFIG_HERRAMIENTAS,
   CONFIG_TIEMPO,
   CULTIVOS,
   diasHastaMadurar,
@@ -18,6 +20,7 @@ import {
   tierraValida,
   vistaDePlanta,
   type EstadoJuego,
+  type Planta,
 } from './index'
 import { crecerPlantas, motivoNoRegar } from './riego'
 import { empezarDiaSiguiente } from './obras'
@@ -339,5 +342,148 @@ describe('propiedades del riego', () => {
         expect(corre()).toEqual(corre())
       }),
     )
+  })
+})
+
+describe('regadera nivel 2 (3×3)', () => {
+  /** Tierra arada en el cuadrado (cx±r, cy±r); regadera en mano, nivel 2, personaje en (cx, cy). */
+  function conArada(cx: number, cy: number, nivel: 1 | 2 = 2, radio = 1): EstadoJuego {
+    const e = conTierraLabrable(
+      { ...base, personaje: { x: cx + 0.5, y: cy + 0.5, orientacion: 'sur' } },
+      cx,
+      cy,
+    )
+    const celdas = e.tierra.split('')
+    for (let y = cy - radio; y <= cy + radio; y++)
+      for (let x = cx - radio; x <= cx + radio; x++) celdas[sitio(x, y)] = 'a'
+    return { ...e, herramienta: 'regadera', nivelRegadera: nivel, tierra: celdas.join('') }
+  }
+  const regadas = (e: EstadoJuego) => [...e.tierra].filter((c) => c === 'A').length
+  const eventosRiego = (r: ReturnType<typeof riega>) =>
+    (r.ok ? r.eventos : []).filter((ev) => ev.tipo === 'tierra-regada')
+
+  it('nivel 2 riega 9 casillas', () => {
+    const r = riega(conArada(50, 50), 50, 50)
+    expect(r.ok).toBe(true)
+    expect(regadas(r.estado)).toBe(9)
+    expect(eventosRiego(r)).toHaveLength(9)
+    for (let y = 49; y <= 51; y++)
+      for (let x = 49; x <= 51; x++) expect(estaRegada(r.estado, x, y)).toBe(true)
+  })
+
+  it('nivel 1 sigue regando una sola casilla', () => {
+    const r = riega(conArada(50, 50, 1), 50, 50)
+    expect(regadas(r.estado)).toBe(1)
+    expect(eventosRiego(r)).toHaveLength(1)
+  })
+
+  it('en el borde de la parcela riega solo las propias', () => {
+    // Las columnas 40..59 son una parcela; la de 60..79 no es propia (se fuerza).
+    let e = conArada(59, 50)
+    const c = e.valle.casillasPorParcela
+    const ajena = Math.floor(50 / c) * e.valle.parcelasPorLado + Math.floor(60 / c)
+    e = {
+      ...e,
+      valle: {
+        ...e.valle,
+        parcelas: e.valle.parcelas.map((p, i) =>
+          i === ajena ? { ...p, estado: 'en-venta' as const } : p,
+        ),
+      },
+    }
+    const r = riega(e, 59, 50)
+    expect(r.ok).toBe(true)
+    expect(regadas(r.estado)).toBe(6)
+    expect(eventosRiego(r)).toHaveLength(6)
+    for (let y = 49; y <= 51; y++) {
+      expect(estaRegada(r.estado, 58, y)).toBe(true)
+      expect(estaRegada(r.estado, 59, y)).toBe(true)
+      expect(estaRegada(r.estado, 60, y)).toBe(false)
+    }
+  })
+
+  it('solo riega casillas aradas: las sin arar del 3×3 no se mojan', () => {
+    const e = conArada(50, 50)
+    const i = sitio(49, 49)
+    const j = sitio(51, 50)
+    const celdas = e.tierra.split('')
+    celdas[i] = '.'
+    celdas[j] = '.'
+    const r = riega({ ...e, tierra: celdas.join('') }, 50, 50)
+    expect(regadas(r.estado)).toBe(7)
+    expect(r.estado.tierra[i]).toBe('.')
+    expect(r.estado.tierra[j]).toBe('.')
+  })
+
+  it('salta sin error las marchitas y las ya regadas', () => {
+    const e = conArada(50, 50)
+    const celdas = e.tierra.split('')
+    celdas[sitio(49, 49)] = 'A'
+    const p0 = plantaNueva(sitio(51, 51), CULTIVOS.indexOf('rabano'))
+    const marchita: Planta = [p0[0], p0[1], p0[2], p0[3], p0[4], 1]
+    const r = riega({ ...e, tierra: celdas.join(''), plantas: [marchita] }, 50, 50)
+    expect(r.ok).toBe(true)
+    expect(eventosRiego(r)).toHaveLength(7)
+    expect(estaRegada(r.estado, 51, 51)).toBe(false)
+  })
+
+  it('con el centro sin arar pero vecinas aradas, se acepta y riega las vecinas', () => {
+    const e = conArada(50, 50)
+    const celdas = e.tierra.split('')
+    celdas[sitio(50, 50)] = '.'
+    const r = riega({ ...e, tierra: celdas.join('') }, 50, 50)
+    expect(r.ok).toBe(true)
+    expect(eventosRiego(r)).toHaveLength(8)
+  })
+
+  it('sin ninguna casilla regable se rechaza con el motivo del centro y no gasta', () => {
+    const e = { ...conArada(50, 50), tierra: base.tierra }
+    const r = riega(e, 50, 50)
+    expect(r).toMatchObject({ ok: false, error: 'no-arada' })
+    expect(r.estado).toBe(e)
+  })
+
+  it('gasta la energía del dato, una sola vez', () => {
+    const e = conArada(50, 50)
+    const r = riega(e, 50, 50)
+    expect(r.estado.energia).toBe(e.energia - CONFIG_HERRAMIENTAS.regadera.niveles[1].energia)
+    const n1 = riega(conArada(50, 50, 1), 50, 50)
+    expect(n1.estado.energia).toBe(e.energia - CONFIG_ENERGIA.costes.regadera)
+  })
+
+  it('con menos energía que el nivel 2 se rechaza por sin-energia', () => {
+    const e = { ...conArada(50, 50), energia: CONFIG_HERRAMIENTAS.regadera.niveles[1].energia - 1 }
+    expect(riega(e, 50, 50)).toMatchObject({ ok: false, error: 'sin-energia' })
+  })
+
+  it('un estado sin nivelRegadera se lee como nivel 1', () => {
+    const sin = { ...conArada(50, 50) }
+    delete sin.nivelRegadera
+    const r = riega(sin, 50, 50)
+    expect(regadas(r.estado)).toBe(1)
+  })
+
+  it('un nivel inválido se rechaza como estado-invalido', () => {
+    const e = { ...conArada(50, 50), nivelRegadera: 7 as never }
+    expect(riega(e, 50, 50)).toMatchObject({ ok: false, error: 'estado-invalido' })
+  })
+
+  it('MejorarRegadera sube a nivel 2 y es idempotente', () => {
+    const e1 = conArada(50, 50, 1)
+    const r = aplicarComando(e1, { tipo: 'MejorarRegadera' })
+    expect(r).toMatchObject({ ok: true, eventos: [] })
+    expect(r.estado.nivelRegadera).toBe(2)
+    const r2 = aplicarComando(r.estado, { tipo: 'MejorarRegadera' })
+    expect(r2.estado).toBe(r.estado)
+    const sin = { ...e1 }
+    delete sin.nivelRegadera
+    expect(aplicarComando(sin, { tipo: 'MejorarRegadera' }).estado.nivelRegadera).toBe(2)
+    expect(
+      aplicarComando({ ...e1, nivelRegadera: 5 as never }, { tipo: 'MejorarRegadera' }),
+    ).toMatchObject({ ok: false, error: 'estado-invalido' })
+  })
+
+  it('el estado inicial empieza con la regadera de nivel 1', () => {
+    expect(base.nivelRegadera).toBe(1)
   })
 })
