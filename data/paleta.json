@@ -42,5 +42,19 @@
   "uiLinea": "#313a2b",
   "uiSube": "#8fd16f",
   "uiBaja": "#e07a5f",
-  "uiAlerta": "#d9674a"
+  "uiAlerta": "#d9674a",
+  "patataHoja": "#4f8a3c",
+  "patataFlor": "#f1ecf7",
+  "patataFlorLila": "#b69ad6",
+  "zanahoriaHoja": "#62b04a",
+  "zanahoriaRaiz": "#ee7b1d",
+  "lechugaHoja": "#a8d468",
+  "lechugaCogollo": "#cfe892",
+  "rabanoHoja": "#4c9650",
+  "rabanoBulbo": "#d9455c",
+  "fresaHoja": "#3d8c44",
+  "fresaFruto": "#d7263d",
+  "fresaFlor": "#fbf6e6",
+  "marchitoHoja": "#8c6d3b",
+  "marchitoOscuro": "#5c472a"
 }
