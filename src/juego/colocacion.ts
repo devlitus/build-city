@@ -17,6 +17,8 @@ export type OyenteColocacion = (estado: EstadoColocacionUi) => void
 
 export interface CanalColocacion extends EstadoColocacionUi {
   girar(): void
+  /** Fija el giro (al coger un edificio para moverlo empieza con el que ya tenía). */
+  fijarRotacion(rotacion: Rotacion): void
   fijarVeredicto(veredicto: Veredicto | null): void
   /** Quita el veredicto y vuelve al giro 0. */
   reiniciar(): void
@@ -39,6 +41,11 @@ export function crearCanalColocacion(): CanalColocacion {
     },
     girar() {
       rotacion = girar(rotacion)
+      avisar()
+    },
+    fijarRotacion(nueva) {
+      if (nueva === rotacion) return
+      rotacion = nueva
       avisar()
     },
     fijarVeredicto(nuevo) {

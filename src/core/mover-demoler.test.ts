@@ -9,6 +9,8 @@ import {
   casillaBloqueada,
   mapaTransitabilidad,
   defEdificio,
+  huellaDe,
+  rotacionDe,
   ladoValle,
   personajeAlDespertar,
   puertaDe,
@@ -484,4 +486,55 @@ describe('propiedad de dinero (construir y quitar nunca da más)', () => {
       expect(e.materiales.piedra).toBeLessThanOrEqual(base.materiales.piedra)
     },
   )
+})
+
+describe('mover con rotación', () => {
+  /** Primer destino (barriendo desde el final) donde `MoverEdificio` con giro `rot` es válido. */
+  function destinoGirado(e: EstadoJuego, id: number, rot: 0 | 1 | 2 | 3): { x: number; y: number } {
+    const lado = ladoValle(e.valle)
+    for (let y = lado - 1; y >= 0; y--) {
+      for (let x = lado - 1; x >= 0; x--) {
+        if (comprobarMover(e, id, x, y, rot) === undefined) return { x, y }
+      }
+    }
+    throw new Error('sin destino')
+  }
+
+  it('girar al mover cambia la huella (ancho y fondo se cruzan) y la puerta', () => {
+    const t = terminada('cobertizo')
+    const def = defEdificio('cobertizo')!
+    const d = destinoGirado(t.e, t.id, 1)
+    const e = ok(t.e, { tipo: 'MoverEdificio', id: t.id, ...d, rotacion: 1 })
+    const b = e.edificios[0]!
+    expect(b.rotacion).toBe(1)
+    expect(huellaDe(def, b.x, b.y, rotacionDe(b))).toEqual({
+      x0: d.x,
+      y0: d.y,
+      x1: d.x + def.alto - 1,
+      y1: d.y + def.ancho - 1,
+    })
+    expect(puertaDe(def, d.x, d.y, 1)).not.toEqual(puertaDe(def, d.x, d.y, 0))
+  })
+
+  it('con la rotación ausente conserva el giro; con 0 lo quita', () => {
+    const t = terminada('cobertizo')
+    const d = destinoGirado(t.e, t.id, 1)
+    const girado = ok(t.e, { tipo: 'MoverEdificio', id: t.id, ...d, rotacion: 1 })
+    // Otro destino válido para el edificio ya girado, sin indicar rotación.
+    const lado = ladoValle(girado.valle)
+    let d2: { x: number; y: number } | undefined
+    for (let y = 0; y < lado && !d2; y++) {
+      for (let x = 0; x < lado && !d2; x++) {
+        if ((x !== d.x || y !== d.y) && comprobarMover(girado, t.id, x, y) === undefined) {
+          d2 = { x, y }
+        }
+      }
+    }
+    expect(d2).toBeDefined()
+    const sinCampo = ok(girado, { tipo: 'MoverEdificio', id: t.id, ...d2! })
+    expect(sinCampo.edificios[0]!.rotacion).toBe(1)
+    const d0 = destinoGirado(girado, t.id, 0)
+    const sin = ok(girado, { tipo: 'MoverEdificio', id: t.id, ...d0, rotacion: 0 })
+    expect(sin.edificios[0]!.rotacion).toBeUndefined()
+  })
 })

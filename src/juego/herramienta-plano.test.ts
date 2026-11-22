@@ -38,11 +38,15 @@ describe('teclas de herramienta', () => {
     expect(herramientaDeTecla(tecla('KeyZ'), { modo: 'plano' })).toBe('zonas')
     expect(herramientaDeTecla(tecla('Escape'), { modo: 'plano' })).toBe('parcelas')
     expect(herramientaDeTecla(tecla('KeyZ'), { modo: 'vida' })).toBeUndefined()
+    expect(herramientaDeTecla(tecla('KeyM'), { modo: 'plano' })).toBe('mover')
+    expect(herramientaDeTecla(tecla('KeyX'), { modo: 'plano' })).toBe('demoler')
+    expect(herramientaDeTecla(tecla('KeyM'), { modo: 'vida' })).toBeUndefined()
+    expect(herramientaDeTecla(tecla('KeyX', { ctrlKey: true }), { modo: 'plano' })).toBeUndefined()
   })
   it('ignora repetición, combinaciones y las teclas reservadas', () => {
     expect(herramientaDeTecla(tecla('KeyZ', { repeat: true }), { modo: 'plano' })).toBeUndefined()
     expect(herramientaDeTecla(tecla('KeyZ', { ctrlKey: true }), { modo: 'plano' })).toBeUndefined()
-    for (const code of ['KeyR', 'KeyM', 'KeyX', 'Digit1', 'Digit9']) {
+    for (const code of ['KeyR', 'Digit1', 'Digit9', 'Tab']) {
       expect(herramientaDeTecla(tecla(code), { modo: 'plano' })).toBeUndefined()
     }
   })
@@ -97,6 +101,8 @@ describe('esTeclaGirar (R)', () => {
   const plano = { modo: 'plano' as const }
   it('solo gira en Plano con construir', () => {
     expect(esTeclaGirar(tecla('KeyR'), plano, 'construir')).toBe(true)
+    expect(esTeclaGirar(tecla('KeyR'), plano, 'mover')).toBe(true)
+    expect(esTeclaGirar(tecla('KeyR'), plano, 'demoler')).toBe(false)
     expect(esTeclaGirar(tecla('KeyR'), plano, 'parcelas')).toBe(false)
     expect(esTeclaGirar(tecla('KeyR'), plano, 'zonas')).toBe(false)
     expect(esTeclaGirar(tecla('KeyR'), { modo: 'vida' }, 'construir')).toBe(false)
