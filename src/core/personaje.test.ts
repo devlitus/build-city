@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { circuloSolapaBloqueo } from './colision'
 import { aplicarComando } from './comandos'
 import { CONFIG_PERSONAJE } from './datos/personaje'
+import { CONFIG_CAMINOS } from './datos/caminos'
 import { crearEstadoInicial } from './estado'
 import { ladoValle, mapaTransitabilidad } from './mapa'
 
@@ -24,6 +25,31 @@ describe('MoverPersonaje: velocidades', () => {
     expect(paso(false)).toBeCloseTo((CONFIG_PERSONAJE.velocidadAndar * 200) / 1000, 6)
     expect(paso(true)).toBeCloseTo((CONFIG_PERSONAJE.velocidadCorrer * 200) / 1000, 6)
     expect(CONFIG_PERSONAJE.velocidadCorrer).toBeGreaterThan(CONFIG_PERSONAJE.velocidadAndar)
+  })
+
+  it('velocidad sobre camino × multiplicador (andar y correr); fuera del camino no cambia', () => {
+    const e = libre(42)
+    const x = Math.floor(e.personaje.x)
+    const y = Math.floor(e.personaje.y)
+    const lado = ladoValle(e.valle)
+    const celdas = e.caminos.split('')
+    celdas[y * lado + x] = 'c'
+    const sobre = { ...e, caminos: celdas.join('') }
+    const lejos = { ...e, caminos: celdas.join('').replace('c', '.') }
+    const avance = (est: typeof e, corre: boolean) => {
+      const r = aplicarComando(est, { tipo: 'MoverPersonaje', dx: 0, dy: -1, ms: 100, corre })
+      if (!r.ok) throw new Error(r.error)
+      return e.personaje.y - r.estado.personaje.y
+    }
+    const m = CONFIG_CAMINOS.multiplicadorVelocidad
+    expect(m).toBeGreaterThan(1)
+    expect(avance(sobre, false)).toBeCloseTo((CONFIG_PERSONAJE.velocidadAndar * 100 * m) / 1000, 6)
+    expect(avance(sobre, true)).toBeCloseTo((CONFIG_PERSONAJE.velocidadCorrer * 100 * m) / 1000, 6)
+    expect(avance(lejos, false)).toBeCloseTo((CONFIG_PERSONAJE.velocidadAndar * 100) / 1000, 6)
+    expect(avance(lejos, true)).toBeCloseTo((CONFIG_PERSONAJE.velocidadCorrer * 100) / 1000, 6)
+    // Un camino en otra casilla no afecta.
+    const otra = { ...e, caminos: celdas.join('').replace('c', '.') }
+    expect(avance(otra, false)).toBeCloseTo((CONFIG_PERSONAJE.velocidadAndar * 100) / 1000, 6)
   })
 
   it('`corre` que no es booleano es un parámetro inválido', () => {
