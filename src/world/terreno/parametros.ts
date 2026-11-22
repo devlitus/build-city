@@ -26,6 +26,14 @@ export const esquemaTerreno = v.pipe(
       /** Metros de colinas dibujados más allá del borde del valle (se redondea a trozos enteros). */
       radioColinas: positivo,
     }),
+    zocalo: v.object({
+      /** Metros que el zócalo baja por debajo del punto más bajo del terreno de la huella. */
+      margen: positivo,
+      /** Nombre del color de `data/paleta.json` del zócalo. */
+      colorPaleta: v.pipe(v.string(), v.minLength(1)),
+      /** Metros que el zócalo sobresale de la huella por cada lado. */
+      voladizo: positivo,
+    }),
     agua: v.object({
       /** Opacidad de la superficie (0 a 1). */
       opacidad: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
