@@ -1,0 +1,18 @@
+{
+  "umbrales": {
+    "andamios": 0.25,
+    "paredes": 0.6,
+    "terminado": 1
+  },
+  "aparicion": {
+    "duracion": 0.4,
+    "escalaInicial": 0.8
+  },
+  "provisional": {
+    "alturaCimientos": 0.2,
+    "grosorAndamio": 0.12,
+    "fraccionParedes": 0.65,
+    "fraccionTejado": 0.35,
+    "margen": 0.1
+  }
+}

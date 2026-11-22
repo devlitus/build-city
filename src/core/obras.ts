@@ -32,6 +32,18 @@ export function diasRestantes(obra: Obra, dia: number): number {
 }
 
 /**
+ * Avance de la obra de un edificio el día `dia`, en [0, 1]: 0 el día que empieza, 1 al llegar
+ * `diaFin`. Sin obra (terminado) es 1. Una obra de duración nula cuenta como terminada.
+ */
+export function progresoObra(edificio: Pick<Edificio, 'obra'>, dia: number): number {
+  const obra = edificio.obra
+  if (obra === null) return 1
+  const total = obra.diaFin - obra.diaInicio
+  if (!(total > 0)) return 1
+  return Math.min(1, Math.max(0, (dia - obra.diaInicio) / total))
+}
+
+/**
  * Termina las obras con `diaFin <= estado.dia` (`obra` pasa a `null`). Función pura que se
  * llama en todo cambio de día. Eventos en orden de id ascendente. Si no termina ninguna
  * devuelve el mismo estado.
