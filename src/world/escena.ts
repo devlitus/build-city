@@ -29,6 +29,7 @@ import { crearVegetacion } from './vegetacion'
 import { crearPlantasMundo } from './cultivos/instancias'
 import { crearCapaPlano } from './plano/plano'
 import { crearParcelasMundo } from './parcelas/parcelas-mundo'
+import { crearSueloCultivo } from './cultivos/suelo'
 import { crearIndicador } from './cultivos/indicador'
 import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
@@ -122,6 +123,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   escena.add(plano.objeto)
   const parcelasMundo = crearParcelasMundo(lector, altura)
   escena.add(parcelasMundo.objeto)
+  const sueloCultivo = crearSueloCultivo(lector, altura)
+  escena.add(sueloCultivo.objeto)
   const plantas = crearPlantasMundo(lector, altura)
   escena.add(plantas.objeto)
   const indicador = crearIndicador(lector, altura)
@@ -161,6 +164,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       efectos.actualizar(dt)
       plano.actualizar()
       parcelasMundo.actualizar(dt)
+      sueloCultivo.actualizar()
       plantas.actualizar(dt)
       indicador.actualizar()
       instanteAnterior = ahora
@@ -174,6 +178,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       camaraPlano.destruir()
       plano.destruir()
       parcelasMundo.destruir()
+      sueloCultivo.destruir()
       plantas.destruir()
       indicador.destruir()
       observador.disconnect()
