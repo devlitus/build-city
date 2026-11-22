@@ -76,6 +76,16 @@
       "vida": 0.55,
       "tamano": 0.07,
       "colores": ["roca", "piedra"]
+    },
+    "agua": {
+      "cantidadGolpe": 9,
+      "cantidadRotura": 0,
+      "alturaOrigen": 0.5,
+      "rapidez": 0.9,
+      "impulsoVertical": 2.2,
+      "vida": 0.5,
+      "tamano": 0.06,
+      "colores": ["agua", "nieve"]
     }
   }
 }
