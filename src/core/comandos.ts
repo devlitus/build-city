@@ -3,7 +3,7 @@ import { CONFIG_TIEMPO } from './datos/tiempo'
 import { parcelaComprable } from './parcelas'
 import { aplicarZonas, CARACTER_SIN_ZONA, CARACTER_ZONA, ZONAS, type Zona } from './zonas'
 import { moverPersonaje } from './personaje'
-import type { EventoPlantaMarchita } from './riego'
+import { nivelRegaderaDe, type EventoPlantaMarchita } from './riego'
 import { empezarDiaSiguiente, type ObraTerminada } from './obras'
 import { comprobarDormir, type ErrorDormir } from './dormir'
 import { colocacionValida, type MotivoColocacion } from './construccion'
@@ -125,6 +125,11 @@ export type Comando =
    * si aún no hay casa).
    */
   | { readonly tipo: 'Dormir' }
+  /**
+   * Sube la regadera al nivel 2 (3×3). Idempotente. Provisional: hasta M8 (compra en el pueblo)
+   * solo lo lanza el atajo de depuración F8.
+   */
+  | { readonly tipo: 'MejorarRegadera' }
 
 /**
  * Hechos ocurridos al aplicar un comando, para que la capa de juego reaccione (avisos, efectos).
@@ -614,6 +619,12 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       const r = usarHerramienta(estado, comando.x, comando.y)
       if (!r.ok) return { ok: false, estado, error: r.error }
       return { ok: true, eventos: r.eventos, estado: r.estado }
+    }
+    case 'MejorarRegadera': {
+      if (nivelRegaderaDe(estado) === undefined)
+        return { ok: false, estado, error: 'estado-invalido' }
+      if (estado.nivelRegadera === 2) return { ok: true, estado, eventos: SIN_EVENTOS }
+      return { ok: true, eventos: SIN_EVENTOS, estado: { ...estado, nivelRegadera: 2 } }
     }
     case 'Dormir': {
       const error = comprobarDormir(estado)

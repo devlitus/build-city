@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { aplicarComando, CARACTER_ZONA, crearEstadoInicial, type EstadoJuego } from '../core'
 import { HERRAMIENTAS } from '../core/inventario'
+import { conTierraLabrable } from '../../tests/unit/fixtures/labranza'
 import {
   comandoHerramientaDeRueda,
   comandoHerramientaDeTecla,
@@ -192,6 +194,42 @@ describe('comandoUsarHerramienta', () => {
     expect(comandoUsarHerramienta(clic, true, estado)).toEqual(esperado)
     expect(comandoUsarHerramienta(clic, false, estado)).toBeUndefined()
     expect(comandoUsarHerramienta({ ...clic, button: 2 }, true, estado)).toBeUndefined()
+  })
+
+  it('con la azada E apunta al suelo; solo ara en zona de cultivo/huerto de parcela propia', () => {
+    const labrable = conTierraLabrable(
+      { ...crearEstadoInicial({ semilla: 1 }), modo: 'vida', energia: 100 },
+      50,
+      50,
+    )
+    const e: EstadoJuego = {
+      ...labrable,
+      herramienta: 'azada',
+      personaje: { x: 50.5, y: 50.5, orientacion: 'sur' },
+      // Un árbol delante no desvía la azada de la casilla de suelo.
+      obstaculos: [{ tipo: 'arbol', x: 50, y: 51, variante: 0 }],
+    }
+    const sinArbol = { ...e, obstaculos: [] }
+    const cmd = comandoUsarHerramienta(E, false, sinArbol)
+    expect(cmd).toEqual({ tipo: 'UsarHerramienta', x: 50, y: 51 })
+    expect(comandoUsarHerramienta(E, false, e)).toEqual(cmd)
+    if (!cmd) throw new Error('sin comando')
+    expect(aplicarComando(sinArbol, cmd).ok).toBe(true)
+    const rechazo = (s: EstadoJuego) => {
+      const r = aplicarComando(s, cmd)
+      return r.ok ? undefined : r.error
+    }
+    expect(
+      rechazo({ ...sinArbol, zonas: sinArbol.zonas.replaceAll(CARACTER_ZONA.cultivo, '.') }),
+    ).toBe('zona')
+    const ajena = {
+      ...sinArbol,
+      valle: {
+        ...sinArbol.valle,
+        parcelas: sinArbol.valle.parcelas.map((p) => ({ ...p, estado: 'en-venta' as const })),
+      },
+    }
+    expect(rechazo(ajena)).toBe('no-propia')
   })
 
   it('otras teclas y teclas con modificadores no hacen nada', () => {
