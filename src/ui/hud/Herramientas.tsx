@@ -9,12 +9,12 @@ import { barrasIguales, vistaBarra, type VistaRanura } from './barra'
  */
 export function Herramientas({ almacen }: { readonly almacen: FuenteEstado }) {
   const [vista, setVista] = useState<readonly VistaRanura[]>(() =>
-    vistaBarra(almacen.estado.herramienta),
+    vistaBarra(almacen.estado.herramienta, undefined, almacen.estado.semillaElegida),
   )
 
   useEffect(() => {
     const actualizar = () => {
-      const nueva = vistaBarra(almacen.estado.herramienta)
+      const nueva = vistaBarra(almacen.estado.herramienta, undefined, almacen.estado.semillaElegida)
       setVista((previa) => (barrasIguales(previa, nueva) ? previa : nueva))
     }
     actualizar()
@@ -60,6 +60,11 @@ export function Herramientas({ almacen }: { readonly almacen: FuenteEstado }) {
         >
           <div style={{ fontSize: '11px', color: 'var(--ui-apagado)' }}>{r.tecla}</div>
           <div style={{ fontSize: '13px' }}>{t(`herramientas.${r.herramienta}`)}</div>
+          {r.cultivo !== undefined && (
+            <div style={{ fontSize: '11px', color: 'var(--ui-acento)' }}>
+              {t(`cultivos.${r.cultivo}`)} (R)
+            </div>
+          )}
         </div>
       ))}
     </div>
