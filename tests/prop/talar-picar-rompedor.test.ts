@@ -206,6 +206,18 @@ function verificarPaso(antes: EstadoJuego, c: Comando, r: ReturnType<typeof apli
     plantones += ev.plantones
     if (ev.obstaculo === 'arbol') talados.add(clave(ev.x, ev.y))
   }
+  // La mano planta un plantón del inventario (M5-06): gasta 1 y deja un obstáculo nuevo.
+  const plantados = new Set<string>()
+  for (const ev of r.eventos) {
+    if (ev.tipo !== 'planton-plantado') continue
+    expect(antes.herramienta).toBe('mano')
+    expect(antes.obstaculos.some((o) => o.x === ev.x && o.y === ev.y)).toBe(false)
+    expect(despues.obstaculos.filter((o) => o.x === ev.x && o.y === ev.y)).toEqual([
+      expect.objectContaining({ tipo: 'planton' }),
+    ])
+    plantones -= 1
+    plantados.add(clave(ev.x, ev.y))
+  }
   expect(despues.materiales.madera - antes.materiales.madera).toBe(madera)
   expect(despues.materiales.piedra - antes.materiales.piedra).toBe(piedra)
   expect(cantidadDe(despues.inventario, 'planton') - cantidadDe(antes.inventario, 'planton')).toBe(
@@ -219,8 +231,9 @@ function verificarPaso(antes: EstadoJuego, c: Comando, r: ReturnType<typeof apli
     if (o.tipo !== 'tocon') continue
     expect(toconesAntes.has(clave(o.x, o.y)) || talados.has(clave(o.x, o.y))).toBe(true)
   }
-  // Ningún obstáculo nuevo (fuera de tocones de árboles talados) ni movido.
+  // Ningún obstáculo nuevo (fuera de tocones de árboles talados y plantones plantados) ni movido.
   for (const o of despues.obstaculos) {
+    if (plantados.has(clave(o.x, o.y))) continue
     expect(antes.obstaculos.some((a) => a.x === o.x && a.y === o.y)).toBe(true)
   }
 }
