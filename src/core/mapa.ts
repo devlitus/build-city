@@ -1,6 +1,7 @@
 import type { ConfigPersonaje, ConfigValle } from './datos/esquemas'
 import { decorarValle, type Obstaculo } from './decoracion'
 import { casillasOcupadas, type Edificio } from './edificios'
+import { casillasConValla } from './vallas-estado'
 import { casillasRio, claveCasilla, generarVados } from './rio'
 import type { Parcela, Valle } from './valle'
 
@@ -17,6 +18,8 @@ export interface DatosMapa {
   readonly obstaculos: readonly Obstaculo[]
   /** Edificios y obras: bloquean el paso. */
   readonly edificios: readonly Edificio[]
+  /** Vallas y puertas (`EstadoJuego.vallas`): las vallas bloquean el paso; las puertas no. Opcional: sin ella, no hay. */
+  readonly vallas?: string
   /** Centro de la casilla de aparición, en unidades de casilla. */
   readonly aparicion: { readonly x: number; readonly y: number }
 }
@@ -182,6 +185,7 @@ interface EntradaCache {
   readonly mapa: MapaTransitabilidad
   readonly obstaculos: readonly Obstaculo[]
   readonly edificios: readonly Edificio[]
+  readonly vallas: string | undefined
   readonly cauce: Cauce
 }
 
@@ -192,7 +196,7 @@ const CACHE = new WeakMap<
 
 /**
  * Mapa de transitabilidad derivado del estado: bloquean el río (salvo los vados), los
- * obstáculos, los edificios (y obras) y toda casilla que no se alcance desde la aparición. Se
+ * obstáculos, los edificios (y obras), las vallas (no las puertas) y toda casilla que no se alcance desde la aparición. Se
  * cachea por referencia de cauce, obstáculos y edificios; la entrada solo vale si el valle es el mismo y la
  * aparición (comparada por valor) coincide. Fuera del valle cuenta como bloqueado (`casillaBloqueada`).
  */
@@ -207,6 +211,7 @@ export function mapaTransitabilidad(datos: DatosMapa): MapaTransitabilidad {
   if (
     hecho &&
     hecho.valle === datos.valle &&
+    hecho.vallas === datos.vallas &&
     hecho.aparicion.x === datos.aparicion.x &&
     hecho.aparicion.y === datos.aparicion.y
   ) {
@@ -216,6 +221,7 @@ export function mapaTransitabilidad(datos: DatosMapa): MapaTransitabilidad {
   const bloqueada = aguaBloqueada(datos.valle, datos.cauce)
   for (const o of datos.obstaculos) if (bloqueaPaso(o)) bloqueada[claveCasilla(lado, o.x, o.y)] = 1
   for (const k of casillasOcupadas(datos.edificios, lado).keys()) bloqueada[k] = 1
+  for (const k of casillasConValla(datos.vallas)) bloqueada[k] = 1
   const inicio = claveCasilla(lado, Math.floor(datos.aparicion.x), Math.floor(datos.aparicion.y))
   const vista = alcanzables(lado, bloqueada, inicio)
   for (let i = 0; i < bloqueada.length; i++) bloqueada[i] = vista[i] === 1 ? 0 : 1
@@ -226,6 +232,7 @@ export function mapaTransitabilidad(datos: DatosMapa): MapaTransitabilidad {
     mapa,
     obstaculos: datos.obstaculos,
     edificios: datos.edificios,
+    vallas: datos.vallas,
     cauce: datos.cauce,
   }
   porEdificios.set(datos.edificios, entrada)
@@ -252,6 +259,7 @@ function reutilizable(datos: DatosMapa): MapaTransitabilidad | undefined {
     u.cauce !== datos.cauce ||
     u.edificios !== datos.edificios ||
     u.valle !== datos.valle ||
+    u.vallas !== datos.vallas ||
     u.aparicion.x !== datos.aparicion.x ||
     u.aparicion.y !== datos.aparicion.y
   ) {
