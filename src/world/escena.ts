@@ -7,6 +7,7 @@ import {
   SRGBColorSpace,
   WebGLRenderer,
 } from 'three'
+import type { Comando } from '../core'
 import type { LectorEstado } from '../juego/almacen'
 import { crearCielo } from './cielo'
 import { DATOS_CIELO } from './cielo-datos'
@@ -52,7 +53,10 @@ export interface Escena {
 }
 
 /** Crea el lienzo three.js dentro del contenedor, con luces, terreno y redimensionado. */
-export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & FuenteEventos): Escena {
+export function crearEscena(
+  contenedor: HTMLElement,
+  lector: LectorEstado & FuenteEventos & { despachar(comando: Comando): unknown },
+): Escena {
   const { valle, semilla } = lector.estado
   const lado = ladoMetros(valle)
 
