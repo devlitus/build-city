@@ -43,6 +43,11 @@ export function catalogo(estado: EstadoCatalogo): readonly EntradaCatalogo[] {
   return TIPOS_EDIFICIO.map((t) => entradaCatalogo(estado, t))
 }
 
+/** Lo que le falta al inventario (dinero y materiales) para pagar `tipo`; todo 0 si llega. Pura. */
+export function materialesQueFaltan(estado: EstadoCatalogo, tipo: TipoEdificio): Coste {
+  return entradaCatalogo(estado, tipo).faltan
+}
+
 /** Dinero y materiales que te quedarían tras pagar `coste` (para la confirmación; puede ser negativo si no llegas). */
 export function restoTrasPagar(estado: EstadoCatalogo, coste: Coste): Coste {
   return {

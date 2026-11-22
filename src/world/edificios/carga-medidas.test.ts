@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { defEdificio } from '../../core'
 import { ETAPAS_OBRA, TIPOS_EDIFICIO } from './carga'
 
 interface MedidaEtapa {
@@ -17,14 +18,14 @@ const medidas = JSON.parse(readFileSync('assets-src/fichas/medidas.json', 'utf-8
   edificios: Record<string, Record<string, MedidaEtapa>>
 }
 
-// Huellas del GDD (1 casilla = 1 m) y altura total aproximada. M5-T02 fija las definitivas en
-// data/edificios.json: revisar esta tabla al integrar.
-const ESPERADO: Record<string, { ancho: number; fondo: number; alto: number }> = {
-  tienda: { ancho: 3, fondo: 3, alto: 1.8 },
-  'caja-envio': { ancho: 2, fondo: 1, alto: 1 },
-  cobertizo: { ancho: 4, fondo: 3, alto: 3.5 },
-  casa: { ancho: 7, fondo: 5, alto: 5 },
-}
+// Huella y altura salen de data/edificios.json (GDD §7.4; 1 casilla = 1 m).
+const ESPERADO: Record<string, { ancho: number; fondo: number; alto: number }> = Object.fromEntries(
+  TIPOS_EDIFICIO.map((t) => {
+    const d = defEdificio(t)
+    if (!d) throw new Error(`sin definición de ${t}`)
+    return [t, { ancho: d.ancho, fondo: d.alto, alto: d.altura }]
+  }),
+)
 
 function medida(tipo: string, etapa: string): MedidaEtapa {
   const m = medidas.edificios[tipo]?.[etapa]

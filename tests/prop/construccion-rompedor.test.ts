@@ -424,7 +424,7 @@ describe('huellas en bordes y fronteras', () => {
     const col = par[0] % N
     const y = fila * C + 4
     const frontera = (col + 1) * C // primera casilla de la segunda parcela
-    // Cobertizo 3×2 que cruza la frontera entre las dos propias.
+    // Cobertizo 4×3 que cruza la frontera entre las dos propias.
     expect(colocacionValida(e, 'cobertizo', frontera - 2, y)).toEqual({ valida: true })
     expect(construir(e, 'cobertizo', frontera - 1, y).ok).toBe(true)
     // Cruza la frontera izquierda de la primera (ajena o fuera del valle).
@@ -438,7 +438,11 @@ describe('huellas en bordes y fronteras', () => {
         valida: false,
         motivo: 'no-propia',
       })
-      expect(colocacionValida(e, 'cobertizo', der - 3, y)).toEqual({ valida: true })
+      expect(colocacionValida(e, 'cobertizo', der - 3, y)).toEqual({
+        valida: false,
+        motivo: 'no-propia',
+      })
+      expect(colocacionValida(e, 'cobertizo', der - 4, y)).toEqual({ valida: true })
     }
     // Arriba/abajo con la fila vecina (ajena).
     const arriba = fila * C
@@ -461,11 +465,13 @@ describe('huellas en bordes y fronteras', () => {
       for (const k of agua) {
         const x = k % LADO
         const y = Math.floor(k / LADO)
-        const r = colocacionValida(e, 'caja-envio', x, y)
+        // La caja mide 2×1: en la última columna se ancla una casilla antes para seguir tocando el agua.
+        const r = colocacionValida(e, 'caja-envio', x + 1 < LADO ? x : x - 1, y)
         expect(r).toEqual({ valida: false, motivo: 'agua' })
-        // Huella 3×2 que solo roza el agua por una esquina.
+        // Huella 4×3 que solo roza el agua por una esquina.
         if (x >= 3 && y >= 2) {
-          const r2 = colocacionValida(e, 'cobertizo', x - 2, y - 1)
+          // El agua queda en la esquina inferior derecha de la huella 4×3.
+          const r2 = colocacionValida(e, 'cobertizo', x - 3, y - 2)
           expect(r2).toEqual({ valida: false, motivo: 'agua' })
         }
         // Orilla seca justo al lado.
@@ -477,8 +483,13 @@ describe('huellas en bordes y fronteras', () => {
         ] as const) {
           if (ox < 0 || oy < 0 || ox >= LADO || oy >= LADO) continue
           if (agua.has(oy * LADO + ox)) continue
-          const ap = Math.floor(e.aparicion.x) === ox && Math.floor(e.aparicion.y) === oy
-          expect(colocacionValida(e, 'caja-envio', ox, oy).valida).toBe(!ap)
+          // La caja mide 2×1: ocupa también la casilla de su derecha.
+          const ox2 = ox + 1
+          const ap = [ox, ox2].some(
+            (cx) => Math.floor(e.aparicion.x) === cx && Math.floor(e.aparicion.y) === oy,
+          )
+          const cabe = ox2 < LADO && !agua.has(oy * LADO + ox2)
+          expect(colocacionValida(e, 'caja-envio', ox, oy).valida).toBe(cabe && !ap)
           orillas++
         }
       }
@@ -528,16 +539,16 @@ describe('caja del personaje en el límite de la huella', () => {
     const permitido = pxIzq + M <= X // con redondeo de coma flotante
     const r = colocacionValida(conPersonaje(e0, pxIzq, Y + 0.5), 'caja-envio', X, Y)
     expect(r.valida).toBe(permitido && !(pxIzq + M > X))
-    // Caja que empieza exactamente en X+1 (px - m === X+1) → no toca.
-    const pxDer = X + 1 + M
+    // Caja (2×1) que empieza exactamente en X+2 (px - m === X+2) → no toca.
+    const pxDer = X + 2 + M
     const r2 = colocacionValida(conPersonaje(e0, pxDer, Y + 0.5), 'caja-envio', X, Y)
-    expect(r2.valida).toBe(!(pxDer - M < X + 1))
+    expect(r2.valida).toBe(!(pxDer - M < X + 2))
     // Muy dentro del ulp por cada lado → toca.
     for (const [px, py] of [
       [X - M + 1e-9, Y + 0.5],
-      [X + 1 + M - 1e-9, Y + 0.5],
-      [X + 0.5, Y - M + 1e-9],
-      [X + 0.5, Y + 1 + M - 1e-9],
+      [X + 2 + M - 1e-9, Y + 0.5],
+      [X + 1, Y - M + 1e-9],
+      [X + 1, Y + 1 + M - 1e-9],
       [X - M + 1e-9, Y - M + 1e-9], // esquina
     ] as const) {
       expect(colocacionValida(conPersonaje(e0, px, py), 'caja-envio', X, Y)).toEqual({

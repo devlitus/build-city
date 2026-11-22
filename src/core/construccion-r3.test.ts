@@ -5,6 +5,7 @@ import {
   CONFIG_EDIFICIOS,
   CONFIG_VALLE,
   crearEstadoInicial,
+  casillasOcupadas,
   ladoValle,
   type Comando,
   type EstadoJuego,
@@ -81,7 +82,7 @@ describe('pagado y redondeo del reembolso', () => {
   it('la casa guarda un pagado a cero', () => {
     let e = abierto()
     const { x, y } = ap(e)
-    e = ok(e, { tipo: 'PintarZona', x0: x + 3, y0: y - 8, x1: x + 8, y1: y - 4, zona: 'vivienda' })
+    e = ok(e, { tipo: 'PintarZona', x0: x + 3, y0: y - 8, x1: x + 9, y1: y - 4, zona: 'vivienda' })
     e = ok(e, { tipo: 'Construir', tipoEdificio: 'casa', x: x + 3, y: y - 8 })
     expect(e.edificios[0]?.pagado).toEqual({ dinero: 0, madera: 0, piedra: 0 })
   })
@@ -95,7 +96,7 @@ describe('bloquea-paso con vados', () => {
     const cerrada = (k: number) =>
       agua[k] === 1 ||
       e.obstaculos.some((o) => o.y * lado + o.x === k) ||
-      e.edificios.some((b) => b.y * lado + b.x === k)
+      casillasOcupadas(e.edificios, lado).has(k)
     const { x, y } = ap(e)
     const visto = new Set([y * lado + x])
     const pila = [y * lado + x]
@@ -132,17 +133,28 @@ describe('bloquea-paso con vados', () => {
     const lista = [...accesos]
     expect(lista.length).toBeGreaterThan(0)
     let e = e0
-    for (const [i, k] of lista.entries()) {
+    // La caja mide 2×1: para tapar una casilla vale anclarla en ella o una casilla antes.
+    let cerrado = false
+    for (const k of lista) {
       const cx = k % lado
       const cy = (k - cx) / lado
-      if (i < lista.length - 1) {
-        expect(motivo(e, 'caja-envio', cx, cy)).toBe('valida')
-        e = ok(e, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: cx, y: cy })
+      if (casillasOcupadas(e.edificios, lado).has(k)) continue
+      const anclas = [cx, cx - 1]
+      const motivos = anclas.map((ax) => motivo(e, 'caja-envio', ax, cy))
+      const ax = anclas[motivos.indexOf('valida')]
+      if (ax !== undefined) {
+        e = ok(e, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: ax, y: cy })
       } else {
         // Última entrada al vado: tapar la otra orilla (que cuenta como alcanzable) la aísla.
-        expect(motivo(e, 'caja-envio', cx, cy)).toBe('bloquea-paso')
+        expect(motivos).toContain('bloquea-paso')
+        // De verdad era el último: el resto de accesos ya están tapados.
+        const ocupadas = casillasOcupadas(e.edificios, lado)
+        for (const otro of lista) if (otro !== k) expect(ocupadas.has(otro)).toBe(true)
+        cerrado = true
+        break
       }
     }
+    expect(cerrado).toBe(true)
   })
 })
 
@@ -154,7 +166,7 @@ describe('caché de la base de alcance', () => {
       e = { ...e, personaje: { ...e.personaje, x: x + 3.5, y: y + 3.5 } }
       for (const [dx, dy] of [
         [1, 0],
-        [-1, 0],
+        [-2, 0],
         [0, 1],
       ] as const) {
         e = ok(e, { tipo: 'Construir', tipoEdificio: 'caja-envio', x: x + dx, y: y + dy })

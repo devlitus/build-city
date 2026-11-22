@@ -168,6 +168,20 @@ export const EsquemaEdificio = v.strictObject({
   /** Huella en casillas (ancho × alto), sin rotación. */
   ancho: entero,
   alto: entero,
+  /** Altura aproximada en metros (GDD §7.4); dato visual, las reglas no la usan. */
+  altura: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(50)),
+  /**
+   * Niveles de mejora previstos tras el base (GDD §7.4), en orden. Solo datos: la mejora aún no
+   * está implementada y las reglas no los usan.
+   */
+  niveles: v.array(
+    v.strictObject({
+      nombre: v.pipe(v.string(), v.minLength(1)),
+      ancho: entero,
+      alto: entero,
+      altura: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(50)),
+    }),
+  ),
   /** Zonas sobre las que se puede colocar: todas las casillas de la huella deben tener una de ellas. */
   zonas: v.pipe(
     v.array(v.picklist(ZONAS)),
