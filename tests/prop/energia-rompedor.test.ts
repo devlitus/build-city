@@ -71,18 +71,18 @@ describe('Dormir: la cama y el despertar', () => {
   it('tras mover la casa, la cama es la puerta nueva y la vieja ya no vale', () => {
     const e = conCasa(en(limpio, puerta.x, puerta.y))
     expect(comprobarDormir(e)).toBeUndefined()
-    const movido = con(e, { edificios: [casa(1, null, S.x + 6, S.y)] })
-    expect(casillaDeCama(movido)).toEqual({ x: puerta.x + 6, y: puerta.y })
+    const movido = con(e, { edificios: [casa(1, null, S.x + 8, S.y)] })
+    expect(casillaDeCama(movido)).toEqual({ x: puerta.x + 8, y: puerta.y })
     expect(comprobarDormir(movido)).toBe('lejos-de-la-cama')
   })
 
   it('con dos casas terminadas vale la de menor id; con la de menor id en obra, la otra', () => {
     const a = casa(5, null, S.x, S.y)
-    const b = casa(2, null, S.x + 6, S.y)
+    const b = casa(2, null, S.x + 8, S.y)
     const dos = con(limpio, { edificios: [a, b] })
-    expect(casillaDeCama(dos)).toEqual({ x: puerta.x + 6, y: puerta.y })
+    expect(casillaDeCama(dos)).toEqual({ x: puerta.x + 8, y: puerta.y })
     const unaEnObra = con(limpio, {
-      edificios: [casa(1, { diaInicio: 1, diaFin: 9 }, S.x + 6, S.y), a],
+      edificios: [casa(1, { diaInicio: 1, diaFin: 9 }, S.x + 8, S.y), a],
     })
     expect(casillaDeCama(unaEnObra)).toEqual(puerta)
   })

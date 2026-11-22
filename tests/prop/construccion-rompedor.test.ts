@@ -470,13 +470,8 @@ describe('huellas en bordes y fronteras', () => {
         expect(r).toEqual({ valida: false, motivo: 'agua' })
         // Huella 4×3 que solo roza el agua por una esquina.
         if (x >= 3 && y >= 2) {
-          // Se ancla sin salirse del valle (4×3) y sigue cubriendo la casilla de agua.
-          const r2 = colocacionValida(
-            e,
-            'cobertizo',
-            Math.min(x - 2, LADO - 4),
-            Math.min(y - 1, LADO - 3),
-          )
+          // El agua queda en la esquina inferior derecha de la huella 4×3.
+          const r2 = colocacionValida(e, 'cobertizo', x - 3, y - 2)
           expect(r2).toEqual({ valida: false, motivo: 'agua' })
         }
         // Orilla seca justo al lado.

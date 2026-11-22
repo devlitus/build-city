@@ -5,7 +5,7 @@ import { CLAVE_PALETA_ZONA } from '../../world/plano/datos-zonas'
 import { colorHex, paletaJuego } from '../../world/paleta'
 import type { FuenteEstado } from '../fuente'
 import { t } from '../textos'
-import { ALTO_CATALOGO } from './Catalogo'
+import { ALTO_CATALOGO, TOP_CATALOGO } from './Catalogo'
 
 const OPCIONES: readonly ZonaElegida[] = [...ZONAS, 'borrar']
 
@@ -53,7 +53,7 @@ export function Zonas({
       aria-label={t('zonas.etiqueta')}
       style={{
         position: 'fixed',
-        top: `${14 + ALTO_CATALOGO + 10}px`,
+        top: `${TOP_CATALOGO + ALTO_CATALOGO + 10}px`,
         left: '14px',
         display: 'flex',
         flexDirection: 'column',

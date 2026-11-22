@@ -147,6 +147,9 @@ describe('bloquea-paso con vados', () => {
       } else {
         // Última entrada al vado: tapar la otra orilla (que cuenta como alcanzable) la aísla.
         expect(motivos).toContain('bloquea-paso')
+        // De verdad era el último: el resto de accesos ya están tapados.
+        const ocupadas = casillasOcupadas(e.edificios, lado)
+        for (const otro of lista) if (otro !== k) expect(ocupadas.has(otro)).toBe(true)
         cerrado = true
         break
       }
