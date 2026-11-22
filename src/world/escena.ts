@@ -26,6 +26,7 @@ import { crearDirectorCamara } from './camaras/director'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
+import { crearPlantasMundo } from './cultivos/instancias'
 import { crearCapaPlano } from './plano/plano'
 import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 import { crearIndicador } from './cultivos/indicador'
@@ -121,6 +122,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   escena.add(plano.objeto)
   const parcelasMundo = crearParcelasMundo(lector, altura)
   escena.add(parcelasMundo.objeto)
+  const plantas = crearPlantasMundo(lector, altura)
+  escena.add(plantas.objeto)
   const indicador = crearIndicador(lector, altura)
   escena.add(indicador.objeto)
 
@@ -158,6 +161,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       efectos.actualizar(dt)
       plano.actualizar()
       parcelasMundo.actualizar(dt)
+      plantas.actualizar(dt)
       indicador.actualizar()
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
@@ -170,6 +174,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       camaraPlano.destruir()
       plano.destruir()
       parcelasMundo.destruir()
+      plantas.destruir()
       indicador.destruir()
       observador.disconnect()
       horizonte.destruir()
