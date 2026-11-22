@@ -1,9 +1,39 @@
 import type { Notificacion } from '../../juego/almacen'
 import type { EstadoJuego } from '../../core/estado'
-import { comprobarUsarHerramienta } from '../../core/herramientas'
-import { objetivoDelante } from '../../core/objetivo'
+import { puedeCosechar } from '../../core/cosecha'
+import { cultivoDeSemilla } from '../../core/cultivos'
+import { comprobarUsarHerramienta, EFECTOS_HERRAMIENTA } from '../../core/herramientas'
+import { esHerramientaDeCultivo, objetivoDelante } from '../../core/objetivo'
+import { hayMarchita } from '../../core/riego'
 import { golpearia, golpesNecesarios, terrenoDeCasilla } from '../../core/recursos'
 import { t } from '../textos'
+
+/** Aviso de las herramientas de cultivo sobre la casilla (x, y) de enfrente; `undefined` si E no haría nada. */
+function avisoCultivo(estado: EstadoJuego, x: number, y: number): string | undefined {
+  const error = comprobarUsarHerramienta(estado, x, y)
+  if (error === 'sin-energia') return t('aviso.cansancio')
+  if (error === 'no-propia') return t('aviso.comprarParcela')
+  if (error) return undefined
+  switch (estado.herramienta) {
+    case 'azada':
+      return hayMarchita(estado, x, y) ? t('aviso.limpiarMarchita') : t('aviso.arar')
+    case 'regadera':
+      return t('aviso.regar')
+    case 'semillas': {
+      const cultivo = cultivoDeSemilla(estado.semillaElegida)
+      return cultivo ? t('aviso.plantar', { cultivo: t(`cultivos.${cultivo}`) }) : undefined
+    }
+    case 'mano': {
+      if (puedeCosechar(estado, x, y)) return t('aviso.cosechar')
+      if (hayMarchita(estado, x, y)) return t('aviso.limpiarMarchita')
+      const r = EFECTOS_HERRAMIENTA.mano.aplicar(estado, x, y)
+      const planta = r.ok && r.eventos.some((e) => e.tipo === 'planton-plantado')
+      return planta ? t('aviso.plantarPlanton') : undefined
+    }
+    default:
+      return undefined
+  }
+}
 
 /**
  * Aviso contextual (abajo, sobre la barra): qué hará **E** con la herramienta activa, o `undefined`
@@ -14,6 +44,8 @@ import { t } from '../textos'
 export function avisoContextual(estado: EstadoJuego): string | undefined {
   const { personaje } = estado
   const objetivo = objetivoDelante(personaje, personaje.orientacion, estado)
+  if (esHerramientaDeCultivo(estado.herramienta))
+    return avisoCultivo(estado, objetivo.x, objetivo.y)
   if (objetivo.tipo !== 'obstaculo') return undefined
   const { x, y, obstaculo: o } = objetivo
   if (!golpearia(estado, x, y)) return undefined
