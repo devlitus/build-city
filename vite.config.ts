@@ -10,6 +10,7 @@ import {
   EsquemaConfigEdificios,
   EsquemaConfigInventario,
   EsquemaConfigValle,
+  EsquemaConfigVallas,
 } from './src/core/datos/esquemas.ts'
 
 /**
@@ -22,6 +23,7 @@ export function validarDatos(
   rutaEdificios = resolve(import.meta.dirname, 'data/edificios.json'),
   rutaInventario = resolve(import.meta.dirname, 'data/inventario.json'),
   rutaCultivos = resolve(import.meta.dirname, 'data/cultivos.json'),
+  rutaVallas = resolve(import.meta.dirname, 'data/vallas.json'),
 ): Plugin {
   return {
     name: 'validar-datos',
@@ -41,6 +43,7 @@ export function validarDatos(
       comprobar(rutaEdificios, EsquemaConfigEdificios)
       comprobar(rutaInventario, EsquemaConfigInventario)
       comprobar(rutaCultivos, EsquemaConfigCultivos)
+      comprobar(rutaVallas, EsquemaConfigVallas)
     },
   }
 }

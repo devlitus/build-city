@@ -186,6 +186,22 @@ export const EsquemaConfigEconomia = v.strictObject({
 
 export type ConfigEconomia = v.InferOutput<typeof EsquemaConfigEconomia>
 
+const maderaPorCasilla = v.strictObject({
+  /** Madera que cuesta cada casilla de este tipo. */
+  madera: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1_000_000)),
+})
+
+/** Vallas y puertas (`data/vallas.json`): coste por casilla y reembolso al quitarlas. */
+export const EsquemaConfigVallas = v.strictObject({
+  coste: v.strictObject({ valla: maderaPorCasilla, puerta: maderaPorCasilla }),
+  /** Fracción de lo pagado que se devuelve al quitar una casilla (0..1). */
+  reembolsoQuitar: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1)),
+  /** Redondeo de la fracción (hoy solo `abajo`, como `redondeoReembolso` de los edificios). */
+  redondeoReembolso: v.literal('abajo'),
+})
+
+export type ConfigVallas = v.InferOutput<typeof EsquemaConfigVallas>
+
 const diasDeObra = v.pipe(v.number(), v.safeInteger(), v.minValue(1))
 
 export const EsquemaEdificio = v.strictObject({
