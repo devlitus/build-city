@@ -42,5 +42,6 @@
   "uiLinea": "#313a2b",
   "uiSube": "#8fd16f",
   "uiBaja": "#e07a5f",
-  "uiAlerta": "#d9674a"
+  "uiAlerta": "#d9674a",
+  "indicadorCultivo": "#fff2a8"
 }
