@@ -48,6 +48,15 @@ export class Almacen implements LectorEstado {
     return notificacion
   }
 
+  /**
+   * SOLO DESARROLLO (atajos de depuración, p. ej. la granja de prueba de rendimiento): sustituye el
+   * estado entero sin pasar por un comando y sin notificar a los suscriptores. La escena lo recoge
+   * al leer `estado`. El juego normal nunca lo llama.
+   */
+  reemplazarEstadoDepuracion(estado: EstadoJuego): void {
+    this.#estado = estado
+  }
+
   /** Devuelve la función que cancela la suscripción. */
   suscribir(suscriptor: Suscriptor): () => void {
     this.#suscriptores.add(suscriptor)
