@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { paletaJuego } from '../paleta'
 import terrenoJson from '../../../data/terreno.json'
 
 const positivo = v.pipe(v.number(), v.minValue(0))
@@ -83,6 +84,10 @@ export const esquemaTerreno = v.pipe(
   v.check(
     (t) => t.alturaBase + t.ruidoParcela.amplitud - t.cauce.profundidad < t.nivelAgua,
     'El fondo del cauce debe quedar por debajo del nivel del agua',
+  ),
+  v.check(
+    (t) => Object.hasOwn(paletaJuego, t.zocalo.colorPaleta),
+    'zocalo.colorPaleta debe existir en data/paleta.json',
   ),
 )
 
