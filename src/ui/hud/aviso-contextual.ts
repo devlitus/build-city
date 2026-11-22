@@ -19,6 +19,12 @@ export function avisoContextual(estado: EstadoJuego): string | undefined {
   if (!golpearia(estado, x, y)) return undefined
   const error = comprobarUsarHerramienta(estado, x, y)
   if (error === 'sin-energia') return t('aviso.cansancio')
+  // Solo se tala y se pica en parcelas propias: la primera parcela es la primera meta.
+  if (error === 'no-propia') {
+    if (o.tipo === 'roca') return t('aviso.comprarParaPicar')
+    if (o.tipo === 'arbol' || o.tipo === 'tocon') return t('aviso.comprarParaTalar')
+    return t('aviso.comprarParcela')
+  }
   if (error) return undefined
   if (o.tipo === 'roca') return t('aviso.picarRoca')
   if (o.tipo === 'tocon') return t('aviso.quitarTocon')

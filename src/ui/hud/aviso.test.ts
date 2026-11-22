@@ -76,6 +76,31 @@ describe('avisoContextual', () => {
   })
 })
 
+describe('avisoContextual fuera de parcela propia', () => {
+  const ajena = (e: EstadoJuego): EstadoJuego => ({
+    ...e,
+    valle: { ...e.valle, parcelas: e.valle.parcelas.map((p) => ({ ...p, estado: 'en-venta' })) },
+  })
+
+  it('hacha + árbol en parcela ajena -> pide comprar la parcela para talar', () => {
+    expect(avisoContextual(ajena(con('hacha', arbol)))).toBe(t('aviso.comprarParaTalar'))
+    expect(avisoContextual(ajena(con('hacha', tocon)))).toBe(t('aviso.comprarParaTalar'))
+  })
+
+  it('pico + roca en parcela ajena -> pide comprar la parcela para picar', () => {
+    expect(avisoContextual(ajena(con('pico', roca)))).toBe(t('aviso.comprarParaPicar'))
+  })
+
+  it('el texto menciona Tab y el Modo Plano', () => {
+    expect(t('aviso.comprarParaTalar')).toContain('Tab')
+    expect(t('aviso.comprarParaTalar')).toContain('Modo Plano')
+  })
+
+  it('con una herramienta que no golpea -> sin aviso', () => {
+    expect(avisoContextual(ajena(con('pico', arbol)))).toBeUndefined()
+  })
+})
+
 describe('textoRecogida', () => {
   const comando = { tipo: 'UsarHerramienta', x: 1, y: 1 } as const
   const quitado = (madera: number, piedra: number, plantones: number): Notificacion => ({
