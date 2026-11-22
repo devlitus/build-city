@@ -24,6 +24,14 @@ export const esquemaPlano = v.object({
     cantidad: opacidad,
     duracionTransicion: v.pipe(v.number(), v.minValue(0)),
   }),
+  zonas: v.object({
+    /** Opacidad de la capa de color de las zonas pintadas. */
+    opacidad,
+    /** Opacidad de la vista previa del rectángulo mientras se arrastra. */
+    opacidadVistaPrevia: opacidad,
+    /** Altura (m) de la capa sobre el suelo. */
+    separacion: v.pipe(v.number(), v.minValue(0)),
+  }),
 })
 
 export type DatosPlano = v.InferOutput<typeof esquemaPlano>

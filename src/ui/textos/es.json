@@ -55,6 +55,16 @@
       "precio-invalido": "No se puede calcular el precio."
     }
   },
+  "zonas": {
+    "etiqueta": "Herramienta de zonas",
+    "titulo": "Zonas (Z)",
+    "ayuda": "Arrastra para pintar un rectángulo. Esc para salir.",
+    "cultivo": "Cultivo",
+    "huerto": "Huerto",
+    "vivienda": "Vivienda",
+    "almacen": "Almacén",
+    "borrar": "Borrar"
+  },
   "energia": {
     "etiqueta": "Energía del granjero",
     "nombre": "Energía",

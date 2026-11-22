@@ -5,6 +5,9 @@ import { formatearMonedas } from '../hud/formato'
 import { t } from '../textos'
 import { datosPanelCatalogo } from './panel-catalogo'
 
+/** Alto máximo (px) del catálogo con los 4 edificios; el selector de Zonas va justo debajo. */
+export const ALTO_CATALOGO = 380
+
 /**
  * Catálogo de edificios del Modo Plano, a la izquierda. De momento el clic solo marca el
  * edificio elegido en el canal; la colocación la hace M5-T03. Esc o salir del Modo Plano lo
@@ -40,6 +43,9 @@ export function Catalogo({
       style={{
         position: 'fixed',
         top: '14px',
+        maxHeight: `${ALTO_CATALOGO}px`,
+        overflowY: 'auto',
+        boxSizing: 'border-box',
         left: '14px',
         width: '240px',
         padding: '10px 12px',
