@@ -5,18 +5,10 @@ import { ladoValle } from './mapa'
 import { aguaDe } from './zonas'
 import { obstaculosDe } from './construccion'
 import { esCaracterArada } from './tierra'
+import { CARACTER_CAMINO, CARACTER_SIN_CAMINO, hayCamino } from './caminos-estado'
+import { vallaEn } from './vallas-estado'
 
-/**
- * Caminos de grava (M6-T04). `EstadoJuego.caminos` es una cadena de `lado*lado` caracteres
- * (índice y*lado+x): `.` nada, `c` camino. No bloquean el paso: solo aceleran al personaje.
- */
-export const CARACTER_SIN_CAMINO = '.'
-export const CARACTER_CAMINO = 'c'
-
-/** Cadena de caminos vacía para un valle de `lado` casillas por lado. */
-export function caminosVacios(lado: number): string {
-  return CARACTER_SIN_CAMINO.repeat(lado * lado)
-}
+export * from './caminos-estado'
 
 /** Casilla de la que habla un comando de caminos. */
 export interface CasillaCamino {
@@ -25,8 +17,8 @@ export interface CasillaCamino {
 }
 
 /**
- * Por qué una casilla no admite camino, en orden de prioridad. «Bajo puertas» lo permitirá la
- * tarea de vallas al integrarse (aquí aún no existen).
+ * Por qué una casilla no admite camino, en orden de prioridad. Bajo una puerta sí se puede;
+ * bajo una valla no (`valla`).
  */
 export type MotivoNoCamino =
   | 'fuera-del-valle'
@@ -37,6 +29,8 @@ export type MotivoNoCamino =
   | 'ocupada'
   /** Tierra arada (con o sin planta). */
   | 'arada'
+  /** Valla (bloquea el paso): bajo una puerta sí se puede. */
+  | 'valla'
   | 'ya-hay-camino'
 
 export interface CasillaValidada extends CasillaCamino {
@@ -57,22 +51,9 @@ export interface ValidacionCaminos {
 /** Parte del estado que necesita la consulta. */
 export type EstadoCaminos = Pick<
   EstadoJuego,
-  'valle' | 'cauce' | 'obstaculos' | 'edificios' | 'tierra' | 'caminos'
+  'valle' | 'cauce' | 'obstaculos' | 'edificios' | 'tierra' | 'caminos' | 'vallas'
 > &
   Partial<Pick<EstadoJuego, 'plantas'>>
-
-/** ¿Hay camino en la casilla (x, y)? `false` fuera del valle o si el estado no trae `caminos`. */
-export function hayCamino(
-  estado: Pick<EstadoJuego, 'valle'> & Partial<Pick<EstadoJuego, 'caminos'>>,
-  x: number,
-  y: number,
-): boolean {
-  const lado = ladoValle(estado.valle)
-  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= lado || y >= lado) {
-    return false
-  }
-  return typeof estado.caminos === 'string' && estado.caminos[y * lado + x] === CARACTER_CAMINO
-}
 
 /** Factor de velocidad del personaje con el centro en (x, y): el dato sobre camino, 1 fuera. */
 export function factorVelocidadEn(
@@ -136,6 +117,7 @@ export function validarCaminos(
     if (agua.has(i)) return no('agua')
     if (obstaculos.has(i)) return no('obstaculo')
     if (ocupadas.has(i) || conPlanta.has(i)) return no('ocupada')
+    if (vallaEn(estado.vallas, i) === 'valla') return no('valla')
     if (esCaracterArada(estado.tierra[i])) return no('arada')
     if (estado.caminos[i] === CARACTER_CAMINO) return no('ya-hay-camino')
     validas++
@@ -165,6 +147,7 @@ export type ResultadoCaminos =
       readonly ok: false
       readonly error:
         | 'parametro-invalido'
+        | 'solo-en-plano'
         | 'estado-invalido'
         | 'sin-casillas-validas'
         | 'materiales-insuficientes'
@@ -203,6 +186,7 @@ function materialesValidos(estado: EstadoJuego): boolean {
  */
 export function colocarCaminos(estado: EstadoJuego, casillas: unknown): ResultadoCaminos {
   if (!casillasBienFormadas(casillas)) return { ok: false, error: 'parametro-invalido' }
+  if (estado.modo !== 'plano') return { ok: false, error: 'solo-en-plano' }
   if (!estadoDeCaminosValido(estado) || !materialesValidos(estado)) {
     return { ok: false, error: 'estado-invalido' }
   }
@@ -233,6 +217,7 @@ export function colocarCaminos(estado: EstadoJuego, casillas: unknown): Resultad
  */
 export function quitarCaminos(estado: EstadoJuego, casillas: unknown): ResultadoCaminos {
   if (!casillasBienFormadas(casillas)) return { ok: false, error: 'parametro-invalido' }
+  if (estado.modo !== 'plano') return { ok: false, error: 'solo-en-plano' }
   if (!estadoDeCaminosValido(estado) || !materialesValidos(estado)) {
     return { ok: false, error: 'estado-invalido' }
   }

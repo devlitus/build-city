@@ -5,8 +5,9 @@ import type { Rotacion } from './edificios'
 import type { EstadoJuego } from './estado'
 import { aguaBloqueada, ladoValle } from './mapa'
 import { claveCasilla } from './rio'
+import { casillasConValla, hayValla } from './vallas-estado'
 import { aguaDe, zonaEn } from './zonas'
-import { CARACTER_CAMINO } from './caminos'
+import { CARACTER_CAMINO } from './caminos-estado'
 
 /**
  * Motivos por los que no se puede colocar un edificio, en orden de prioridad (la interfaz
@@ -17,7 +18,7 @@ import { CARACTER_CAMINO } from './caminos'
  * 4. `no-propia`: alguna casilla es de una parcela que no se ha comprado.
  * 5. `agua`: alguna casilla es de río (vados incluidos).
  * 6. `obstaculo`: alguna casilla tiene un árbol o una roca.
- * 7. `ocupada`: alguna casilla ya es de otro edificio u obra, o tiene una planta o un camino. La tierra arada
+ * 7. `ocupada`: alguna casilla ya es de otro edificio u obra, o tiene una planta, un camino, una valla o una puerta. La tierra arada
  *    vacía no estorba: al construir encima se limpia (`Construir` y `MoverEdificio`).
  * 8. `aparicion`: la huella cubre la casilla de aparición.
  * 9. `personaje`: la huella toca la caja de colisión del personaje.
@@ -70,7 +71,7 @@ export type EstadoColocacion = Pick<
   | 'dinero'
   | 'materiales'
 > &
-  Partial<Pick<EstadoJuego, 'plantas' | 'caminos'>>
+  Partial<Pick<EstadoJuego, 'plantas' | 'vallas' | 'caminos'>>
 
 const cacheObstaculos = new WeakMap<EstadoJuego['obstaculos'], Map<number, ReadonlySet<number>>>()
 
@@ -93,10 +94,11 @@ interface BaseAlcance {
   readonly valle: EstadoColocacion['valle']
   readonly cauce: EstadoColocacion['cauce']
   readonly obstaculos: EstadoColocacion['obstaculos']
+  readonly vallas: string | undefined
   readonly ax: number
   readonly ay: number
   readonly ignorarId: number | undefined
-  /** Casillas bloqueadas (agua, obstáculos, edificios salvo `ignorarId`). */
+  /** Casillas bloqueadas (agua, obstáculos, vallas y edificios salvo `ignorarId`; las puertas no). */
   readonly bloqueada: Uint8Array
   readonly inicio: number
   /** Casillas alcanzables desde la aparición antes de colocar. */
@@ -152,6 +154,7 @@ function baseAlcance(
     b.valle === estado.valle &&
     b.cauce === estado.cauce &&
     b.obstaculos === estado.obstaculos &&
+    b.vallas === estado.vallas &&
     b.ax === ax &&
     b.ay === ay &&
     b.ignorarId === ignorarId
@@ -160,6 +163,7 @@ function baseAlcance(
   }
   const bloqueada = aguaBloqueada(estado.valle, estado.cauce)
   for (const k of obstaculosDe(estado, lado)) bloqueada[k] = 1
+  for (const k of casillasConValla(estado.vallas)) bloqueada[k] = 1
   for (const [k, id] of casillasOcupadas(estado.edificios, lado)) {
     if (id !== ignorarId) bloqueada[k] = 1
   }
@@ -172,6 +176,7 @@ function baseAlcance(
     valle: estado.valle,
     cauce: estado.cauce,
     obstaculos: estado.obstaculos,
+    vallas: estado.vallas,
     ax,
     ay,
     ignorarId,
@@ -183,29 +188,41 @@ function baseAlcance(
 }
 
 /**
- * ¿Dejaría la huella `h` sin alcanzar alguna casilla que hoy se alcanza desde la aparición?
- * Bloquear casillas solo puede reducir lo alcanzable, así que basta comparar el número.
+ * ¿Dejaría de ser alcanzable desde la aparición alguna casilla que hoy se alcanza si se bloquean
+ * las casillas `indices` (índices y*lado+x)? Bloquear casillas solo puede reducir lo alcanzable,
+ * así que basta comparar el número. La usan `colocacionValida` (huella de un edificio) y
+ * `validarVallas` (casillas de valla). Los índices no deben repetirse.
  */
+export function bloqueaPasoCasillas(
+  estado: EstadoColocacion,
+  lado: number,
+  indices: Iterable<number>,
+  ignorarId?: number,
+): boolean {
+  const base = baseAlcance(estado, lado, ignorarId)
+  if (base.total === 0) return false
+  const bloqueada = new Uint8Array(base.bloqueada)
+  let propias = 0
+  for (const k of indices) {
+    bloqueada[k] = 1
+    propias += base.vista[k] as number
+  }
+  const objetivo = base.total - propias
+  if (objetivo <= 0) return false
+  return recorrer(lado, bloqueada, base.inicio, new Uint8Array(lado * lado), objetivo) < objetivo
+}
+
 function bloqueaPaso(
   estado: EstadoColocacion,
   lado: number,
   h: { x0: number; y0: number; x1: number; y1: number },
   ignorarId: number | undefined,
 ): boolean {
-  const base = baseAlcance(estado, lado, ignorarId)
-  if (base.total === 0) return false
-  const bloqueada = new Uint8Array(base.bloqueada)
-  let propias = 0
+  const indices: number[] = []
   for (let cy = h.y0; cy <= h.y1; cy++) {
-    for (let cx = h.x0; cx <= h.x1; cx++) {
-      const k = cy * lado + cx
-      bloqueada[k] = 1
-      propias += base.vista[k] as number
-    }
+    for (let cx = h.x0; cx <= h.x1; cx++) indices.push(cy * lado + cx)
   }
-  const objetivo = base.total - propias
-  if (objetivo <= 0) return false
-  return recorrer(lado, bloqueada, base.inicio, new Uint8Array(lado * lado), objetivo) < objetivo
+  return bloqueaPasoCasillas(estado, lado, indices, ignorarId)
 }
 
 /** ¿El edificio es único y ya hay uno (obra incluida), sin contar `ignorarId`? */
@@ -290,7 +307,8 @@ export function colocacionValida(
         (id !== undefined && id !== opciones.ignorarId) ||
         conPlanta.has(k) ||
         // M6-T04: un camino también ocupa la casilla (hay que quitarlo antes de construir).
-        estado.caminos?.[k] === CARACTER_CAMINO
+        estado.caminos?.[k] === CARACTER_CAMINO ||
+        hayValla(estado.vallas, k)
       )
     })
   ) {

@@ -7,6 +7,9 @@ import {
   CONFIG_CAMINOS,
   crearEstadoInicial,
   hayCamino,
+  puedePlantarPlanton,
+  validarVallas,
+  zonasVacias,
   ladoValle,
   validarCaminos,
   type EstadoJuego,
@@ -16,10 +19,17 @@ import { aguaDe } from './zonas'
 
 const base = crearEstadoInicial({ semilla: 1 })
 const lado = ladoValle(base.valle)
-/** Cuadrado 5×5 propio alrededor de (50, 50), sin obstáculos, con 10 de piedra. */
+/** Cuadrado 5×5 propio alrededor de (50, 50), sin obstáculos, Modo Plano, con 10 de piedra y 50 de madera. */
 const e0: EstadoJuego = {
   ...conTierraLabrable(base, 50, 50),
-  materiales: { madera: 0, piedra: 10 },
+  modo: 'plano',
+  materiales: { madera: 50, piedra: 10 },
+}
+const vida = (e: EstadoJuego): EstadoJuego => ({ ...e, modo: 'vida' })
+const conVallas = (e: EstadoJuego, ...c: [number, number, string][]): EstadoJuego => {
+  const celdas = e.vallas.split('')
+  for (const [x, y, t] of c) celdas[y * lado + x] = t
+  return { ...e, vallas: celdas.join('') }
 }
 const coloca = (e: EstadoJuego, ...c: [number, number][]) =>
   aplicarComando(e, { tipo: 'ColocarCamino', casillas: c.map(([x, y]) => ({ x, y })) })
@@ -55,7 +65,7 @@ describe('ColocarCamino', () => {
     expect(hayCamino(e, 50, 50) && hayCamino(e, 51, 50) && hayCamino(e, 52, 50)).toBe(true)
     expect(hayCamino(e, 49, 50)).toBe(false)
     expect(e.materiales.piedra).toBe(10 - 3 * CONFIG_CAMINOS.costePiedra)
-    expect(e.materiales.madera).toBe(0)
+    expect(e.materiales.madera).toBe(50)
     expect(r.ok && r.eventos).toEqual([
       { tipo: 'caminos-colocados', casillas: 3, piedra: 3 * CONFIG_CAMINOS.costePiedra },
     ])
@@ -74,12 +84,12 @@ describe('ColocarCamino', () => {
   it('no sobre cultivo (tierra arada o planta), ni río, ni edificio, ni obstáculo', () => {
     const arada = ok(
       aplicarComando(
-        { ...e0, personaje: { x: 50.5, y: 50.5, orientacion: 'sur' }, herramienta: 'azada' },
+        { ...vida(e0), personaje: { x: 50.5, y: 50.5, orientacion: 'sur' }, herramienta: 'azada' },
         { tipo: 'UsarHerramienta', x: 50, y: 51 },
       ),
     )
     expect(arada.tierra[51 * lado + 50]).not.toBe('.')
-    expect(error(coloca(arada, [50, 51]))).toBe('sin-casillas-validas')
+    expect(error(coloca({ ...arada, modo: 'plano' }, [50, 51]))).toBe('sin-casillas-validas')
     const conPlanta = { ...arada, plantas: [[51 * lado + 50, 0, 0, 0, 0, 0]] as const }
     expect(validarCaminos(conPlanta, [{ x: 50, y: 51 }]).casillas[0]?.valida).toBe(false)
     expect(validarCaminos(arada, [{ x: 50, y: 51 }]).casillas[0]?.motivo).toBe('arada')
@@ -101,11 +111,12 @@ describe('ColocarCamino', () => {
       'sin-casillas-validas',
     )
     const vado = propias.cauce.vados[0]
-    if (vado !== undefined) {
-      expect(
-        validarCaminos(propias, [{ x: vado % lado, y: Math.floor(vado / lado) }]).validas,
-      ).toBe(0)
-    }
+    expect(vado).toBeDefined()
+    expect(
+      validarCaminos(propias, [
+        { x: (vado as number) % lado, y: Math.floor((vado as number) / lado) },
+      ]).validas,
+    ).toBe(0)
 
     // Edificio y obstáculo.
     const conEdificio: EstadoJuego = {
@@ -160,7 +171,7 @@ describe('ColocarCamino', () => {
 
   it('no bloquea el paso: el personaje puede cruzar un camino', () => {
     const e = ok(coloca({ ...e0, personaje: { x: 49.5, y: 50.5, orientacion: 'este' } }, [50, 50]))
-    const r = ok(aplicarComando(e, { tipo: 'MoverPersonaje', dx: 1, dy: 0, ms: 200 }))
+    const r = ok(aplicarComando(vida(e), { tipo: 'MoverPersonaje', dx: 1, dy: 0, ms: 200 }))
     expect(r.personaje.x).toBeGreaterThan(49.5)
   })
 })
@@ -214,9 +225,99 @@ describe('coherencia con construir y arar', () => {
   it('la azada rechaza una casilla con camino', () => {
     const e = ok(coloca(e0, [50, 51]))
     const r = aplicarComando(
-      { ...e, personaje: { x: 50.5, y: 50.5, orientacion: 'sur' }, herramienta: 'azada' },
+      { ...vida(e), personaje: { x: 50.5, y: 50.5, orientacion: 'sur' }, herramienta: 'azada' },
       { tipo: 'UsarHerramienta', x: 50, y: 51 },
     )
     expect(error(r)).toBe('ocupada')
+  })
+
+  const cobertizo = (x: number, y: number) =>
+    ({
+      id: 1,
+      tipo: 'cobertizo',
+      x,
+      y,
+      obra: null,
+      pagado: { dinero: 0, madera: 0, piedra: 0 },
+    }) as never
+
+  it('MoverEdificio rechaza una huella que pisa un camino (ocupada)', () => {
+    const e = ok(coloca(e0, [50, 50]))
+    const plano: EstadoJuego = { ...e, edificios: [cobertizo(44, 44)], siguienteIdEdificio: 2 }
+    expect(error(aplicarComando(plano, { tipo: 'MoverEdificio', id: 1, x: 49, y: 49 }))).toBe(
+      'ocupada',
+    )
+  })
+
+  it('entre edificios: la casilla contigua es válida y la de la huella no', () => {
+    const e: EstadoJuego = { ...e0, edificios: [cobertizo(48, 50)], siguienteIdEdificio: 2 }
+    const r = validarCaminos(e, [
+      { x: 52, y: 50 },
+      { x: 47, y: 51 },
+      { x: 48, y: 50 },
+      { x: 51, y: 52 },
+    ])
+    expect(r.casillas.map((c) => c.motivo)).toEqual([undefined, undefined, 'ocupada', 'ocupada'])
+    expect(ok(coloca(e, [52, 50], [47, 51])).caminos.split('c').length - 1).toBe(2)
+  })
+})
+
+describe('Modo Plano', () => {
+  it('fuera del Modo Plano ColocarCamino y QuitarCamino dan solo-en-plano y no cambian nada', () => {
+    const conCamino = ok(coloca(e0, [50, 50]))
+    for (const e of [vida(e0), vida(conCamino)]) {
+      for (const r of [coloca(e, [51, 50]), quita(e, [50, 50])]) {
+        expect(error(r)).toBe('solo-en-plano')
+        expect(r.estado).toBe(e)
+      }
+    }
+  })
+})
+
+describe('integración con vallas', () => {
+  it('camino bajo una puerta sí, bajo una valla no', () => {
+    const e = conVallas(e0, [50, 50, 'p'], [51, 50, 'v'])
+    const r = validarCaminos(e, [
+      { x: 50, y: 50 },
+      { x: 51, y: 50 },
+    ])
+    expect(r.casillas.map((c) => c.motivo)).toEqual([undefined, 'valla'])
+    const f = ok(coloca(e, [50, 50], [51, 50]))
+    expect(hayCamino(f, 50, 50)).toBe(true)
+    expect(hayCamino(f, 51, 50)).toBe(false)
+    expect(f.materiales.piedra).toBe(10 - CONFIG_CAMINOS.costePiedra)
+    expect(error(coloca(conVallas(e0, [51, 50, 'v']), [51, 50]))).toBe('sin-casillas-validas')
+  })
+
+  it('puerta sí, valla no sobre una casilla con camino', () => {
+    const e = ok(coloca(e0, [50, 50]))
+    const v = validarVallas(e, [{ x: 50, y: 50 }], 'valla')
+    expect(v.casillas[0]?.motivo).toBe('camino')
+    expect(v.validas).toEqual([])
+    expect(
+      aplicarComando(e, { tipo: 'ColocarVallas', casillas: [{ x: 50, y: 50 }], tipoValla: 'valla' })
+        .ok,
+    ).toBe(false)
+    expect(validarVallas(e, [{ x: 50, y: 50 }], 'puerta').validas).toEqual([{ x: 50, y: 50 }])
+    const f = ok(
+      aplicarComando(e, {
+        tipo: 'ColocarVallas',
+        casillas: [{ x: 50, y: 50 }],
+        tipoValla: 'puerta',
+      }),
+    )
+    expect(hayCamino(f, 50, 50)).toBe(true)
+    expect(f.vallas[50 * lado + 50]).toBe('p')
+  })
+})
+
+describe('plantones', () => {
+  it('no se planta un plantón sobre camino, valla ni puerta', () => {
+    const libre: EstadoJuego = { ...e0, zonas: zonasVacias(lado) }
+    expect(puedePlantarPlanton(libre, 49, 49)).toBe(true)
+    expect(puedePlantarPlanton(ok(coloca(libre, [49, 49])), 49, 49)).toBe(false)
+    expect(puedePlantarPlanton(conVallas(libre, [49, 49, 'v']), 49, 49)).toBe(false)
+    expect(puedePlantarPlanton(conVallas(libre, [49, 49, 'p']), 49, 49)).toBe(false)
+    expect(puedePlantarPlanton(ok(coloca(libre, [49, 49])), 48, 49)).toBe(true)
   })
 })
