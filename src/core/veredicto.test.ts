@@ -43,11 +43,38 @@ describe('veredictoColocacion', () => {
     })
   })
 
-  it('día en el límite: limite-de-dia (no se ve válido)', () => {
-    const e = { ...plano, dia: Number.MAX_SAFE_INTEGER }
-    const v = veredictoColocacion(e, 'casa', 0, 0, 0)
-    const r = aplicarComando(e, { tipo: 'Construir', tipoEdificio: 'casa', x: 0, y: 0 })
-    expect(v.valida).toBe(r.ok)
+  it('día en el límite: limite-de-dia con certeza (el sitio es válido con un día normal)', () => {
+    // Parcela propia sin río ni aparición, zona vivienda pintada y Modo Plano.
+    const N = base.valle.parcelasPorLado
+    const C = base.valle.casillasPorParcela
+    const ia = Math.floor(base.aparicion.y / C) * N + Math.floor(base.aparicion.x / C)
+    const i = base.valle.parcelas.findIndex((_, k) => !base.valle.rio.includes(k) && k !== ia)
+    const px = (i % N) * C
+    const py = Math.floor(i / N) * C
+    let e = ok({ ...plano, dinero: 100_000 }, { tipo: 'ComprarParcela', indice: i })
+    e = { ...e, obstaculos: [] }
+    e = ok(e, {
+      tipo: 'PintarZona',
+      x0: px,
+      y0: py,
+      x1: px + C - 1,
+      y1: py + C - 1,
+      zona: 'vivienda',
+    })
+    const x = px + 1
+    const y = py + 1
+    // 1. Con un día normal es válido: ningún otro motivo tapa el que se prueba.
+    expect(veredictoColocacion(e, 'casa', x, y, 0)).toEqual({ valida: true })
+    // 2 y 3. En el límite del día, fantasma y comando dan el mismo rechazo.
+    const limite = { ...e, dia: Number.MAX_SAFE_INTEGER }
+    expect(veredictoColocacion(limite, 'casa', x, y, 0)).toEqual({
+      valida: false,
+      motivo: 'limite-de-dia',
+      faltan: { dinero: 0, madera: 0, piedra: 0 },
+    })
+    expect(aplicarComando(limite, { tipo: 'Construir', tipoEdificio: 'casa', x, y })).toMatchObject(
+      { ok: false, error: 'limite-de-dia' },
+    )
     expect(MOTIVOS_VEREDICTO).toContain('limite-de-dia')
   })
 
