@@ -54,6 +54,22 @@ describe('zonas', () => {
     expect(r.estado).toBe(base)
   })
 
+  it('fuera de parcela propia se ignora', () => {
+    // Rectángulo a caballo entre la parcela propia y su vecina (ajena): solo cae lo propio.
+    const haciaEste = fx + C < LADO
+    const x0 = haciaEste ? fx + C - 2 : fx - 2
+    const r = pintar(propia, x0, fy, x0 + 3, fy + 1)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const dentro = (x: number) => x >= fx && x < fx + C
+    for (let x = x0; x < x0 + 4; x++)
+      for (let y = fy; y < fy + 2; y++) {
+        if (agua.has(y * LADO + x)) continue
+        expect(zonaEn(r.estado, x, y)).toBe(dentro(x) ? 'cultivo' : undefined)
+      }
+    expect(r.eventos).toEqual([{ tipo: 'zonas-cambiadas', casillas: 4 }])
+  })
+
   it('ignora agua y vados', () => {
     const pr = base.valle.rio[0] as number
     const e = comprar(base, pr)
