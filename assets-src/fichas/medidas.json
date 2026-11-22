@@ -11,9 +11,7 @@
         "base": 0.0,
         "triangulos": 12,
         "bytes": 1876,
-        "colores": [
-          "piedra"
-        ]
+        "colores": ["piedra"]
       },
       "andamios": {
         "ancho": 3.0,
@@ -24,12 +22,7 @@
         "base": 0.0,
         "triangulos": 168,
         "bytes": 15964,
-        "colores": [
-          "madera",
-          "maderaOscura",
-          "paja",
-          "piedra"
-        ]
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
       },
       "paredes": {
         "ancho": 3.0,
@@ -40,10 +33,7 @@
         "base": 0.0,
         "triangulos": 24,
         "bytes": 3484,
-        "colores": [
-          "crema",
-          "piedra"
-        ]
+        "colores": ["crema", "piedra"]
       },
       "terminado": {
         "ancho": 3.0,
@@ -54,11 +44,7 @@
         "base": 0.0,
         "triangulos": 30,
         "bytes": 4568,
-        "colores": [
-          "crema",
-          "maderaOscura",
-          "piedra"
-        ]
+        "colores": ["crema", "maderaOscura", "piedra"]
       }
     },
     "caja-envio": {
@@ -71,9 +57,7 @@
         "base": 0.0,
         "triangulos": 12,
         "bytes": 1876,
-        "colores": [
-          "piedra"
-        ]
+        "colores": ["piedra"]
       },
       "andamios": {
         "ancho": 2.0,
@@ -84,12 +68,7 @@
         "base": 0.0,
         "triangulos": 168,
         "bytes": 16212,
-        "colores": [
-          "madera",
-          "maderaOscura",
-          "paja",
-          "piedra"
-        ]
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
       },
       "paredes": {
         "ancho": 2.0,
@@ -100,10 +79,7 @@
         "base": 0.0,
         "triangulos": 60,
         "bytes": 6276,
-        "colores": [
-          "madera",
-          "piedra"
-        ]
+        "colores": ["madera", "piedra"]
       },
       "terminado": {
         "ancho": 2.0,
@@ -114,11 +90,7 @@
         "base": 0.0,
         "triangulos": 72,
         "bytes": 7436,
-        "colores": [
-          "madera",
-          "maderaOscura",
-          "piedra"
-        ]
+        "colores": ["madera", "maderaOscura", "piedra"]
       }
     },
     "cobertizo": {
@@ -131,9 +103,7 @@
         "base": 0.0,
         "triangulos": 12,
         "bytes": 1876,
-        "colores": [
-          "piedra"
-        ]
+        "colores": ["piedra"]
       },
       "andamios": {
         "ancho": 4.0,
@@ -144,12 +114,7 @@
         "base": 0.0,
         "triangulos": 168,
         "bytes": 16068,
-        "colores": [
-          "madera",
-          "maderaOscura",
-          "paja",
-          "piedra"
-        ]
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
       },
       "paredes": {
         "ancho": 4.0,
@@ -160,10 +125,7 @@
         "base": 0.0,
         "triangulos": 84,
         "bytes": 8332,
-        "colores": [
-          "madera",
-          "piedra"
-        ]
+        "colores": ["madera", "piedra"]
       },
       "terminado": {
         "ancho": 4.0,
@@ -174,11 +136,7 @@
         "base": 0.0,
         "triangulos": 104,
         "bytes": 10904,
-        "colores": [
-          "madera",
-          "maderaOscura",
-          "piedra"
-        ]
+        "colores": ["madera", "maderaOscura", "piedra"]
       }
     },
     "casa": {
@@ -191,9 +149,7 @@
         "base": 0.0,
         "triangulos": 12,
         "bytes": 1880,
-        "colores": [
-          "piedra"
-        ]
+        "colores": ["piedra"]
       },
       "andamios": {
         "ancho": 7.0,
@@ -204,12 +160,7 @@
         "base": 0.0,
         "triangulos": 168,
         "bytes": 15988,
-        "colores": [
-          "madera",
-          "maderaOscura",
-          "paja",
-          "piedra"
-        ]
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
       },
       "paredes": {
         "ancho": 7.0,
@@ -220,10 +171,7 @@
         "base": 0.0,
         "triangulos": 84,
         "bytes": 8244,
-        "colores": [
-          "crema",
-          "piedra"
-        ]
+        "colores": ["crema", "piedra"]
       },
       "terminado": {
         "ancho": 7.0,
@@ -234,13 +182,7 @@
         "base": 0.0,
         "triangulos": 140,
         "bytes": 14240,
-        "colores": [
-          "agua",
-          "crema",
-          "maderaOscura",
-          "piedra",
-          "teja"
-        ]
+        "colores": ["agua", "crema", "maderaOscura", "piedra", "teja"]
       }
     }
   }
