@@ -93,6 +93,8 @@ export const esquemaEfectos = v.object({
     gravedad: estrictoPositivo,
     astillas: tipoParticula,
     piedra: tipoParticula,
+    /** Gotas al regar una casilla (usa `cantidadGolpe`). */
+    agua: tipoParticula,
   }),
 })
 
