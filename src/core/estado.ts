@@ -8,6 +8,7 @@ import { CONFIG_PERSONAJE } from './datos/personaje'
 import type { Obstaculo } from './decoracion'
 import { generarMundo, ladoValle, type Cauce } from './mapa'
 import { zonasVacias } from './zonas'
+import { caminosVacios } from './caminos'
 import { tierraVacia, type Planta } from './tierra'
 import type { Edificio, Materiales } from './edificios'
 import { personajeEnAparicion, type Personaje } from './personaje'
@@ -47,6 +48,8 @@ import {
  * M7-T05: se añade `nivelRegadera` (1 | 2) sin subir la versión (los tests del Rompedor fijan 11):
  * un estado sin el campo se lee como nivel 1 (`nivelRegaderaDe`). Deuda #127: al fijar el guardado
  * (M7) habrá que decidir la política de versiones.
+ * M6-T04: se añade `caminos` (cadena de `lado*lado` caracteres: nada o camino) sin subir la
+ * versión (los tests del Rompedor fijan 11); sigue sin haber partidas guardadas.
  */
 export const VERSION_FORMATO = 11
 
@@ -96,6 +99,8 @@ export interface EstadoJuego {
   readonly zonas: string
   /** Tierra trabajada por casilla (índice y*lado+x): `.` sin labrar, `a` arada (ver `tierra.ts`). */
   readonly tierra: string
+  /** Caminos por casilla (índice y*lado+x): `.` nada, `c` camino de grava (ver `caminos.ts`). */
+  readonly caminos: string
   /** Plantas de las casillas aradas, ordenadas por casilla (ver `Planta` en `tierra.ts`). */
   readonly plantas: readonly Planta[]
   /** Obras y edificios; bloquean el paso. `obra` es `null` cuando el edificio está terminado. */
@@ -188,6 +193,7 @@ export function crearEstadoInicial(opciones: OpcionesNuevaPartida): EstadoJuego 
     valle,
     zonas: zonasVacias(ladoValle(valle)),
     tierra: tierraVacia(ladoValle(valle)),
+    caminos: caminosVacios(ladoValle(valle)),
     plantas: [],
     edificios: [],
     siguienteIdEdificio: 1,
