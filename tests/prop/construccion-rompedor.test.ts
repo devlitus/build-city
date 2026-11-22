@@ -1022,10 +1022,14 @@ function comprobar(
         expect(d.zonas).toContain(zonaEn(e, x, y))
         expect(x === ax && y === ay).toBe(false)
       }
+    // Desde M2-T01 el personaje choca como un círculo de radio `CONFIG_PERSONAJE.radio`: puede
+    // acercarse en diagonal a la esquina de un edificio más de lo que permitiría la antigua caja.
+    // Construir sigue exigiendo la caja (más estricta), así que basta con que el círculo no entre.
     const { x: px, y: py } = e.personaje
-    expect(px - M < b.x + d.ancho && px + M > b.x && py - M < b.y + d.alto && py + M > b.y).toBe(
-      false,
-    )
+    const r = CONFIG_PERSONAJE.radio
+    const dx = px - Math.max(b.x, Math.min(px, b.x + d.ancho))
+    const dy = py - Math.max(b.y, Math.min(py, b.y + d.alto))
+    expect(dx * dx + dy * dy < r * r).toBe(false)
   }
   expect(e.edificios.filter((b) => b.tipo === 'casa').length).toBeLessThanOrEqual(1)
   for (const n of [e.dinero, e.materiales.madera, e.materiales.piedra]) {

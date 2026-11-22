@@ -1,4 +1,4 @@
-import type { Comando, EstadoJuego } from '../core'
+import type { Comando, EstadoJuego, ModoJuego } from '../core'
 import { HERRAMIENTAS, type Herramienta } from '../core/inventario'
 import { objetivoDelante } from '../core/objetivo'
 import type { Almacen } from './almacen'
@@ -119,14 +119,16 @@ export function comandoHerramientaDeTecla(
 
 /**
  * Rueda -> `ElegirHerramienta` (pura): `deltaY > 0` (hacia abajo) pasa a la siguiente y
- * `deltaY < 0` a la anterior, dando la vuelta en los extremos. Con Alt/Ctrl/Meta (zoom) o
- * `deltaY` 0 no hace nada.
+ * `deltaY < 0` a la anterior, dando la vuelta en los extremos. Con Alt/Ctrl/Meta (zoom),
+ * `deltaY` 0 o en Modo Plano (la rueda es el zoom de la cámara de plano) no hace nada.
  */
 export function comandoHerramientaDeRueda(
   rueda: Pick<WheelEvent, 'deltaY' | 'altKey' | 'ctrlKey' | 'metaKey'>,
   actual: Herramienta,
   herramientas: readonly Herramienta[] = HERRAMIENTAS,
+  modo: ModoJuego = 'vida',
 ): ComandoElegir | undefined {
+  if (modo === 'plano') return undefined
   if (rueda.altKey || rueda.ctrlKey || rueda.metaKey || rueda.deltaY === 0) return undefined
   const n = herramientas.length
   const i = herramientas.indexOf(actual)
@@ -150,7 +152,8 @@ export function instalarEleccionHerramienta(
   }
   const alRodar = (e: WheelEvent): void => {
     if (enCampoDeTexto(e.target)) return
-    const comando = comandoHerramientaDeRueda(e, almacen.estado.herramienta)
+    const { herramienta, modo } = almacen.estado
+    const comando = comandoHerramientaDeRueda(e, herramienta, HERRAMIENTAS, modo)
     if (!comando) return
     e.preventDefault()
     almacen.despachar(comando)

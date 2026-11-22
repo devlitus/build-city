@@ -40,6 +40,8 @@ export type Comando =
     }
   /** Cambia de modo; no toca `pausado` (la pausa del Plano se deriva en `tiempoDetenido`). */
   | { readonly tipo: 'CambiarModo'; readonly modo: ModoJuego }
+  /** Ajuste «pausar en Modo Plano». */
+  | { readonly tipo: 'FijarPausarEnPlano'; readonly activo: boolean }
   | { readonly tipo: 'Pausar' }
   | { readonly tipo: 'Reanudar' }
   | { readonly tipo: 'CambiarVelocidad'; readonly velocidad: number }
@@ -341,7 +343,8 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       if (corre !== undefined && typeof corre !== 'boolean') {
         return { ok: false, estado, error: 'parametro-invalido' }
       }
-      if (tiempoDetenido(estado) || ms === 0 || (dx === 0 && dy === 0)) {
+      // En Modo Plano el personaje no anda, aunque el reloj corra (ajuste desactivado).
+      if (tiempoDetenido(estado) || estado.modo === 'plano' || ms === 0 || (dx === 0 && dy === 0)) {
         return { ok: true, estado, eventos: SIN_EVENTOS }
       }
       if (!edificiosValidos(estado.edificios))
@@ -372,6 +375,16 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       }
       if (comando.modo === estado.modo) return { ok: true, estado, eventos: SIN_EVENTOS }
       return { ok: true, eventos: SIN_EVENTOS, estado: { ...estado, modo: comando.modo } }
+    }
+    case 'FijarPausarEnPlano': {
+      if (typeof comando.activo !== 'boolean') {
+        return { ok: false, estado, error: 'parametro-invalido' }
+      }
+      return {
+        ok: true,
+        eventos: SIN_EVENTOS,
+        estado: { ...estado, pausarEnPlano: comando.activo },
+      }
     }
     case 'Pausar':
       return { ok: true, eventos: SIN_EVENTOS, estado: { ...estado, pausado: true } }

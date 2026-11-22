@@ -4,5 +4,6 @@
   "diasPorEstacion": 21,
   "estaciones": ["primavera", "verano", "otono", "invierno"],
   "minutosRealesPorDia": 15,
-  "velocidades": [1, 2, 3]
+  "velocidades": [1, 2, 3],
+  "pausarEnPlano": true
 }

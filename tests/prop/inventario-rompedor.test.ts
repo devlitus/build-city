@@ -603,12 +603,17 @@ describe('M5-01 · rompedor del núcleo', () => {
                       ...e,
                       rng,
                       inventario: inv,
-                      // Un árbol talado deja un tocón en su casilla.
+                      // Un árbol talado deja un tocón en su casilla (el núcleo normaliza -0 a 0).
                       obstaculos:
                         o.tipo === 'arbol'
                           ? e.obstaculos.map((b) =>
                               b === o
-                                ? { tipo: 'tocon' as const, x: o.x, y: o.y, variante: o.variante }
+                                ? {
+                                    tipo: 'tocon' as const,
+                                    x: o.x + 0,
+                                    y: o.y + 0,
+                                    variante: o.variante,
+                                  }
                                 : b,
                             )
                           : e.obstaculos.filter((b) => b !== o),

@@ -138,6 +138,14 @@ describe('elegir herramienta', () => {
     expect(comandoHerramientaDeRueda({ deltaY: 100, ...sin, altKey: true }, en(0))).toBeUndefined()
   })
 
+  it('en Modo Plano la rueda es el zoom de la cámara y no elige herramienta', () => {
+    const r = { deltaY: 100, ...sin }
+    expect(comandoHerramientaDeRueda(r, en(0), HERRAMIENTAS, 'plano')).toBeUndefined()
+    expect(comandoHerramientaDeRueda(r, en(0), HERRAMIENTAS, 'vida')?.herramienta).toBe(
+      HERRAMIENTAS[1],
+    )
+  })
+
   it('los oyentes despachan y la función de retirada los quita', () => {
     const oyentes = new Map<string, (e: never) => void>()
     const o = {

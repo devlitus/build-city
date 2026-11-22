@@ -79,6 +79,8 @@ export const EsquemaConfigTiempo = v.pipe(
       v.array(v.pipe(enteroPositivo, v.maxValue(VELOCIDAD_MAXIMA))),
       v.minLength(1),
     ),
+    /** Valor por defecto del ajuste «pausar en Modo Plano» (GDD §7.2). */
+    pausarEnPlano: v.boolean(),
   }),
   v.check((c) => c.horaFin > c.horaInicio, 'horaFin debe ser mayor que horaInicio'),
   v.check((c) => c.horaFin - c.horaInicio <= MINUTOS_POR_DIA, 'La jornada no dura más de 24 h'),

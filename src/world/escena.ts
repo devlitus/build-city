@@ -21,9 +21,13 @@ import { crearPueblo } from './pueblo'
 import { crearAltura } from './terreno/altura'
 import { crearSombras } from './sombras'
 import { crearTerceraPersona } from './camaras/tercera-persona'
+import { crearCamaraPlano } from './camaras/plano'
+import { crearDirectorCamara } from './camaras/director'
 import { ladoMetros } from './terreno/coordenadas'
 import { crearTerreno } from './terreno/malla'
 import { crearVegetacion } from './vegetacion'
+import { crearCapaPlano } from './plano/plano'
+import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
 export interface Escena {
@@ -81,7 +85,8 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   let instanteAnterior = performance.now()
 
   // Aquí se añaden las capas del mundo, una línea cada una (agua, vegetación, horizonte, pueblo…).
-  escena.add(crearTerreno(valle, semilla))
+  const terreno = crearTerreno(valle, semilla)
+  escena.add(terreno)
   escena.add(horizonte.objeto)
   const altura = crearAltura(valle, semilla)
   escena.add(crearPueblo(valle, altura))
@@ -108,6 +113,14 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
   // La pose real la fija la cámara en tercera persona en cada fotograma.
   const terceraPersona = crearTerceraPersona(camara, renderer.domElement, altura)
 
+  const camaraPlano = crearCamaraPlano(camara, renderer.domElement, altura)
+  const director = crearDirectorCamara(camara, terceraPersona, camaraPlano, altura)
+
+  const plano = crearCapaPlano(lector, camara, renderer.domElement, terreno, altura)
+  escena.add(plano.objeto)
+  const parcelasMundo = crearParcelasMundo(lector, altura)
+  escena.add(parcelasMundo.objeto)
+
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
     renderer.setSize(ancho, alto)
@@ -127,7 +140,7 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
     marcarPaso: () => granjero.marcarPaso(),
     yawCamara: () => terceraPersona.yaw,
     fijarCamaraSeguimiento: (activa) => {
-      terceraPersona.habilitada = activa
+      director.seguimiento = activa
     },
     dibujar: (alfa = 1) => {
       const ahora = performance.now()
@@ -136,10 +149,12 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
       agua.actualizar(dt)
       const pies = granjero.actualizar(dt, alfa)
       // Antes que la vegetación, que usa la cámara ya colocada.
-      const mirado = terceraPersona.actualizar(dt, pies)
+      const mirado = director.actualizar(dt, pies, lector.estado.modo)
       vegetacion.sincronizar(lector.estado.obstaculos, lector.estado.dia)
       vegetacion.actualizar(dt, camara)
       efectos.actualizar(dt)
+      plano.actualizar()
+      parcelasMundo.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -148,6 +163,9 @@ export function crearEscena(contenedor: HTMLElement, lector: LectorEstado & Fuen
     },
     destruir: () => {
       terceraPersona.destruir()
+      camaraPlano.destruir()
+      plano.destruir()
+      parcelasMundo.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
