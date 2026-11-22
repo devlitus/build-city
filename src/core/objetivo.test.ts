@@ -65,3 +65,45 @@ describe('objetivoDelante', () => {
     expect(CONFIG_HERRAMIENTAS.alcance).toBeGreaterThan(0)
   })
 })
+
+describe('objetivoDelante con herramientas de cultivo', () => {
+  const conH = (
+    herramienta: 'azada' | 'semillas' | 'regadera' | 'mano' | 'hacha',
+    ...o: Obstaculo[]
+  ) => ({
+    obstaculos: o,
+    herramienta,
+  })
+
+  it('con la azada devuelve la casilla delante, aunque haya un obstáculo en el cono', () => {
+    const r = objetivoDelante(P, 'sur', conH('azada', arbol(10, 11)))
+    expect(r).toEqual({ tipo: 'casilla', x: 10, y: 11 })
+  })
+
+  it('semillas, regadera y mano también devuelven la casilla de suelo', () => {
+    for (const h of ['semillas', 'regadera', 'mano'] as const) {
+      expect(objetivoDelante(P, 'este', conH(h, arbol(11, 10)))).toEqual({
+        tipo: 'casilla',
+        x: 11,
+        y: 10,
+      })
+    }
+  })
+
+  it('el hacha sigue prefiriendo el obstáculo', () => {
+    expect(objetivoDelante(P, 'sur', conH('hacha', arbol(10, 11))).tipo).toBe('obstaculo')
+  })
+
+  it('la casilla delante en las cuatro direcciones y en diagonal', () => {
+    const e = conH('azada')
+    expect(objetivoDelante(P, 'norte', e)).toMatchObject({ x: 10, y: 9 })
+    expect(objetivoDelante(P, 'sur', e)).toMatchObject({ x: 10, y: 11 })
+    expect(objetivoDelante(P, 'este', e)).toMatchObject({ x: 11, y: 10 })
+    expect(objetivoDelante(P, 'oeste', e)).toMatchObject({ x: 9, y: 10 })
+    // «En diagonal»: personaje pegado a la esquina de su casilla; sigue siendo la contigua en la
+    // orientación de 4 lados (la diagonal real es la deuda #107).
+    const esquina = { x: 10.95, y: 10.95 }
+    expect(objetivoDelante(esquina, 'sur', e)).toMatchObject({ x: 10, y: 11 })
+    expect(objetivoDelante(esquina, 'este', e)).toMatchObject({ x: 11, y: 10 })
+  })
+})

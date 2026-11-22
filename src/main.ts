@@ -9,6 +9,7 @@ import {
   instalarEntrada,
   instalarUsoHerramienta,
 } from './juego/entrada'
+import { instalarEleccionSemilla } from './juego/semillas'
 import { instalarTeclaModo } from './juego/modo'
 import { instalarTeclasTiempo } from './juego/tiempo'
 import { montarUi } from './ui/montar'
@@ -28,8 +29,14 @@ if (contenedor) {
   let contarFps: (() => void) | undefined
   if (import.meta.env.DEV) {
     void import('./world/contador-fps').then((m) => {
-      contarFps = m.crearContadorFps(contenedor)
+      contarFps = m.crearContadorFps(contenedor, renderer.info)
     })
+  }
+
+  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8) y F6 pinta zona Cultivo.
+  if (import.meta.env.DEV) {
+    void import('./juego/depuracion-regadera').then((m) => m.instalarAtajoRegadera(almacen))
+    void import('./juego/depuracion').then((m) => m.instalarAtajosDepuracion(almacen))
   }
 
   // Con F2 manda la cámara libre de depuración: la de tercera persona se detiene y WASD solo
@@ -46,6 +53,7 @@ if (contenedor) {
   const quitarTeclasTiempo = instalarTeclasTiempo(almacen)
   void quitarTeclasTiempo
   instalarEleccionHerramienta(almacen)
+  instalarEleccionSemilla(almacen)
   instalarUsoHerramienta(
     almacen,
     renderer.domElement,

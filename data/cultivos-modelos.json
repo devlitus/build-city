@@ -1,0 +1,149 @@
+{
+  "rugosidad": 0.85,
+  "lados": 4,
+  "ladosEsfera": 8,
+  "fases": {
+    "brote": {
+      "escala": 0.3,
+      "hojasMax": 4
+    },
+    "crecimiento": {
+      "escala": 0.65,
+      "hojasMax": 99
+    },
+    "maduro": {
+      "escala": 1,
+      "hojasMax": 99
+    }
+  },
+  "marchito": {
+    "hojas": {
+      "n": 6,
+      "radio": 0.06,
+      "alto": 0.2,
+      "ancho": 0.07,
+      "inclinacion": 1.2,
+      "color": "marchitoHoja"
+    },
+    "tallo": {
+      "radio": 0.02,
+      "alto": 0.16,
+      "color": "marchitoOscuro"
+    }
+  },
+  "cultivos": {
+    "patata": {
+      "hojas": {
+        "n": 10,
+        "radio": 0.1,
+        "alto": 0.7,
+        "ancho": 0.15,
+        "inclinacion": 0.4,
+        "color": "patataHoja"
+      },
+      "adornos": [
+        {
+          "desde": "maduro",
+          "n": 5,
+          "anillo": 0.2,
+          "y": 0.62,
+          "radio": 0.06,
+          "color": "patataFlor"
+        },
+        {
+          "desde": "maduro",
+          "n": 3,
+          "anillo": 0.1,
+          "y": 0.72,
+          "radio": 0.055,
+          "color": "patataFlorLila"
+        }
+      ]
+    },
+    "zanahoria": {
+      "hojas": {
+        "n": 12,
+        "radio": 0.02,
+        "alto": 0.6,
+        "ancho": 0.035,
+        "inclinacion": 0.22,
+        "color": "zanahoriaHoja"
+      },
+      "cuerpo": {
+        "desde": "crecimiento",
+        "forma": "cilindro",
+        "radio": 0.085,
+        "alto": 0.07,
+        "y": 0.03,
+        "color": "zanahoriaRaiz"
+      },
+      "adornos": []
+    },
+    "lechuga": {
+      "hojas": {
+        "n": 9,
+        "radio": 0.08,
+        "alto": 0.22,
+        "ancho": 0.2,
+        "inclinacion": 0.95,
+        "color": "lechugaHoja"
+      },
+      "cuerpo": {
+        "desde": "crecimiento",
+        "forma": "esfera",
+        "radio": 0.15,
+        "alto": 0.12,
+        "y": 0.1,
+        "color": "lechugaCogollo"
+      },
+      "adornos": []
+    },
+    "rabano": {
+      "hojas": {
+        "n": 6,
+        "radio": 0.04,
+        "alto": 0.32,
+        "ancho": 0.08,
+        "inclinacion": 0.7,
+        "color": "rabanoHoja"
+      },
+      "cuerpo": {
+        "desde": "crecimiento",
+        "forma": "esfera",
+        "radio": 0.1,
+        "alto": 0.1,
+        "y": 0.05,
+        "color": "rabanoBulbo"
+      },
+      "adornos": []
+    },
+    "fresa": {
+      "hojas": {
+        "n": 8,
+        "radio": 0.1,
+        "alto": 0.2,
+        "ancho": 0.11,
+        "inclinacion": 0.95,
+        "color": "fresaHoja"
+      },
+      "adornos": [
+        {
+          "desde": "crecimiento",
+          "n": 3,
+          "anillo": 0.2,
+          "y": 0.1,
+          "radio": 0.025,
+          "color": "fresaFlor"
+        },
+        {
+          "desde": "maduro",
+          "n": 5,
+          "anillo": 0.22,
+          "y": 0.06,
+          "radio": 0.055,
+          "color": "fresaFruto"
+        }
+      ]
+    }
+  }
+}
