@@ -178,7 +178,7 @@ export function comandoUsarHerramienta(
     | Pick<KeyboardEvent, 'code' | 'altKey' | 'ctrlKey' | 'metaKey'>
     | Pick<MouseEvent, 'button' | 'altKey' | 'ctrlKey' | 'metaKey'>,
   ratonCapturado: boolean,
-  estado: Pick<EstadoJuego, 'obstaculos' | 'personaje'>,
+  estado: Pick<EstadoJuego, 'obstaculos' | 'personaje'> & Partial<Pick<EstadoJuego, 'herramienta'>>,
 ): ComandoUsar | undefined {
   if (entrada.altKey || entrada.ctrlKey || entrada.metaKey) return undefined
   const usa = 'code' in entrada ? entrada.code === 'KeyE' : entrada.button === 0 && ratonCapturado
