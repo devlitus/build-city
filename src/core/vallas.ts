@@ -1,5 +1,6 @@
 import { CONFIG_VALLAS } from './datos/vallas'
 import { CONFIG_PERSONAJE } from './datos/personaje'
+import { hayCamino } from './caminos-estado'
 import { bloqueaPasoCasillas, obstaculosDe } from './construccion'
 import { casillasOcupadas } from './edificios'
 import type { EstadoJuego } from './estado'
@@ -40,6 +41,7 @@ export const MOTIVOS_CASILLA_VALLA = [
   'ocupada',
   'cultivo',
   'ya-hay-valla',
+  'camino',
   'personaje',
 ] as const
 export type MotivoCasillaValla = (typeof MOTIVOS_CASILLA_VALLA)[number]
@@ -133,6 +135,8 @@ export function validarVallas(
     else if (ocupadas.has(i)) motivo = 'ocupada'
     else if (esCaracterArada(estado.tierra[i]) || conPlanta.has(i)) motivo = 'cultivo'
     else if (vallaEn(estado.vallas, i) !== undefined) motivo = 'ya-hay-valla'
+    // Un camino admite puerta pero no valla (M6-T04).
+    else if (tipo === 'valla' && hayCamino(estado, x, y)) motivo = 'camino'
     else if (tipo === 'valla' && x >= caja.x0 && x <= caja.x1 && y >= caja.y0 && y <= caja.y1) {
       // Una valla bajo los pies dejaría al personaje atrapado (la puerta no).
       motivo = 'personaje'

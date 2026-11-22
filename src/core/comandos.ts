@@ -3,6 +3,7 @@ import { CONFIG_TIEMPO } from './datos/tiempo'
 import { parcelaComprable } from './parcelas'
 import { aplicarZonas, CARACTER_SIN_ZONA, CARACTER_ZONA, ZONAS, type Zona } from './zonas'
 import { moverPersonaje } from './personaje'
+import { colocarCaminos, factorVelocidadEn, quitarCaminos, type CasillaCamino } from './caminos'
 import { nivelRegaderaDe, type EventoPlantaMarchita } from './riego'
 import { empezarDiaSiguiente, type ObraTerminada } from './obras'
 import { comprobarDormir, type ErrorDormir } from './dormir'
@@ -139,6 +140,13 @@ export type Comando =
    */
   | { readonly tipo: 'MejorarRegadera' }
   /**
+   * Coloca camino en las casillas válidas (`validarCaminos`) y cobra su piedra solo por esas;
+   * sin piedra para todas, no coloca ni cobra. Solo en Modo Plano; no depende del reloj.
+   */
+  | { readonly tipo: 'ColocarCamino'; readonly casillas: readonly CasillaCamino[] }
+  /** Quita el camino de las casillas que lo tienen y devuelve su reembolso en piedra. Solo en Modo Plano. */
+  | { readonly tipo: 'QuitarCamino'; readonly casillas: readonly CasillaCamino[] }
+  /**
    * Coloca vallas o puertas (`tipo`) en las casillas dadas (M6-T01; reglas en `vallas.ts`). Solo en
    * Modo Plano. Se colocan solo las casillas válidas y se cobra solo por ellas; sin madera para
    * todas, o si las vallas encerrarían una zona alcanzable (`bloquea-paso`), no se hace nada.
@@ -218,6 +226,12 @@ export type EventoJuego =
   | EventoHerramienta
   /** El personaje durmió: empieza el día siguiente (las obras que tocan traen su `obra-terminada`). */
   | { readonly tipo: 'dormido' }
+  /** Camino colocado (`piedra` cobrada) o quitado (`piedra` devuelta) en `casillas` casillas. */
+  | {
+      readonly tipo: 'caminos-colocados' | 'caminos-quitados'
+      readonly casillas: number
+      readonly piedra: number
+    }
 
 export type ResultadoComando =
   | { readonly ok: true; readonly estado: EstadoJuego; readonly eventos: readonly EventoJuego[] }
@@ -506,6 +520,8 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
         ms,
         undefined,
         corre === true,
+        // Camino bajo el centro al inicio del paso (M6-T04): un paso es corto (≤ maxMsPorComando).
+        factorVelocidadEn(estado, estado.personaje.x, estado.personaje.y),
       )
       const antes = estado.personaje
       // Contra un muro no cambia nada: se devuelve el mismo estado (sin avisos por fotograma).
@@ -732,6 +748,23 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
         return { ok: false, estado, error: 'estado-invalido' }
       if (estado.nivelRegadera === 2) return { ok: true, estado, eventos: SIN_EVENTOS }
       return { ok: true, eventos: SIN_EVENTOS, estado: { ...estado, nivelRegadera: 2 } }
+    }
+    case 'ColocarCamino':
+    case 'QuitarCamino': {
+      const colocar = comando.tipo === 'ColocarCamino'
+      const r = (colocar ? colocarCaminos : quitarCaminos)(estado, comando.casillas)
+      if (!r.ok) return { ok: false, estado, error: r.error }
+      return {
+        ok: true,
+        estado: r.estado,
+        eventos: [
+          {
+            tipo: colocar ? 'caminos-colocados' : 'caminos-quitados',
+            casillas: r.casillas.length,
+            piedra: r.piedra,
+          },
+        ],
+      }
     }
     case 'ColocarVallas':
     case 'QuitarVallas':

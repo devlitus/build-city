@@ -7,6 +7,7 @@ import { aguaBloqueada, ladoValle } from './mapa'
 import { claveCasilla } from './rio'
 import { casillasConValla, hayValla } from './vallas-estado'
 import { aguaDe, zonaEn } from './zonas'
+import { CARACTER_CAMINO } from './caminos-estado'
 
 /**
  * Motivos por los que no se puede colocar un edificio, en orden de prioridad (la interfaz
@@ -17,7 +18,7 @@ import { aguaDe, zonaEn } from './zonas'
  * 4. `no-propia`: alguna casilla es de una parcela que no se ha comprado.
  * 5. `agua`: alguna casilla es de río (vados incluidos).
  * 6. `obstaculo`: alguna casilla tiene un árbol o una roca.
- * 7. `ocupada`: alguna casilla ya es de otro edificio u obra, o tiene una planta, una valla o una puerta. La tierra arada
+ * 7. `ocupada`: alguna casilla ya es de otro edificio u obra, o tiene una planta, un camino, una valla o una puerta. La tierra arada
  *    vacía no estorba: al construir encima se limpia (`Construir` y `MoverEdificio`).
  * 8. `aparicion`: la huella cubre la casilla de aparición.
  * 9. `personaje`: la huella toca la caja de colisión del personaje.
@@ -70,7 +71,7 @@ export type EstadoColocacion = Pick<
   | 'dinero'
   | 'materiales'
 > &
-  Partial<Pick<EstadoJuego, 'plantas' | 'vallas'>>
+  Partial<Pick<EstadoJuego, 'plantas' | 'vallas' | 'caminos'>>
 
 const cacheObstaculos = new WeakMap<EstadoJuego['obstaculos'], Map<number, ReadonlySet<number>>>()
 
@@ -305,6 +306,8 @@ export function colocacionValida(
       return (
         (id !== undefined && id !== opciones.ignorarId) ||
         conPlanta.has(k) ||
+        // M6-T04: un camino también ocupa la casilla (hay que quitarlo antes de construir).
+        estado.caminos?.[k] === CARACTER_CAMINO ||
         hayValla(estado.vallas, k)
       )
     })
