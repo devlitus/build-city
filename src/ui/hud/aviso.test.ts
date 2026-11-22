@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { conTierraLabrable } from '../../../tests/unit/fixtures/labranza'
 import {
+  CONFIG_CULTIVOS,
+  CULTIVOS,
+  diasHastaMadurar,
+  ladoValle,
   crearEstadoInicial,
   golpesNecesarios,
   terrenoDeCasilla,
@@ -98,6 +103,86 @@ describe('avisoContextual fuera de parcela propia', () => {
 
   it('con una herramienta que no golpea -> sin aviso', () => {
     expect(avisoContextual(ajena(con('pico', arbol)))).toBeUndefined()
+  })
+})
+
+describe('avisoContextual con herramientas de cultivo', () => {
+  const lado = ladoValle(base.valle)
+  const i = 51 * lado + 50
+  const labrable = conTierraLabrable(
+    { ...base, modo: 'vida', energia: 100, personaje: { x: 50.5, y: 50.5, orientacion: 'sur' } },
+    50,
+    50,
+  )
+  const arada: EstadoJuego = {
+    ...labrable,
+    tierra: labrable.tierra.slice(0, i) + 'a' + labrable.tierra.slice(i + 1),
+  }
+  const usa = (h: EstadoJuego['herramienta'], e: EstadoJuego = labrable): EstadoJuego => ({
+    ...e,
+    herramienta: h,
+  })
+  const conPlanta = (dias: number, marchita = 0): EstadoJuego => ({
+    ...arada,
+    herramienta: 'mano',
+    plantas: [[i, CULTIVOS.indexOf('rabano'), dias, 0, 0, marchita]],
+  })
+
+  it('azada sobre tierra sin labrar en zona cultivo -> Arar', () => {
+    expect(avisoContextual(usa('azada'))).toBe('E — Arar')
+  })
+
+  it('azada con un árbol delante apunta al suelo: no ofrece talar', () => {
+    const e = { ...usa('azada'), obstaculos: [{ ...arbol, x: 50, y: 51 }] }
+    expect(avisoContextual(e)).toBeUndefined()
+  })
+
+  it('azada sobre tierra ya arada -> sin aviso', () => {
+    expect(avisoContextual(usa('azada', arada))).toBeUndefined()
+  })
+
+  it('semillas sobre tierra arada → Plantar con el nombre del cultivo', () => {
+    const e: EstadoJuego = {
+      ...usa('semillas', arada),
+      inventario: [{ objeto: 'semilla-zanahoria', cantidad: 3 }],
+      semillaElegida: 'semilla-zanahoria',
+    }
+    expect(avisoContextual(e)).toBe('E — Plantar zanahoria')
+  })
+
+  it('semillas sin semilla elegida o sobre tierra sin arar -> sin aviso', () => {
+    expect(avisoContextual({ ...usa('semillas', arada), semillaElegida: null })).toBeUndefined()
+    const sinArar: EstadoJuego = { ...usa('semillas'), semillaElegida: 'semilla-rabano' }
+    expect(avisoContextual(sinArar)).toBeUndefined()
+  })
+
+  it('regadera sobre una planta seca -> Regar; ya regada -> sin aviso', () => {
+    const e = { ...conPlanta(0), herramienta: 'regadera' as const }
+    expect(avisoContextual(e)).toBe('E — Regar')
+    const regada = { ...e, tierra: e.tierra.slice(0, i) + 'A' + e.tierra.slice(i + 1) }
+    expect(avisoContextual(regada)).toBeUndefined()
+  })
+
+  it('hoz (mano) sobre cultivo maduro → Cosechar; sobre uno joven -> sin aviso', () => {
+    const dias = diasHastaMadurar(CONFIG_CULTIVOS.cultivos.rabano)
+    expect(avisoContextual(conPlanta(dias))).toBe('E — Cosechar')
+    expect(avisoContextual(conPlanta(0))).toBeUndefined()
+  })
+
+  it('mano sobre una planta marchita -> quitarla', () => {
+    expect(avisoContextual(conPlanta(0, 1))).toBe(t('aviso.limpiarMarchita'))
+  })
+
+  it('en parcela ajena pide comprarla y sin energía avisa del cansancio', () => {
+    const ajena: EstadoJuego = {
+      ...usa('azada'),
+      valle: {
+        ...labrable.valle,
+        parcelas: labrable.valle.parcelas.map((p) => ({ ...p, estado: 'en-venta' })),
+      },
+    }
+    expect(avisoContextual(ajena)).toBe(t('aviso.comprarParcela'))
+    expect(avisoContextual({ ...usa('azada'), energia: 0 })).toBe(t('aviso.cansancio'))
   })
 })
 
