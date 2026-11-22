@@ -3,6 +3,7 @@ import {
   defEdificio,
   huellaDe,
   veredictoColocacion,
+  veredictoMover,
   type EstadoJuego,
   type Rotacion,
   type TipoEdificio,
@@ -21,6 +22,8 @@ export interface ColocacionFantasma {
   readonly x: number
   readonly y: number
   readonly rotacion: Rotacion
+  /** Id del edificio que se está moviendo, o `null` si es una construcción nueva. */
+  readonly idMover: number | null
   readonly veredicto: Veredicto
 }
 
@@ -30,7 +33,7 @@ export interface Fantasma {
   readonly actual: ColocacionFantasma | null
   /**
    * Coloca el fantasma con el cursor en el centro de la huella y lo pinta de azul (válido) o rojo
-   * (inválido) según `veredictoColocacion` del núcleo. Solo recalcula si cambia la casilla, el
+   * (inválido) según `veredictoColocacion` (o `veredictoMover` si se da `idMover`) del núcleo. Solo recalcula si cambia la casilla, el
    * tipo, el giro o el estado. Con `tipo` o `casilla` a `null` lo oculta.
    */
   actualizar(
@@ -38,6 +41,7 @@ export interface Fantasma {
     tipo: TipoEdificio | null,
     casilla: { x: number; y: number } | null,
     rotacion: Rotacion,
+    idMover?: number | null,
   ): ColocacionFantasma | null
   destruir(): void
 }
@@ -67,7 +71,7 @@ export function crearFantasma(valle: Valle, altura: FuncionAltura): Fantasma {
     get actual() {
       return actual
     },
-    actualizar(estado, tipo, casilla, rotacion) {
+    actualizar(estado, tipo, casilla, rotacion, idMover = null) {
       const def = tipo === null ? undefined : defEdificio(tipo)
       if (tipo === null || !def || casilla === null) {
         malla.visible = false
@@ -84,13 +88,17 @@ export function crearFantasma(valle: Valle, altura: FuncionAltura): Fantasma {
         actual.tipo === tipo &&
         actual.x === esquina.x &&
         actual.y === esquina.y &&
-        actual.rotacion === rotacion
+        actual.rotacion === rotacion &&
+        actual.idMover === idMover
       ) {
         return actual
       }
       ultimoEstado = estado
-      const veredicto = veredictoColocacion(estado, tipo, esquina.x, esquina.y, rotacion)
-      actual = { tipo, x: esquina.x, y: esquina.y, rotacion, veredicto }
+      const veredicto =
+        idMover === null
+          ? veredictoColocacion(estado, tipo, esquina.x, esquina.y, rotacion)
+          : veredictoMover(estado, idMover, esquina.x, esquina.y, rotacion)
+      actual = { tipo, x: esquina.x, y: esquina.y, rotacion, idMover, veredicto }
 
       const h = huellaDe(def, esquina.x, esquina.y, rotacion)
       const an = h.x1 - h.x0 + 1

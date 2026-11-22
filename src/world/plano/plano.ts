@@ -1,9 +1,17 @@
 import { Group, type Object3D, type PerspectiveCamera } from 'three'
-import { ladoValle, veredictoColocacion, type Comando } from '../../core'
+import {
+  edificioEnCasilla,
+  ladoValle,
+  rotacionDe,
+  veredictoColocacion,
+  veredictoMover,
+  type Comando,
+} from '../../core'
 import type { LectorEstado } from '../../juego/almacen'
 import { comandoDeZona, herramientaPlano } from '../../juego/herramienta-plano'
 import { colocacion } from '../../juego/colocacion'
 import { edificioElegido } from '../../juego/edificio-elegido'
+import { edicionPlano } from '../../juego/edicion-plano'
 import { seleccionParcela } from '../../juego/seleccion-parcela'
 import type { FuncionAltura } from '../terreno/altura'
 import { metrosACasilla } from '../terreno/coordenadas'
@@ -95,6 +103,42 @@ export function crearCapaPlano(
       }
       return
     }
+    if (herramientaPlano.herramienta === 'mover') {
+      const cogido = edicionPlano.cogido
+      if (cogido === null) {
+        // Coger: el edificio bajo el cursor pasa a ser el fantasma, con su tipo y su giro.
+        const c = casillaBajoCursor()
+        const e = c && edificioEnCasilla(lector.estado, c.x, c.y, ladoValle(lector.estado.valle))
+        if (e) {
+          colocacion.fijarRotacion(rotacionDe(e))
+          edicionPlano.coger(e.id)
+        }
+        return
+      }
+      // Soltar: el veredicto sale de `comprobarMover`, la misma comprobación que el comando.
+      // Se recalcula con el estado de ahora mismo. En rojo no se envía nada.
+      const f = fantasma.actual
+      if (f && veredictoMover(lector.estado, cogido, f.x, f.y, f.rotacion).valida) {
+        lector.despachar({
+          tipo: 'MoverEdificio',
+          id: cogido,
+          x: f.x,
+          y: f.y,
+          rotacion: f.rotacion,
+        })
+        edicionPlano.soltar()
+        colocacion.reiniciar()
+      }
+      return
+    }
+    if (herramientaPlano.herramienta === 'demoler') {
+      // Abre la confirmación del edificio bajo el cursor; un clic en vacío la cierra.
+      const c = casillaBajoCursor()
+      const e = c && edificioEnCasilla(lector.estado, c.x, c.y, ladoValle(lector.estado.valle))
+      if (e) edicionPlano.pedirQuitar(e.id)
+      else edicionPlano.descartar()
+      return
+    }
     if (herramientaPlano.herramienta !== 'parcelas') return
     const bajo = seleccion.actualizar()
     if (bajo) seleccionParcela.seleccionar(bajo.indiceParcela)
@@ -156,17 +200,25 @@ export function crearCapaPlano(
       const bajo = arrastre ? seleccion.actual : seleccion.actualizar()
       // Herramienta Construir: el fantasma sigue al cursor y publica su veredicto a la UI.
       const construyendo = herramientaPlano.herramienta === 'construir'
+      // Herramienta Mover: con un edificio cogido, el fantasma es de su tipo y lleva su id para
+      // que el veredicto salga de `comprobarMover`. Si el edificio desapareció, se suelta.
+      let cogido = herramientaPlano.herramienta === 'mover' ? edicionPlano.cogido : null
+      const origen =
+        cogido === null ? undefined : lector.estado.edificios.find((b) => b.id === cogido)
+      if (cogido !== null && !origen) {
+        edicionPlano.soltar()
+        cogido = null
+      }
       const f = fantasma.actualizar(
         lector.estado,
-        construyendo ? edificioElegido.actual : null,
-        construyendo ? casillaBajoCursor() : null,
+        construyendo ? edificioElegido.actual : (origen?.tipo ?? null),
+        construyendo || cogido !== null ? casillaBajoCursor() : null,
         colocacion.rotacion,
+        cogido,
       )
       colocacion.fijarVeredicto(f?.veredicto ?? null)
       resaltado.mostrar(
-        herramientaPlano.herramienta === 'zonas' || construyendo
-          ? null
-          : (bajo?.indiceParcela ?? null),
+        herramientaPlano.herramienta === 'parcelas' ? (bajo?.indiceParcela ?? null) : null,
       )
     },
     destruir() {
