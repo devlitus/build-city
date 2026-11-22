@@ -1,0 +1,189 @@
+{
+  "meshopt": true,
+  "edificios": {
+    "tienda": {
+      "cimientos": {
+        "ancho": 3.0,
+        "fondo": 3.0,
+        "alto": 0.15,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 12,
+        "bytes": 1876,
+        "colores": ["piedra"]
+      },
+      "andamios": {
+        "ancho": 3.0,
+        "fondo": 3.0,
+        "alto": 1.72,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 168,
+        "bytes": 15964,
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
+      },
+      "paredes": {
+        "ancho": 3.0,
+        "fondo": 3.0,
+        "alto": 0.87,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 24,
+        "bytes": 3484,
+        "colores": ["crema", "piedra"]
+      },
+      "terminado": {
+        "ancho": 3.0,
+        "fondo": 3.0,
+        "alto": 1.8,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 30,
+        "bytes": 4568,
+        "colores": ["crema", "maderaOscura", "piedra"]
+      }
+    },
+    "caja-envio": {
+      "cimientos": {
+        "ancho": 2.0,
+        "fondo": 1.0,
+        "alto": 0.15,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 12,
+        "bytes": 1876,
+        "colores": ["piedra"]
+      },
+      "andamios": {
+        "ancho": 2.0,
+        "fondo": 1.0,
+        "alto": 1.26,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 168,
+        "bytes": 16212,
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
+      },
+      "paredes": {
+        "ancho": 2.0,
+        "fondo": 1.0,
+        "alto": 0.95,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 60,
+        "bytes": 6276,
+        "colores": ["madera", "piedra"]
+      },
+      "terminado": {
+        "ancho": 2.0,
+        "fondo": 1.0,
+        "alto": 1.0,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 72,
+        "bytes": 7436,
+        "colores": ["madera", "maderaOscura", "piedra"]
+      }
+    },
+    "cobertizo": {
+      "cimientos": {
+        "ancho": 4.0,
+        "fondo": 3.0,
+        "alto": 0.15,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 12,
+        "bytes": 1876,
+        "colores": ["piedra"]
+      },
+      "andamios": {
+        "ancho": 4.0,
+        "fondo": 3.0,
+        "alto": 2.86,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 168,
+        "bytes": 16068,
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
+      },
+      "paredes": {
+        "ancho": 4.0,
+        "fondo": 3.0,
+        "alto": 2.55,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 84,
+        "bytes": 8332,
+        "colores": ["madera", "piedra"]
+      },
+      "terminado": {
+        "ancho": 4.0,
+        "fondo": 3.0,
+        "alto": 3.5,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 104,
+        "bytes": 10904,
+        "colores": ["madera", "maderaOscura", "piedra"]
+      }
+    },
+    "casa": {
+      "cimientos": {
+        "ancho": 7.0,
+        "fondo": 5.0,
+        "alto": 0.15,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 12,
+        "bytes": 1880,
+        "colores": ["piedra"]
+      },
+      "andamios": {
+        "ancho": 7.0,
+        "fondo": 5.0,
+        "alto": 3.46,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 168,
+        "bytes": 15988,
+        "colores": ["madera", "maderaOscura", "paja", "piedra"]
+      },
+      "paredes": {
+        "ancho": 7.0,
+        "fondo": 5.0,
+        "alto": 3.15,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 84,
+        "bytes": 8244,
+        "colores": ["crema", "piedra"]
+      },
+      "terminado": {
+        "ancho": 7.0,
+        "fondo": 5.0,
+        "alto": 5.0,
+        "centroX": 0.0,
+        "centroZ": 0.0,
+        "base": 0.0,
+        "triangulos": 140,
+        "bytes": 14240,
+        "colores": ["agua", "crema", "maderaOscura", "piedra", "teja"]
+      }
+    }
+  }
+}
