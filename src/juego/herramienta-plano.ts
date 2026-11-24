@@ -9,7 +9,24 @@ import type { TeclaEntrada } from './tiempo'
  * Cada tarea implementa las suyas: parcelas y zonas (M5-T01), construir y mover (M5-T03),
  * demoler (M5-T06).
  */
-export type HerramientaPlano = 'parcelas' | 'zonas' | 'construir' | 'mover' | 'demoler'
+export type HerramientaPlano =
+  | 'parcelas'
+  | 'zonas'
+  | 'construir'
+  | 'mover'
+  | 'demoler'
+  | 'vallas'
+  | 'puertas'
+  | 'caminos'
+
+/** Herramientas que se usan arrastrando un trazo en L de vallas, puertas o caminos (M6-T03). */
+export const HERRAMIENTAS_TRAZO = ['vallas', 'puertas', 'caminos'] as const
+export type HerramientaTrazo = (typeof HERRAMIENTAS_TRAZO)[number]
+
+/** ¿Es una herramienta de trazo (vallas, puertas o caminos)? */
+export function esHerramientaTrazo(h: HerramientaPlano): h is HerramientaTrazo {
+  return (HERRAMIENTAS_TRAZO as readonly string[]).includes(h)
+}
 
 /** Zona que se pinta con la herramienta Zonas, o `'borrar'` para quitarla. */
 export type ZonaElegida = Zona | 'borrar'
@@ -31,6 +48,13 @@ export interface CanalHerramientaPlano {
   elegirZona(zona: ZonaElegida): void
   /** Vuelve a `parcelas` (no cambia la zona elegida). */
   reiniciar(): void
+  /** ¿Hay un trazo de vallas/caminos en curso? Lo fija la escena; Esc lo cancela en vez de salir. */
+  readonly trazoEnCurso: boolean
+  fijarTrazoEnCurso(enCurso: boolean): void
+  /** La escena registra aquí cómo cancela el trazo en curso. */
+  alCancelarTrazo(cancelar: (() => void) | null): void
+  /** Cancela el trazo en curso si lo hay; devuelve si había alguno. */
+  cancelarTrazo(): boolean
   suscribir(oyente: OyenteHerramienta): () => void
 }
 
@@ -38,6 +62,8 @@ export function crearCanalHerramientaPlano(): CanalHerramientaPlano {
   let herramienta: HerramientaPlano = HERRAMIENTA_POR_DEFECTO
   let zona: ZonaElegida = ZONA_POR_DEFECTO
   const oyentes = new Set<OyenteHerramienta>()
+  let trazoEnCurso = false
+  let cancelador: (() => void) | null = null
   const avisar = (): void => {
     for (const o of [...oyentes]) o({ herramienta, zona })
   }
@@ -47,6 +73,21 @@ export function crearCanalHerramientaPlano(): CanalHerramientaPlano {
     },
     get zona() {
       return zona
+    },
+    get trazoEnCurso() {
+      return trazoEnCurso
+    },
+    fijarTrazoEnCurso(enCurso) {
+      trazoEnCurso = enCurso
+    },
+    alCancelarTrazo(cancelar) {
+      cancelador = cancelar
+    },
+    cancelarTrazo() {
+      if (!trazoEnCurso) return false
+      trazoEnCurso = false
+      cancelador?.()
+      return true
     },
     elegirHerramienta(nueva) {
       if (nueva === herramienta) return
@@ -77,7 +118,7 @@ export const herramientaPlano: CanalHerramientaPlano = crearCanalHerramientaPlan
 
 /**
  * Herramienta que corresponde a una tecla en Modo Plano (pura), o `undefined` si no hace nada.
- * Z activa Zonas, M Mover y X Demoler; Esc vuelve a Parcelas. Ignora repetición y combinaciones con Ctrl/Alt/Meta.
+ * Z activa Zonas, M Mover, X Demoler, V Vallas, P Puertas y C Caminos; Esc vuelve a Parcelas. Ignora repetición y combinaciones con Ctrl/Alt/Meta.
  * 1–9 están reservadas para otras herramientas (R gira el fantasma: `esTeclaGirar`).
  */
 export function herramientaDeTecla(
@@ -89,6 +130,9 @@ export function herramientaDeTecla(
   if (tecla.code === 'KeyZ') return 'zonas'
   if (tecla.code === 'KeyM') return 'mover'
   if (tecla.code === 'KeyX') return 'demoler'
+  if (tecla.code === 'KeyV') return 'vallas'
+  if (tecla.code === 'KeyP') return 'puertas'
+  if (tecla.code === 'KeyC') return 'caminos'
   if (tecla.code === 'Escape') return 'parcelas'
   return undefined
 }
@@ -143,6 +187,8 @@ export function instalarTeclasHerramientaPlano(
       girarFantasma()
       return
     }
+    // Esc con un trazo en curso solo lo cancela; sin trazo vuelve a Parcelas.
+    if (e.code === 'Escape' && almacen.estado.modo === 'plano' && canal.cancelarTrazo()) return
     const h = herramientaDeTecla(e, almacen.estado)
     if (h) canal.elegirHerramienta(h)
   }
