@@ -211,6 +211,21 @@ export function colocarCaminos(estado: EstadoJuego, casillas: unknown): Resultad
   }
 }
 
+export interface ValidacionQuitarCaminos {
+  /** Casillas distintas que tienen camino. */
+  readonly casillas: readonly CasillaCamino[]
+  readonly reembolsoPiedra: number
+}
+
+/** Consulta pura de `QuitarCamino`: qué casillas tienen camino y cuánta piedra se devuelve. */
+export function validarQuitarCaminos(
+  estado: Pick<EstadoJuego, 'valle'> & Partial<Pick<EstadoJuego, 'caminos'>>,
+  casillas: readonly CasillaCamino[],
+): ValidacionQuitarCaminos {
+  const con = sinDuplicados(casillas).filter((c) => hayCamino(estado, c.x, c.y))
+  return { casillas: con, reembolsoPiedra: con.length * CONFIG_CAMINOS.reembolsoPiedra }
+}
+
 /**
  * `QuitarCamino`: quita el camino de las casillas que lo tienen (el resto se ignora) y devuelve
  * `reembolsoPiedra` por cada una. Ninguna con camino → `sin-casillas-validas`.
@@ -222,9 +237,8 @@ export function quitarCaminos(estado: EstadoJuego, casillas: unknown): Resultado
     return { ok: false, error: 'estado-invalido' }
   }
   const lado = ladoValle(estado.valle)
-  const con = sinDuplicados(casillas).filter((c) => hayCamino(estado, c.x, c.y))
+  const { casillas: con, reembolsoPiedra: piedra } = validarQuitarCaminos(estado, casillas)
   if (con.length === 0) return { ok: false, error: 'sin-casillas-validas' }
-  const piedra = con.length * CONFIG_CAMINOS.reembolsoPiedra
   if (!Number.isSafeInteger(estado.materiales.piedra + piedra)) {
     return { ok: false, error: 'limite-de-recursos' }
   }

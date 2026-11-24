@@ -77,6 +77,37 @@
     "confirmar": "Confirmar",
     "cancelar": "Cancelar"
   },
+  "trazo": {
+    "etiqueta": "Herramientas de vallas y caminos",
+    "etiquetaCartel": "Trazo de vallas y caminos",
+    "vallas": "Vallas (V)",
+    "puertas": "Puertas (P)",
+    "caminos": "Caminos (C)",
+    "ayuda": "Arrastra para trazar en L · Mayús: quitar · Clic derecho o Esc: cancelar",
+    "ayudaQuitar": "Mayús pulsada: se quita en vez de colocar",
+    "coste": "Coste: {n} {recurso}",
+    "reembolso": "Devuelve: {n} {recurso}",
+    "madera": "madera",
+    "piedra": "piedra",
+    "casillas": "{validas} casillas, {invalidas} en rojo",
+    "sinMaterial": "Falta {recurso}",
+    "bloqueaPaso": "Cerraría el paso: pon antes una puerta",
+    "motivo": {
+      "fuera-del-valle": "Fuera del valle",
+      "no-propia": "Fuera de tus parcelas",
+      "agua": "Hay agua",
+      "obstaculo": "Hay un árbol o una roca",
+      "ocupada": "Ocupado por un edificio o una planta",
+      "cultivo": "Hay cultivo",
+      "arada": "Hay tierra arada",
+      "ya-hay-valla": "Ya hay una valla o puerta",
+      "ya-hay-camino": "Ya hay un camino",
+      "camino": "Hay un camino: ahí solo cabe una puerta",
+      "valla": "Hay una valla: ahí no cabe un camino",
+      "personaje": "Estás en medio",
+      "nada-que-quitar": "No hay nada que quitar"
+    }
+  },
   "parcela": {
     "titulo": "Parcela {fila}-{columna}",
     "tipo": "Terreno",

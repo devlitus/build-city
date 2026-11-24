@@ -12,6 +12,7 @@ import {
   zonasVacias,
   ladoValle,
   validarCaminos,
+  validarQuitarCaminos,
   type EstadoJuego,
 } from './index'
 import { EsquemaConfigCaminos } from './datos/esquemas'
@@ -195,6 +196,22 @@ describe('QuitarCamino', () => {
     expect(error(aplicarComando(e0, { tipo: 'QuitarCamino', casillas: 'x' as never }))).toBe(
       'parametro-invalido',
     )
+  })
+
+  it('validarQuitarCaminos: solo las casillas con camino, sin repetir, y su reembolso', () => {
+    const e = ok(coloca(e0, [50, 50], [51, 50]))
+    const v = validarQuitarCaminos(e, [
+      { x: 50, y: 50 },
+      { x: 50, y: 50 },
+      { x: 51, y: 50 },
+      { x: 52, y: 50 },
+    ])
+    expect(v.casillas).toEqual([
+      { x: 50, y: 50 },
+      { x: 51, y: 50 },
+    ])
+    expect(v.reembolsoPiedra).toBe(2 * CONFIG_CAMINOS.reembolsoPiedra)
+    expect(validarQuitarCaminos(e0, [{ x: 50, y: 50 }]).reembolsoPiedra).toBe(0)
   })
 
   it('el reembolso no desborda los materiales', () => {
