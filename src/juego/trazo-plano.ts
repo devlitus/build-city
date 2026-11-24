@@ -1,6 +1,5 @@
 import {
-  CONFIG_CAMINOS,
-  hayCamino,
+  validarQuitarCaminos,
   validarCaminos,
   validarQuitarVallas,
   validarVallas,
@@ -54,12 +53,14 @@ export function resumenTrazo(
   let bloqueaPaso = false
   if (quitar) {
     if (herramienta === 'caminos') {
-      vista = casillas.map((q) =>
-        hayCamino(estado, q.x, q.y)
-          ? { ...q, valida: true }
-          : { ...q, valida: false, motivo: 'nada-que-quitar' },
+      const q = validarQuitarCaminos(estado, casillas)
+      const con = new Set(q.casillas.map((c) => `${c.x},${c.y}`))
+      vista = casillas.map((c) =>
+        con.has(`${c.x},${c.y}`)
+          ? { ...c, valida: true }
+          : { ...c, valida: false, motivo: 'nada-que-quitar' },
       )
-      cantidad = vista.filter((q) => q.valida).length * CONFIG_CAMINOS.reembolsoPiedra
+      cantidad = q.reembolsoPiedra
     } else {
       const q = validarQuitarVallas(estado, casillas)
       const con = new Set(q.casillas.map((c) => `${c.x},${c.y}`))

@@ -105,7 +105,10 @@ export function Trazo({
           }}
         >
           {vista.importe === '' ? (
-            <div style={{ color: 'var(--ui-apagado)' }}>{t('trazo.ayuda')}</div>
+            <>
+              <div style={{ color: 'var(--ui-apagado)' }}>{t('trazo.ayuda')}</div>
+              <div style={{ color: 'var(--ui-apagado)' }}>{t('trazo.ayudaQuitar')}</div>
+            </>
           ) : (
             <>
               <div style={{ fontSize: '15px', fontWeight: 600 }}>{vista.importe}</div>

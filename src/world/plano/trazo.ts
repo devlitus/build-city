@@ -1,6 +1,15 @@
 import type { Casilla } from './rectangulo'
 
 /**
+ * ¿Este evento de puntero es el clic derecho que cancela el trazo? Con el izquierdo pulsado, pulsar
+ * el derecho no lanza `pointerdown` sino `pointermove` con `button === 2` (Pointer Events), así
+ * que también se mira `buttons`. Pura.
+ */
+export function cancelaTrazoPuntero(e: { button: number; buttons: number }): boolean {
+  return e.button === 2 || (e.buttons & 2) !== 0
+}
+
+/**
  * Casillas del trazo en L de `a` a `b` (M6-T03): primero el eje más largo desde `a` y luego el
  * otro hasta `b`. Empieza en `a`, acaba en `b`, sin repetir y con casillas contiguas (4-conexas).
  * Con ejes iguales va primero en x. `a = b` da una sola casilla. Pura.

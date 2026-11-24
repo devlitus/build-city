@@ -1,6 +1,19 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { casillasTrazo } from './trazo'
+import { cancelaTrazoPuntero, casillasTrazo } from './trazo'
+
+describe('cancelaTrazoPuntero', () => {
+  it('el botón derecho cancela, sea pointerdown o pointermove', () => {
+    expect(cancelaTrazoPuntero({ button: 2, buttons: 3 })).toBe(true)
+    expect(cancelaTrazoPuntero({ button: 2, buttons: 0 })).toBe(true)
+    expect(cancelaTrazoPuntero({ button: -1, buttons: 3 })).toBe(true)
+  })
+  it('el izquierdo, el central y el movimiento normal no cancelan', () => {
+    expect(cancelaTrazoPuntero({ button: 0, buttons: 1 })).toBe(false)
+    expect(cancelaTrazoPuntero({ button: -1, buttons: 1 })).toBe(false)
+    expect(cancelaTrazoPuntero({ button: 1, buttons: 4 })).toBe(false)
+  })
+})
 
 describe('casillasTrazo', () => {
   it('A = B da una casilla', () => {

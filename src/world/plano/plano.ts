@@ -30,7 +30,7 @@ import { crearRejilla } from './rejilla'
 import { crearResaltadoParcela } from './resaltado'
 import { rectanguloDeArrastre, type Casilla } from './rectangulo'
 import { crearSeleccion, type BajoCursor } from './seleccion'
-import { casillasTrazo } from './trazo'
+import { cancelaTrazoPuntero, casillasTrazo } from './trazo'
 import { crearVistaPreviaTrazo } from './trazo-vista'
 import { crearCapaZonas } from './zonas'
 
@@ -84,7 +84,15 @@ export function crearCapaPlano(
     cacheResumen = { clave, estado: lector.estado, resumen }
     return resumen
   }
+  let idPuntero: number | null = null
+  const soltarPuntero = (): void => {
+    if (idPuntero !== null && lienzo.hasPointerCapture?.(idPuntero)) {
+      lienzo.releasePointerCapture(idPuntero)
+    }
+    idPuntero = null
+  }
   const cancelarTrazo = (): void => {
+    soltarPuntero()
     trazo = null
     herramientaPlano.fijarTrazoEnCurso(false)
     vistaTrazo.mostrar(null)
@@ -96,8 +104,7 @@ export function crearCapaPlano(
   }
   const alPulsar = (e: PointerEvent): void => {
     mayus = e.shiftKey
-    if (e.button === 2 && trazo) {
-      // Clic derecho durante el trazo: lo cancela sin enviar nada.
+    if (trazo && cancelaTrazoPuntero(e)) {
       cancelarTrazo()
       return
     }
@@ -110,6 +117,11 @@ export function crearCapaPlano(
       const c = casillaBajoCursor()
       trazo = c ? { desde: c, hasta: c } : null
       herramientaPlano.fijarTrazoEnCurso(trazo !== null)
+      if (trazo) {
+        // Captura el puntero: soltar fuera del lienzo o sobre un panel también cierra el trazo.
+        idPuntero = e.pointerId
+        lienzo.setPointerCapture?.(e.pointerId)
+      }
       return
     }
     if (
@@ -120,6 +132,17 @@ export function crearCapaPlano(
       return
     const c = casillaBajoCursor()
     arrastre = c ? { desde: c, hasta: c } : null
+  }
+  // Con el izquierdo pulsado, el derecho llega como `pointermove` (no `pointerdown`) o `contextmenu`.
+  const alMover = (e: PointerEvent): void => {
+    if (trazo && cancelaTrazoPuntero(e)) cancelarTrazo()
+  }
+  const alMenuContextual = (e: Event): void => {
+    if (trazo) cancelarTrazo()
+    if (esHerramientaTrazo(herramientaPlano.herramienta)) e.preventDefault()
+  }
+  const alPerderFoco = (): void => {
+    mayus = false
   }
   const alSoltar = (e: PointerEvent): void => {
     const desde = inicio
@@ -210,6 +233,9 @@ export function crearCapaPlano(
   lienzo.addEventListener('pointerup', alSoltar)
   window.addEventListener('keydown', alTeclaMayus)
   window.addEventListener('keyup', alTeclaMayus)
+  window.addEventListener('blur', alPerderFoco)
+  lienzo.addEventListener('pointermove', alMover)
+  lienzo.addEventListener('contextmenu', alMenuContextual)
 
   const vistaTrazo = crearVistaPreviaTrazo(valle, altura)
   const zonas = crearCapaZonas(valle, altura)
@@ -307,6 +333,9 @@ export function crearCapaPlano(
       lienzo.removeEventListener('pointerup', alSoltar)
       window.removeEventListener('keydown', alTeclaMayus)
       window.removeEventListener('keyup', alTeclaMayus)
+      window.removeEventListener('blur', alPerderFoco)
+      lienzo.removeEventListener('pointermove', alMover)
+      lienzo.removeEventListener('contextmenu', alMenuContextual)
       herramientaPlano.alCancelarTrazo(null)
       cancelarTrazo()
       vistaTrazo.destruir()
