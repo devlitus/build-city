@@ -639,3 +639,44 @@ describe('M6 rompedor · colisión con camino', () => {
     )
   })
 })
+
+describe('M6 rompedor · cerco ceñido al hogar', () => {
+  it('vallas ceñidas a la tienda-hogar, demolerla y volver a construir dentro: nunca despierta encerrado', () => {
+    let e = ESTADOS[0]!
+    const { cx, cy } = centro(e)
+    const ok = (c: Comando) => {
+      const r = aplicarComando(e, c)
+      expect({ c, error: r.ok ? undefined : r.error }).toEqual({ c, error: undefined })
+      if (r.ok) e = r.estado
+    }
+    const desmayo = () => {
+      ok({ tipo: 'CambiarModo', modo: 'vida' })
+      ok({ tipo: 'AvanzarTiempo', minutos: 24 * 60 })
+      ok({ tipo: 'CambiarModo', modo: 'plano' })
+      comprobarInvariantes(e)
+    }
+    // Tienda 3×3 en vivienda (hogar provisional sin casa) y anillo de vallas pegado a su huella.
+    const x0 = cx - 10
+    const y0 = cy - 1
+    // El cerco se cierra con la tienda aún en obra (el personaje sigue en la aparición).
+    ok({ tipo: 'Construir', tipoEdificio: 'tienda', x: x0, y: y0 })
+    const anillo: XY[] = []
+    for (let i = -1; i <= 3; i++) {
+      anillo.push({ x: x0 + i, y: y0 - 1 }, { x: x0 + i, y: y0 + 3 })
+      if (i >= 0 && i <= 2) anillo.push({ x: x0 - 1, y: y0 + i }, { x: x0 + 3, y: y0 + i })
+    }
+    ok({ tipo: 'ColocarVallas', casillas: anillo, tipoValla: 'valla' })
+    expect([...e.vallas].filter((c) => c === 'v').length).toBe(16)
+    desmayo() // la puerta de la tienda queda tapada: despierta fuera del cerco
+    const id = e.edificios.find((b) => b.tipo === 'tienda')!.id
+    ok({ tipo: 'DemolerEdificio', id })
+    desmayo() // sin hogar: en la aparición
+    // El hueco de 3×3 queda aislado; construir dentro no quita alcance…
+    ok({ tipo: 'Construir', tipoEdificio: 'tienda', x: x0, y: y0 })
+    desmayo() // …y la nueva tienda-hogar no debe hacer despertar dentro del cerco
+    // Cambiar una valla por una puerta reabre el cerco.
+    ok({ tipo: 'QuitarVallas', casillas: [{ x: x0 + 1, y: y0 + 3 }] })
+    ok({ tipo: 'ColocarVallas', casillas: [{ x: x0 + 1, y: y0 + 3 }], tipoValla: 'puerta' })
+    comprobarInvariantes(e)
+  })
+})
