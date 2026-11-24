@@ -1,0 +1,41 @@
+{
+  "anisotropia": 8,
+  "materiales": {
+    "hierba": {
+      "textura": "hierba",
+      "colorMedio": "#635f2e",
+      "metrosPorRepeticion": 2.5,
+      "tinte": "prado",
+      "rugosidad": 1
+    },
+    "camino": {
+      "textura": "camino",
+      "colorMedio": "#bc9861",
+      "metrosPorRepeticion": 2.5,
+      "tinte": "tierra",
+      "rugosidad": 1
+    },
+    "surcos": {
+      "textura": "surcos",
+      "colorMedio": "#524030",
+      "metrosPorRepeticion": 2.5,
+      "tinte": "surco",
+      "rugosidad": 1
+    },
+    "terreno": {
+      "textura": "hierba",
+      "colorMedio": "#635f2e",
+      "metrosPorRepeticion": 2.5,
+      "tinte": "prado",
+      "rugosidad": 1,
+      "colorPorVertice": true
+    },
+    "tierra": { "tinte": "tierra", "rugosidad": 1 },
+    "crema": { "tinte": "crema", "rugosidad": 0.9 },
+    "teja": { "tinte": "teja", "rugosidad": 0.85 },
+    "piedra": { "tinte": "piedra", "rugosidad": 0.95 },
+    "roca": { "tinte": "roca", "rugosidad": 1 },
+    "nube": { "tinte": "nube", "rugosidad": 1 },
+    "montana": { "tinte": "montana", "rugosidad": 1, "colorPorVertice": true }
+  }
+}

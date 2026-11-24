@@ -1,0 +1,193 @@
+{
+  "estacion": {
+    "primavera": "Primavera",
+    "verano": "Verano",
+    "otono": "Otoño",
+    "invierno": "Invierno"
+  },
+  "reloj": {
+    "fecha": "Día {dia} · {estacion} · Año {anio}",
+    "pausa": "Pausa",
+    "velocidad": "x{velocidad}",
+    "etiqueta": "Reloj del juego"
+  },
+  "estado": {
+    "monedas": "Monedas"
+  },
+  "catalogo": {
+    "titulo": "Construir",
+    "etiqueta": "Catálogo de edificios",
+    "huella": "{ancho}×{alto} casillas · {dias} d de obra",
+    "gratis": "Gratis",
+    "falta": "falta {n}",
+    "dinero": "monedas",
+    "madera": "madera",
+    "piedra": "piedra",
+    "unico": "Ya tienes uno.",
+    "edificio": {
+      "casa": "Casa",
+      "tienda": "Tienda de campaña",
+      "caja-envio": "Caja de envío",
+      "cobertizo": "Cobertizo"
+    }
+  },
+  "construir": {
+    "ayuda": "Clic: construir · R: girar · Esc: cancelar",
+    "falta": "Falta: {lista}",
+    "faltaDinero": "{n} monedas",
+    "faltaMadera": "{n} madera",
+    "faltaPiedra": "{n} piedra",
+    "motivo": {
+      "tipo-desconocido": "Edificio desconocido",
+      "unico-ya-existe": "Ya tienes uno",
+      "fuera-del-valle": "Fuera del valle",
+      "no-propia": "Fuera de tus parcelas",
+      "agua": "Hay agua",
+      "obstaculo": "Hay un árbol o una roca",
+      "ocupada": "Ocupado",
+      "aparicion": "Es el punto de aparición",
+      "personaje": "Estás en medio",
+      "zona-incompatible": "Zona no compatible",
+      "bloquea-paso": "Bloquearía el paso",
+      "fondos-insuficientes": "Faltan monedas",
+      "materiales-insuficientes": "Faltan materiales",
+      "solo-en-plano": "Solo se construye en el Modo Plano",
+      "estado-invalido": "No se puede construir aquí",
+      "limite-de-dia": "No se puede construir aquí",
+      "parametro-invalido": "No se puede construir aquí",
+      "edificio-inexistente": "Ese edificio ya no existe",
+      "en-obra": "Una obra no se puede mover"
+    }
+  },
+  "mover": {
+    "ayuda": "Clic en un edificio para cogerlo · Esc: cancelar",
+    "ayudaCogido": "Clic: soltar aquí (gratis) · R: girar · Esc: dejarlo donde estaba"
+  },
+  "acciones": {
+    "etiqueta": "Confirmar demolición",
+    "ayuda": "Clic en un edificio para demolerlo · Esc: cancelar",
+    "demoler": "¿Demoler {nombre}?",
+    "cancelarObra": "¿Cancelar la obra de {nombre}?",
+    "devuelve": "Se devuelve: {lista}",
+    "nada": "No se devuelve nada",
+    "dinero": "{n} monedas",
+    "madera": "{n} madera",
+    "piedra": "{n} piedra",
+    "noDemolible": "{nombre} no se puede demoler",
+    "confirmar": "Confirmar",
+    "cancelar": "Cancelar"
+  },
+  "trazo": {
+    "etiqueta": "Herramientas de vallas y caminos",
+    "etiquetaCartel": "Trazo de vallas y caminos",
+    "vallas": "Vallas (V)",
+    "puertas": "Puertas (P)",
+    "caminos": "Caminos (C)",
+    "ayuda": "Arrastra para trazar en L · Mayús: quitar · Clic derecho o Esc: cancelar",
+    "ayudaQuitar": "Mayús pulsada: se quita en vez de colocar",
+    "coste": "Coste: {n} {recurso}",
+    "reembolso": "Devuelve: {n} {recurso}",
+    "madera": "madera",
+    "piedra": "piedra",
+    "casillas": "{validas} casillas, {invalidas} en rojo",
+    "sinMaterial": "Falta {recurso}",
+    "bloqueaPaso": "Cerraría el paso: pon antes una puerta",
+    "motivo": {
+      "fuera-del-valle": "Fuera del valle",
+      "no-propia": "Fuera de tus parcelas",
+      "agua": "Hay agua",
+      "obstaculo": "Hay un árbol o una roca",
+      "ocupada": "Ocupado por un edificio o una planta",
+      "cultivo": "Hay cultivo",
+      "arada": "Hay tierra arada",
+      "ya-hay-valla": "Ya hay una valla o puerta",
+      "ya-hay-camino": "Ya hay un camino",
+      "camino": "Hay un camino: ahí solo cabe una puerta",
+      "valla": "Hay una valla: ahí no cabe un camino",
+      "personaje": "Estás en medio",
+      "nada-que-quitar": "No hay nada que quitar"
+    }
+  },
+  "parcela": {
+    "titulo": "Parcela {fila}-{columna}",
+    "tipo": "Terreno",
+    "fertilidad": "Fertilidad",
+    "agua": "Agua",
+    "precio": "Precio",
+    "monedas": "{n} monedas",
+    "terreno": { "prado": "Prado", "bosque": "Bosque", "rocoso": "Rocoso" },
+    "nivel": { "baja": "Baja", "media": "Media", "alta": "Alta" },
+    "fuente": { "rio": "Río", "pozo": "Pozo", "seca": "Seca" },
+    "comprar": "Comprar",
+    "confirmar": "Confirmar",
+    "cancelar": "Cancelar",
+    "cerrar": "Cerrar",
+    "confirmarPregunta": "¿Comprar esta parcela por {precio}?",
+    "etiqueta": "Panel de parcela",
+    "motivo": {
+      "ya-propia": "Esta parcela ya es tuya.",
+      "no-adyacente": "Solo puedes comprar parcelas que toquen una tuya (en diagonal no vale).",
+      "fondos-insuficientes": "Te faltan {falta} monedas.",
+      "parametro-invalido": "Parcela no válida.",
+      "precio-invalido": "No se puede calcular el precio."
+    }
+  },
+  "zonas": {
+    "etiqueta": "Herramienta de zonas",
+    "titulo": "Zonas (Z)",
+    "ayuda": "Arrastra para pintar un rectángulo. Esc para salir.",
+    "cultivo": "Cultivo",
+    "huerto": "Huerto",
+    "vivienda": "Vivienda",
+    "almacen": "Almacén",
+    "borrar": "Borrar"
+  },
+  "energia": {
+    "etiqueta": "Energía del granjero",
+    "nombre": "Energía",
+    "valor": "{actual} / {maximo}"
+  },
+  "desmayo": {
+    "etiqueta": "Te has desmayado de cansancio"
+  },
+  "avisos": {
+    "plantonPerdido": "Mochila llena: el plantón se ha perdido.",
+    "inventarioLleno": "La mochila está llena."
+  },
+  "aviso": {
+    "talarArbol": "E — Talar árbol · {golpes} golpes",
+    "talarArbolUno": "E — Talar árbol · 1 golpe",
+    "picarRoca": "E — Picar roca",
+    "quitarTocon": "E — Quitar tocón",
+    "arrancarPlanton": "E — Arrancar plantón",
+    "arar": "E — Arar",
+    "plantar": "E — Plantar {cultivo}",
+    "regar": "E — Regar",
+    "cosechar": "E — Cosechar",
+    "limpiarMarchita": "E — Quitar planta marchita",
+    "plantarPlanton": "E — Plantar plantón",
+    "cansancio": "Estás demasiado cansado",
+    "comprarParaTalar": "Compra esta parcela para talar (Tab → Modo Plano)",
+    "comprarParaPicar": "Compra esta parcela para picar (Tab → Modo Plano)",
+    "comprarParcela": "Compra esta parcela para usarla (Tab → Modo Plano)",
+    "madera": "+{n} madera",
+    "piedra": "+{n} piedra",
+    "planton": "+{n} plantón"
+  },
+  "cultivos": {
+    "patata": "patata",
+    "zanahoria": "zanahoria",
+    "lechuga": "lechuga",
+    "rabano": "rábano",
+    "fresa": "fresa"
+  },
+  "herramientas": {
+    "etiqueta": "Barra de herramientas",
+    "azada": "Azada",
+    "regadera": "Regadera",
+    "semillas": "Semillas",
+    "mano": "Mano",
+    "hacha": "Hacha",
+    "pico": "Pico"
+  }
+}

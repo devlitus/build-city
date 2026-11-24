@@ -1,0 +1,223 @@
+import { CONFIG_PERSONAJE } from './datos/personaje'
+import { CONFIG_TIEMPO } from './datos/tiempo'
+import {
+  defEdificio,
+  huellaDe,
+  rotacionDe,
+  type Edificio,
+  type Obra,
+  type Rotacion,
+  type TipoEdificio,
+} from './edificios'
+import { crecerPlantones } from './recursos'
+import { energiaAlEmpezarDia, type MotivoCambioDeDia } from './energia'
+import type { EstadoJuego } from './estado'
+import { crecerPlantas, type EventoPlantaMarchita } from './riego'
+import { casillaBloqueada, mapaTransitabilidad, type MapaTransitabilidad } from './mapa'
+import { ORIENTACION_INICIAL, personajeEnAparicion, type Personaje } from './personaje'
+
+/** Hecho de que una obra terminó al empezar un día. */
+export interface ObraTerminada {
+  readonly tipo: 'obra-terminada'
+  readonly id: number
+  readonly tipoEdificio: TipoEdificio
+}
+
+/**
+ * Días que le quedan a una obra el día `dia`: `diaFin - dia`, nunca negativo (una obra vencida
+ * se termina al empezar el día, así que mientras se ve en obra siempre queda al menos 1).
+ */
+export function diasRestantes(obra: Obra, dia: number): number {
+  return Math.max(0, obra.diaFin - dia)
+}
+
+/**
+ * Avance de la obra de un edificio el día `dia`, en [0, 1]: 0 el día que empieza, 1 al llegar
+ * `diaFin`. Sin obra (terminado) es 1. Una obra de duración nula cuenta como terminada.
+ */
+export function progresoObra(edificio: Pick<Edificio, 'obra'>, dia: number): number {
+  const obra = edificio.obra
+  if (obra === null) return 1
+  const total = obra.diaFin - obra.diaInicio
+  if (!(total > 0)) return 1
+  return Math.min(1, Math.max(0, (dia - obra.diaInicio) / total))
+}
+
+/**
+ * Termina las obras con `diaFin <= estado.dia` (`obra` pasa a `null`). Función pura que se
+ * llama en todo cambio de día. Eventos en orden de id ascendente. Si no termina ninguna
+ * devuelve el mismo estado.
+ */
+export function terminarObras(estado: EstadoJuego): {
+  readonly estado: EstadoJuego
+  readonly eventos: readonly ObraTerminada[]
+} {
+  const eventos: ObraTerminada[] = []
+  const terminadas: Edificio[] = []
+  for (const e of estado.edificios) {
+    if (e.obra !== null && e.obra.diaFin <= estado.dia) {
+      terminadas.push(e)
+      eventos.push({ tipo: 'obra-terminada', id: e.id, tipoEdificio: e.tipo })
+    }
+  }
+  if (terminadas.length === 0) return { estado, eventos }
+  eventos.sort((a, b) => a.id - b.id)
+  const edificios = estado.edificios.map((e) =>
+    e.obra !== null && e.obra.diaFin <= estado.dia ? { ...e, obra: null } : e,
+  )
+  return { estado: { ...estado, edificios }, eventos }
+}
+
+/**
+ * Casilla de la puerta de un edificio con esquina `(x, y)` (de la huella ya girada): la casilla
+ * justo fuera del centro del lado al que mira. Con rotación 0 mira al sur (+y): casa 7×5 en
+ * (x, y) ⇒ `(x + 3, y + 5)`. Cada cuarto de vuelta lo gira en sentido horario: 1 al oeste,
+ * 2 al norte, 3 al este. En un lado de longitud par el centro se refleja al girar (es la
+ * misma casilla del muro, vista girada).
+ */
+export function puertaDe(
+  def: { readonly ancho: number; readonly alto: number },
+  x: number,
+  y: number,
+  rotacion: Rotacion = 0,
+): { x: number; y: number } {
+  const h = huellaDe(def, x, y, rotacion)
+  const an = h.x1 - h.x0 + 1
+  const al = h.y1 - h.y0 + 1
+  switch (rotacion) {
+    case 0:
+      return { x: x + Math.floor(an / 2), y: y + al }
+    case 1:
+      return { x: x - 1, y: y + Math.floor(al / 2) }
+    case 2:
+      return { x: x + an - 1 - Math.floor(an / 2), y: y - 1 }
+    default:
+      return { x: x + an, y: y + al - 1 - Math.floor(al / 2) }
+  }
+}
+
+/** ¿Cabe la caja de colisión centrada en la casilla `(cx, cy)` sin tocar nada bloqueado? */
+function casillaLibre(mapa: MapaTransitabilidad, cx: number, cy: number): boolean {
+  const m = CONFIG_PERSONAJE.tamanoCaja / 2
+  const x0 = Math.floor(cx + 0.5 - m)
+  const x1 = Math.ceil(cx + 0.5 + m) - 1
+  const y0 = Math.floor(cy + 0.5 - m)
+  const y1 = Math.ceil(cy + 0.5 + m) - 1
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) if (casillaBloqueada(mapa, x, y)) return false
+  }
+  return true
+}
+
+/**
+ * ¿Despierta el personaje junto a su casa? Es lo que decide `personajeAlDespertar`: hay una casa
+ * terminada (despierta en su puerta o, si está bloqueada, en la casilla libre más cercana) y no
+ * en la aparición.
+ */
+export function despiertaEnCasa(estado: EstadoJuego): boolean {
+  const p = personajeAlDespertar(estado)
+  const a = personajeEnAparicion(estado.aparicion)
+  return p.x !== a.x || p.y !== a.y
+}
+
+/** La casa terminada de menor id (la que hace de hogar), si hay alguna. */
+export function casaTerminada(estado: EstadoJuego): Edificio | undefined {
+  return estado.edificios
+    .filter((e) => e.tipo === 'casa' && e.obra === null)
+    .sort((a, b) => a.id - b.id)[0]
+}
+
+/** La tienda de campaña terminada de menor id (el hogar provisional sin casa), si hay alguna. */
+export function tiendaTerminada(estado: EstadoJuego): Edificio | undefined {
+  return estado.edificios
+    .filter((e) => e.tipo === 'tienda' && e.obra === null)
+    .sort((a, b) => a.id - b.id)[0]
+}
+
+/** Donde vive el personaje: la casa terminada o, sin casa, la tienda terminada. */
+export function hogarTerminado(estado: EstadoJuego): Edificio | undefined {
+  return casaTerminada(estado) ?? tiendaTerminada(estado)
+}
+
+/**
+ * Dónde despierta el personaje al empezar un día, con las obras ya actualizadas: en la puerta
+ * de la casa terminada (la de menor id) o, si no hay casa, en la de la tienda terminada; sin
+ * ninguna de las dos, en la aparición.
+ *
+ * Si la puerta (`puertaDe`) no es transitable (el mapa ya marca como bloqueado lo no
+ * alcanzable desde la aparición), se busca alrededor de la huella: anillos de distancia
+ * Chebyshev 1, 2, 3… al rectángulo de la huella; en el primer anillo con alguna casilla libre,
+ * gana la más cercana a la puerta (distancia euclídea al cuadrado), y a igualdad la de menor
+ * `y` y luego menor `x`. Si no hay ninguna, la aparición. Siempre centrado y mirando al sur.
+ */
+export function personajeAlDespertar(estado: EstadoJuego): Personaje {
+  const aparicion = personajeEnAparicion(estado.aparicion)
+  const casa = hogarTerminado(estado)
+  const def = casa && defEdificio(casa.tipo)
+  if (!casa || !def) return aparicion
+  const mapa = mapaTransitabilidad(estado)
+  const en = (x: number, y: number): Personaje => ({
+    x: x + 0.5,
+    y: y + 0.5,
+    orientacion: ORIENTACION_INICIAL,
+  })
+  const rot = rotacionDe(casa)
+  const puerta = puertaDe(def, casa.x, casa.y, rot)
+  if (casillaLibre(mapa, puerta.x, puerta.y)) return en(puerta.x, puerta.y)
+  const h = huellaDe(def, casa.x, casa.y, rot)
+  // Defensa en profundidad: nunca más allá del valle, pase lo que pase con x, y.
+  for (let d = 1; d <= mapa.lado; d++) {
+    let mejor = null as { x: number; y: number; dist: number } | null
+    const probar = (x: number, y: number): void => {
+      if (!casillaLibre(mapa, x, y)) return
+      const dist = (x - puerta.x) ** 2 + (y - puerta.y) ** 2
+      if (
+        !mejor ||
+        dist < mejor.dist ||
+        (dist === mejor.dist && (y < mejor.y || (y === mejor.y && x < mejor.x)))
+      ) {
+        mejor = { x, y, dist }
+      }
+    }
+    // Solo el perímetro del anillo a distancia exacta d, recortado al valle.
+    const xa = Math.max(h.x0 - d, 0)
+    const xb = Math.min(h.x1 + d, mapa.lado - 1)
+    for (let y = Math.max(h.y0 - d, 0); y <= Math.min(h.y1 + d, mapa.lado - 1); y++) {
+      if (y === h.y0 - d || y === h.y1 + d) {
+        for (let x = xa; x <= xb; x++) probar(x, y)
+      } else {
+        if (h.x0 - d >= 0) probar(h.x0 - d, y)
+        if (h.x1 + d <= mapa.lado - 1) probar(h.x1 + d, y)
+      }
+    }
+    if (mejor) return en(mejor.x, mejor.y)
+  }
+  return aparicion
+}
+
+/**
+ * Único punto de cambio de día (desmayo y dormir; crece lo plantado): pasa al
+ * día siguiente a la hora de inicio, termina las obras, repone la energía según el `motivo`
+ * (dormir: al máximo; desmayo: la fracción de `data/energia.json`) y coloca al personaje (en la
+ * casa si existe). No toca dinero, materiales, zonas ni parcelas. El llamador debe haber
+ * comprobado antes que `dia + 1` es un entero seguro y que `edificiosValidos(estado.edificios)`.
+ */
+export function empezarDiaSiguiente(
+  estado: EstadoJuego,
+  motivo: MotivoCambioDeDia,
+): {
+  readonly estado: EstadoJuego
+  readonly eventos: readonly (ObraTerminada | EventoPlantaMarchita)[]
+} {
+  // Primero crece lo plantado: con el día viejo y el riego de hoy aún marcado.
+  const c = crecerPlantas(estado)
+  const r = terminarObras({
+    ...c.estado,
+    dia: estado.dia + 1,
+    minutoDelDia: CONFIG_TIEMPO.horaInicio,
+    energia: energiaAlEmpezarDia(motivo),
+  })
+  // Los plantones crecen con el personaje ya recolocado: si despierta sobre uno, espera un día.
+  const despierto = { ...r.estado, personaje: personajeAlDespertar(r.estado) }
+  return { estado: crecerPlantones(despierto), eventos: [...r.eventos, ...c.eventos] }
+}

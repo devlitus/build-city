@@ -1,0 +1,458 @@
+import * as v from 'valibot'
+import {
+  AGUAS,
+  AGUAS_SIN_RIO,
+  CATEGORIAS_OBJETO,
+  CULTIVOS,
+  ESTACIONES,
+  FERTILIDADES,
+  HERRAMIENTAS,
+  LADOS,
+  MATERIALES,
+  OBJETOS,
+  TERRENOS,
+  TIPOS_EDIFICIO,
+  ZONAS,
+} from './claves.ts'
+
+/** Tope de 64: 64×64 parcelas de 64×64 casillas ya son ~16 M casillas; más es inabarcable. */
+const LIMITE_TAMANO = 64
+const entero = v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(LIMITE_TAMANO))
+const peso = v.pipe(v.number(), v.finite(), v.minValue(0))
+
+/** Pesos por clave: todos ≥ 0 y con suma > 0. */
+function pesos<const K extends string>(claves: readonly K[]) {
+  const forma = Object.fromEntries(claves.map((k) => [k, peso])) as Record<K, typeof peso>
+  return v.pipe(
+    v.strictObject(forma),
+    v.check(
+      (o) => Object.values<number>(o).reduce((a, b) => a + b, 0) > 0,
+      'La suma de pesos debe ser > 0',
+    ),
+  )
+}
+
+const probabilidad = v.pipe(v.number(), v.minValue(0), v.maxValue(1))
+const densidad = v.pipe(
+  v.strictObject({ arbol: probabilidad, roca: probabilidad }),
+  v.check((d) => d.arbol + d.roca <= 1, 'arbol + roca no puede superar 1'),
+)
+
+export const EsquemaConfigValle = v.strictObject({
+  parcelasPorLado: entero,
+  casillasPorParcela: entero,
+  pesosTerreno: pesos(TERRENOS),
+  pesosFertilidad: v.strictObject({
+    prado: pesos(FERTILIDADES),
+    bosque: pesos(FERTILIDADES),
+    rocoso: pesos(FERTILIDADES),
+  }),
+  pesosAguaSinRio: pesos(AGUAS_SIN_RIO),
+  probabilidadDesvioRio: probabilidad,
+  /** Ancho del cauce del río, en casillas. */
+  anchoRio: entero,
+  /** Probabilidad por casilla de llevar un árbol o una roca, según el terreno. */
+  densidadDecoracion: v.strictObject({ prado: densidad, bosque: densidad, rocoso: densidad }),
+  /** Vados del río: cuántos (entre `min` y `max`) y cuántas casillas de grosor a lo largo del cauce. */
+  vados: v.pipe(
+    v.strictObject({ min: entero, max: entero, grosor: entero }),
+    v.check((c) => c.max >= c.min, 'vados.max debe ser >= vados.min'),
+  ),
+})
+
+export type ConfigValle = v.InferOutput<typeof EsquemaConfigValle>
+
+const MINUTOS_POR_DIA = 1440
+const VELOCIDAD_MAXIMA = 10
+const enteroPositivo = v.pipe(v.number(), v.integer(), v.minValue(1))
+
+export const EsquemaConfigTiempo = v.pipe(
+  v.strictObject({
+    /** Minutos desde 00:00 a los que empieza la jornada (06:00 = 360). */
+    horaInicio: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MINUTOS_POR_DIA - 1)),
+    /** Minutos desde 00:00 a los que acaba la jornada; puede pasar de 1440 (02:00 = 1560). */
+    horaFin: enteroPositivo,
+    diasPorEstacion: enteroPositivo,
+    estaciones: v.pipe(v.array(v.pipe(v.string(), v.minLength(1))), v.minLength(1)),
+    minutosRealesPorDia: v.pipe(v.number(), v.finite(), v.minValue(1)),
+    velocidades: v.pipe(
+      v.array(v.pipe(enteroPositivo, v.maxValue(VELOCIDAD_MAXIMA))),
+      v.minLength(1),
+    ),
+    /** Valor por defecto del ajuste «pausar en Modo Plano» (GDD §7.2). */
+    pausarEnPlano: v.boolean(),
+  }),
+  v.check((c) => c.horaFin > c.horaInicio, 'horaFin debe ser mayor que horaInicio'),
+  v.check((c) => c.horaFin - c.horaInicio <= MINUTOS_POR_DIA, 'La jornada no dura más de 24 h'),
+  v.check((c) => new Set(c.estaciones).size === c.estaciones.length, 'Estaciones repetidas'),
+  v.check((c) => new Set(c.velocidades).size === c.velocidades.length, 'Velocidades repetidas'),
+  v.check((c) => c.velocidades.includes(1), 'La velocidad 1 debe existir'),
+)
+
+export type ConfigTiempo = v.InferOutput<typeof EsquemaConfigTiempo>
+
+export const EsquemaConfigPersonaje = v.strictObject({
+  /** Velocidad al andar en recto, en metros (casillas) por segundo. */
+  velocidadAndar: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(30)),
+  /** Velocidad al correr, en metros (casillas) por segundo. */
+  velocidadCorrer: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(30)),
+  /** Radio del círculo de colisión del personaje, en casillas (< 0,5 para caber por pasillos de una). */
+  radio: v.pipe(v.number(), v.finite(), v.minValue(0.05), v.maxValue(0.475)),
+  /** Lado de la caja de colisión (cuadrada), en casillas; < 1 para caber por pasillos de una casilla. */
+  tamanoCaja: v.pipe(v.number(), v.minValue(0.1), v.maxValue(0.95)),
+  /** Lado del valle donde está el pueblo: allí aparece el personaje (la entrada del valle). */
+  ladoPueblo: v.picklist(LADOS),
+  /** Casillas hacia dentro del valle, desde el borde del pueblo, a las que aparece el personaje. */
+  margenAparicion: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(16)),
+  /** Tope de ms que procesa un solo comando `MoverPersonaje` (evita efecto túnel y bucles largos). */
+  maxMsPorComando: v.pipe(v.number(), v.finite(), v.minValue(1), v.maxValue(1000)),
+})
+
+export type ConfigPersonaje = v.InferOutput<typeof EsquemaConfigPersonaje>
+
+export const EsquemaConfigCaminos = v.pipe(
+  v.strictObject({
+    /** Piedra que cuesta cada casilla de camino. */
+    costePiedra: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+    /** Piedra que se devuelve por cada casilla de camino que se quita (no mayor que el coste). */
+    reembolsoPiedra: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+    /** Factor de la velocidad (andar y correr) sobre un camino; 1.3 = +30 %. */
+    multiplicadorVelocidad: v.pipe(v.number(), v.finite(), v.minValue(1), v.maxValue(3)),
+  }),
+  v.check((c) => c.reembolsoPiedra <= c.costePiedra, 'El reembolso no puede superar el coste'),
+)
+
+export type ConfigCaminos = v.InferOutput<typeof EsquemaConfigCaminos>
+
+export const EsquemaConfigHerramientas = v.strictObject({
+  /** Distancia máxima, en casillas, del personaje al centro de un obstáculo para apuntarlo. */
+  alcance: v.pipe(v.number(), v.finite(), v.minValue(0.5), v.maxValue(3)),
+  /** Apertura total del cono frontal, en grados. */
+  anguloCono: v.pipe(v.number(), v.finite(), v.minValue(10), v.maxValue(180)),
+  /**
+   * Niveles de la regadera. El nivel 1 (`lado` 1) no lleva `energia`: su coste es el de
+   * `data/energia.json` (`costes.regadera`), única fuente. El nivel 2 riega un cuadrado de `lado`
+   * impar y gasta `energia` (entero ≥ 0) por uso.
+   */
+  regadera: v.strictObject({
+    niveles: v.tuple([
+      v.strictObject({ lado: v.literal(1) }),
+      v.strictObject({
+        lado: v.pipe(
+          v.number(),
+          v.safeInteger(),
+          v.minValue(1),
+          v.maxValue(9),
+          v.check((n) => n % 2 === 1, 'El lado debe ser impar'),
+        ),
+        energia: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+      }),
+    ]),
+  }),
+})
+
+/** Datos completos de `data/herramientas.json`. */
+export type DatosHerramientas = v.InferOutput<typeof EsquemaConfigHerramientas>
+
+/** Alcance y cono de apuntado (lo que necesita `objetivo.ts`); `DatosHerramientas` lo cumple. */
+export type ConfigHerramientas = Pick<DatosHerramientas, 'alcance' | 'anguloCono'>
+
+/** Factor multiplicador estrictamente positivo. */
+const factorPositivo = v.pipe(
+  v.number(),
+  v.finite(),
+  v.check((n) => n > 0 && n <= 1000, 'El factor debe estar en (0, 1000]'),
+)
+
+function factores<const K extends string>(claves: readonly K[]) {
+  const forma = Object.fromEntries(claves.map((k) => [k, factorPositivo])) as Record<
+    K,
+    typeof factorPositivo
+  >
+  return v.strictObject(forma)
+}
+
+/** Cantidad entera ≥ 0 por clave (dinero, materiales). */
+const cantidad = v.pipe(v.number(), v.safeInteger(), v.minValue(0))
+function cantidades<const K extends string>(claves: readonly K[]) {
+  const forma = Object.fromEntries(claves.map((k) => [k, cantidad])) as Record<K, typeof cantidad>
+  return v.strictObject(forma)
+}
+
+export const EsquemaConfigEconomia = v.strictObject({
+  /** Ahorros con los que empieza una partida nueva. */
+  dineroInicial: v.pipe(v.number(), v.safeInteger(), v.minValue(0)),
+  /** Precio de una parcela de referencia (todos los factores a 1) antes de subidas. */
+  precioBase: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(1_000_000)),
+  factorTerreno: factores(TERRENOS),
+  factorFertilidad: factores(FERTILIDADES),
+  factorAgua: factores(AGUAS),
+  /** Subida fraccionaria del precio por cada compra hecha (0.25 = +25 %). */
+  subidaPorCompra: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(10)),
+  /**
+   * Atenuación de la subida (opcional, por omisión 1 = sin atenuar): la subida de la compra i es
+   * `subidaPorCompra · atenuacionSubida^i`, pero nunca menos que `subidaMinima`.
+   */
+  atenuacionSubida: v.optional(v.pipe(v.number(), v.finite(), v.gtValue(0), v.maxValue(1))),
+  /** Subida mínima por compra (opcional, por omisión 0): el precio sube en todas las compras. */
+  subidaMinima: v.optional(v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(10))),
+})
+
+export type ConfigEconomia = v.InferOutput<typeof EsquemaConfigEconomia>
+
+const maderaPorCasilla = v.strictObject({
+  /** Madera que cuesta cada casilla de este tipo. */
+  madera: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1_000_000)),
+})
+
+/** Vallas y puertas (`data/vallas.json`): coste por casilla y reembolso al quitarlas. */
+export const EsquemaConfigVallas = v.strictObject({
+  coste: v.strictObject({ valla: maderaPorCasilla, puerta: maderaPorCasilla }),
+  /** Fracción de lo pagado que se devuelve al quitar una casilla (0..1). */
+  reembolsoQuitar: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1)),
+  /** Redondeo de la fracción (hoy solo `abajo`, como `redondeoReembolso` de los edificios). */
+  redondeoReembolso: v.literal('abajo'),
+})
+
+export type ConfigVallas = v.InferOutput<typeof EsquemaConfigVallas>
+
+const diasDeObra = v.pipe(v.number(), v.safeInteger(), v.minValue(1))
+
+export const EsquemaEdificio = v.strictObject({
+  /** Huella en casillas (ancho × alto), sin rotación. */
+  ancho: entero,
+  alto: entero,
+  /** Altura aproximada en metros (GDD §7.4); dato visual, las reglas no la usan. */
+  altura: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(50)),
+  /**
+   * Niveles de mejora previstos tras el base (GDD §7.4), en orden. Solo datos: la mejora aún no
+   * está implementada y las reglas no los usan.
+   */
+  niveles: v.array(
+    v.strictObject({
+      nombre: v.pipe(v.string(), v.minLength(1)),
+      ancho: entero,
+      alto: entero,
+      altura: v.pipe(v.number(), v.finite(), v.minValue(0.1), v.maxValue(50)),
+    }),
+  ),
+  /** Zonas sobre las que se puede colocar: todas las casillas de la huella deben tener una de ellas. */
+  zonas: v.pipe(
+    v.array(v.picklist(ZONAS)),
+    v.minLength(1),
+    v.check((z) => new Set(z).size === z.length, 'Zonas repetidas'),
+  ),
+  /** Coste: dinero y materiales, enteros ≥ 0. */
+  coste: v.strictObject({ dinero: cantidad, madera: cantidad, piedra: cantidad }),
+  /** Días de obra (≥ 1). */
+  dias: diasDeObra,
+  /** Solo puede haber uno en la partida (la casa). */
+  unico: v.boolean(),
+  /** ¿Se puede demoler? (la casa no). */
+  demolible: v.boolean(),
+})
+
+export type DefEdificio = v.InferOutput<typeof EsquemaEdificio>
+
+export const EsquemaConfigEdificios = v.strictObject({
+  /** Lote de materiales de bienvenida con el que empieza una partida nueva (GDD §6.4). */
+  materialesIniciales: cantidades(MATERIALES),
+  /** Fracción del coste que se devuelve al demoler un edificio (0.5 = la mitad); la usa M4-06. */
+  reembolsoDemolicion: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1)),
+  /**
+   * Cómo se redondea cada cantidad reembolsada (sobre lo realmente pagado, `Edificio.pagado`):
+   * `abajo` = al entero inferior. Un solo valor por ahora; lo usan M4-06 (cancelar y demoler).
+   */
+  redondeoReembolso: v.picklist(['abajo']),
+  /** Catálogo: exactamente un registro por cada tipo de `TIPOS_EDIFICIO`. */
+  edificios: v.strictObject(
+    Object.fromEntries(TIPOS_EDIFICIO.map((t) => [t, EsquemaEdificio])) as Record<
+      (typeof TIPOS_EDIFICIO)[number],
+      typeof EsquemaEdificio
+    >,
+  ),
+})
+
+export type ConfigEdificios = v.InferOutput<typeof EsquemaConfigEdificios>
+
+const ranurasEnteras = v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000))
+const idObjeto = v.picklist(OBJETOS)
+
+export const EsquemaObjeto = v.strictObject({
+  categoria: v.picklist(CATEGORIAS_OBJETO),
+  /** Cantidad máxima de una ranura (≥ 1). */
+  pilaMaxima: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(9999)),
+})
+
+export type DefObjeto = v.InferOutput<typeof EsquemaObjeto>
+
+export const EsquemaConfigInventario = v.pipe(
+  v.strictObject({
+    /** Ranuras del inventario sin ningún edificio (≥ 1). */
+    capacidadBase: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(1000)),
+    /** Ranuras que suma cada edificio **terminado** de cada tipo (una obra o un demolido no suman). */
+    ranurasPorEdificio: v.strictObject(
+      Object.fromEntries(TIPOS_EDIFICIO.map((t) => [t, ranurasEnteras])) as Record<
+        (typeof TIPOS_EDIFICIO)[number],
+        typeof ranurasEnteras
+      >,
+    ),
+    /** Herramienta activa al empezar una partida. */
+    herramientaInicial: v.picklist(HERRAMIENTAS),
+    /** Regalo de bienvenida (sin tienda hasta M6): objetos con los que empieza el inventario. */
+    loteInicial: v.array(
+      v.strictObject({
+        objeto: idObjeto,
+        cantidad: v.pipe(v.number(), v.safeInteger(), v.minValue(1)),
+      }),
+    ),
+    /** Catálogo: exactamente un registro por cada objeto de `OBJETOS`. */
+    objetos: v.strictObject(
+      Object.fromEntries(OBJETOS.map((o) => [o, EsquemaObjeto])) as Record<
+        (typeof OBJETOS)[number],
+        typeof EsquemaObjeto
+      >,
+    ),
+  }),
+  v.check(
+    (c) => new Set(c.loteInicial.map((l) => l.objeto)).size === c.loteInicial.length,
+    'Objetos repetidos en el lote inicial',
+  ),
+  v.check((c) => {
+    // El lote cabe en el inventario base, con las pilas completas y a lo sumo una incompleta por objeto.
+    const ranuras = c.loteInicial.reduce(
+      (n, l) => n + Math.ceil(l.cantidad / c.objetos[l.objeto].pilaMaxima),
+      0,
+    )
+    return ranuras <= c.capacidadBase
+  }, 'El lote inicial no cabe en la capacidad base'),
+)
+
+export type ConfigInventario = v.InferOutput<typeof EsquemaConfigInventario>
+
+/** Coste de energía por golpe: entero ≥ 0 (0 = gratis). */
+const costeEnergia = v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000))
+
+export const EsquemaConfigEnergia = v.pipe(
+  v.strictObject({
+    /** Energía máxima (entero ≥ 1) con la que se empieza y a la que se vuelve al dormir. */
+    maximo: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(1000)),
+    /** Fracción del máximo con la que se despierta tras un desmayo (se redondea hacia abajo). */
+    desmayoFraccion: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1)),
+    /** Energía que gasta un uso aceptado de cada herramienta. */
+    costes: v.strictObject(
+      Object.fromEntries(HERRAMIENTAS.map((h) => [h, costeEnergia])) as Record<
+        (typeof HERRAMIENTAS)[number],
+        typeof costeEnergia
+      >,
+    ),
+  }),
+  v.check(
+    (c) => Object.values(c.costes).every((n) => n <= c.maximo),
+    'Ningún coste puede superar la energía máxima',
+  ),
+)
+
+export type ConfigEnergia = v.InferOutput<typeof EsquemaConfigEnergia>
+
+/** Nº de fases de crecimiento con días propios (0 sembrado, 1 brote, 2 joven); la 3 es «maduro». */
+export const FASES_CRECIMIENTO = 3
+
+const diasEnteros = v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(365))
+
+export const EsquemaCultivo = v.pipe(
+  v.strictObject({
+    /** Estaciones en las que se puede sembrar (al menos una, sin repetir). */
+    estaciones: v.pipe(
+      v.array(v.picklist(ESTACIONES)),
+      v.minLength(1),
+      v.check((e) => new Set(e).size === e.length, 'Estaciones repetidas'),
+    ),
+    /** Días que pasa en cada una de las fases 0, 1 y 2; su suma es el crecimiento total (enteros >= 1). */
+    diasPorFase: v.pipe(v.array(diasEnteros), v.length(FASES_CRECIMIENTO)),
+    /**
+     * Necesidad de agua (GDD §6.6): un cultivo sin regar no crece ese día (se detiene) y, al
+     * llegar a `diasSinRegar` días seguidos sin agua, se marchita.
+     */
+    necesidadAgua: v.strictObject({ diasSinRegar: diasEnteros }),
+    /** `null` si se cosecha una sola vez; si rebrota, días hasta volver a madurar tras cosechar (vuelve a la fase 2). */
+    rebrota: v.nullable(v.strictObject({ dias: diasEnteros })),
+    cosecha: v.strictObject({
+      /** Producto que se recoge (un cultivo del catálogo de objetos, categoría `producto`). */
+      producto: v.picklist(CULTIVOS),
+      cantidad: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(99)),
+    }),
+    /** Precio base de venta del producto (lo usa M6). */
+    precioBase: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(1_000_000)),
+    /** Zonas en las que se puede plantar (en M5, cultivo y huerto). */
+    zonas: v.pipe(
+      v.array(v.picklist(['cultivo', 'huerto'] as const)),
+      v.minLength(1),
+      v.check((z) => new Set(z).size === z.length, 'Zonas repetidas'),
+    ),
+  }),
+  // Al rebrotar la planta vuelve a la fase 2 (joven): solo cabe si `rebrota.dias` no supera la
+  // duración de esa fase, así que cosechar no necesita acotar los días.
+  v.check(
+    (c) => c.rebrota === null || c.rebrota.dias <= (c.diasPorFase[2] ?? 0),
+    'rebrota.dias no puede superar los días de la fase 2',
+  ),
+)
+
+export type DefCultivo = v.InferOutput<typeof EsquemaCultivo>
+
+export const EsquemaConfigCultivos = v.strictObject({
+  /**
+   * Tierra arada sin planta: tras `diasSinRegarAHierba` días seguidos sin regar vuelve a hierba
+   * (1..9: cabe en un carácter de `tierra`).
+   */
+  tierra: v.strictObject({
+    diasSinRegarAHierba: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(9)),
+  }),
+  /** Catálogo: exactamente un registro por cada cultivo de `CULTIVOS`. */
+  cultivos: v.strictObject(
+    Object.fromEntries(CULTIVOS.map((c) => [c, EsquemaCultivo])) as Record<
+      (typeof CULTIVOS)[number],
+      typeof EsquemaCultivo
+    >,
+  ),
+})
+
+export type ConfigCultivos = v.InferOutput<typeof EsquemaConfigCultivos>
+const cantidadPorTerreno = (min: number) => {
+  const n = v.pipe(v.number(), v.safeInteger(), v.minValue(min), v.maxValue(100))
+  return v.strictObject(
+    Object.fromEntries(TERRENOS.map((t) => [t, n])) as Record<(typeof TERRENOS)[number], typeof n>,
+  )
+}
+
+/** Talar, picar y replantar (GDD §6.8 y §8): golpes y botín por terreno, y crecimiento del plantón. */
+export const EsquemaConfigRecursos = v.strictObject({
+  arbol: v.strictObject({
+    /** Golpes de hacha que hacen falta para talar un árbol, por terreno del que está. */
+    golpes: cantidadPorTerreno(1),
+    /** Madera que da un árbol talado, por terreno. */
+    madera: cantidadPorTerreno(0),
+    /** Plantones que deja un árbol talado (si caben en el inventario). */
+    plantones: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(10)),
+    /** Probabilidad (0 a 1) de que talar un árbol deje esos plantones; se sortea con el RNG del estado. */
+    probabilidadPlanton: v.pipe(v.number(), v.minValue(0), v.maxValue(1)),
+  }),
+  roca: v.strictObject({
+    golpes: cantidadPorTerreno(1),
+    /** Piedra que da una roca picada, por terreno. */
+    piedra: cantidadPorTerreno(0),
+  }),
+  tocon: v.strictObject({
+    /** Golpes de hacha que cuesta quitar el tocón que deja un árbol talado. */
+    golpes: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(100)),
+    /** Madera que da el tocón al quitarlo. */
+    madera: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+  }),
+  planton: v.strictObject({
+    /** Días que tarda un plantón en convertirse en árbol. */
+    diasCrecimiento: v.pipe(v.number(), v.safeInteger(), v.minValue(1), v.maxValue(100)),
+  }),
+})
+
+export type ConfigRecursos = v.InferOutput<typeof EsquemaConfigRecursos>

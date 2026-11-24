@@ -1,0 +1,14 @@
+{
+  "poste": { "ancho": 0.14, "alto": 1.05, "hundimiento": 0.1, "color": "maderaOscura" },
+  "tabla": { "alto": 0.12, "grosor": 0.04, "alturas": [0.35, 0.75], "color": "madera" },
+  "puerta": {
+    "mitadSeparacion": 0.42,
+    "largoHoja": 0.76,
+    "altoHoja": 0.6,
+    "alturaHoja": 0.25,
+    "grosorHoja": 0.05,
+    "colorHoja": "madera"
+  },
+  "rugosidad": 0.9,
+  "capacidadInicial": 256
+}

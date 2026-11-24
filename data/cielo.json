@@ -1,0 +1,14 @@
+{
+  "sol": { "elevacion": 42, "azimut": 125, "distancia": 40 },
+  "cielo": {
+    "turbidez": 2.5,
+    "rayleigh": 2.2,
+    "mie": 0.003,
+    "mieDireccional": 0.85,
+    "escala": 450000
+  },
+  "exposicion": 0.55,
+  "intensidadSol": 2.2,
+  "intensidadHemisferio": 0.1,
+  "intensidadEntorno": 0.25
+}

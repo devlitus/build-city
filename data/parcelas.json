@@ -1,0 +1,12 @@
+{
+  "mojon": { "ancho": 0.3, "alto": 0.7, "hundimiento": 0.1 },
+  "cartel": {
+    "alturaPoste": 1.4,
+    "grosorPoste": 0.1,
+    "anchoTablilla": 0.9,
+    "altoTablilla": 0.45,
+    "grosorTablilla": 0.06,
+    "texto": "Se vende"
+  },
+  "aparicion": { "duracion": 0.4 }
+}
