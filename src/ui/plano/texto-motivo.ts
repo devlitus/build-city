@@ -2,6 +2,14 @@ import type { Coste, MotivoVeredicto } from '../../core'
 import { t } from '../textos'
 
 /**
+ * Texto del motivo por el que una casilla del trazo de vallas o caminos está en rojo (incluye
+ * `camino` en las vallas y `valla` en los caminos). Pura.
+ */
+export function textoMotivoTrazo(motivo: string): string {
+  return t(`trazo.motivo.${motivo}`)
+}
+
+/**
  * Texto del motivo por el que el fantasma está en rojo. Para fondos y materiales dice lo que
  * falta («Falta: 10 madera»); para el resto, el motivo del núcleo. Pura.
  */
