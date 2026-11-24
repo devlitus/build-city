@@ -24,7 +24,7 @@ describe('conVecinas', () => {
     expect(conVecinas([8], 3)).toEqual([5, 7, 8])
   })
   it('no repite casillas comunes', () => {
-    expect(conVecinas([4, 5], 3)).toEqual([1, 3, 4, 5, 7, 8])
+    expect(conVecinas([4, 5], 3)).toEqual([1, 2, 3, 4, 5, 7, 8])
     expect(conVecinas([], 3)).toEqual([])
   })
 })

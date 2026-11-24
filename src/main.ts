@@ -37,10 +37,12 @@ if (contenedor) {
     })
   }
 
-  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8) y F7 llena la granja.
+  // Solo desarrollo: F8 mejora la regadera (provisional hasta M8), F7 llena la granja
+  // y F9 llena el valle de vallas y caminos.
   if (import.meta.env.DEV) {
     void import('./juego/depuracion-regadera').then((m) => m.instalarAtajoRegadera(almacen))
     void import('./juego/depuracion').then((m) => m.instalarAtajosDepuracion(almacen))
+    void import('./juego/depuracion-vallas').then((m) => m.instalarAtajoVallasCaminos(almacen))
   }
 
   // Con F2 manda la cámara libre de depuración: la de tercera persona se detiene y WASD solo
