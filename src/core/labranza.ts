@@ -5,8 +5,10 @@ import { cultivoDeEstacion, cultivoDeSemilla, type Cultivo } from './cultivos'
 import type { EstadoJuego } from './estado'
 import { casillaConEdificio, aguaDe, zonaEn } from './zonas'
 import { ladoValle } from './mapa'
+import { hayCamino } from './caminos-estado'
 import { cantidadDe, inventarioValido, quitarObjeto } from './inventario'
 import { edificiosValidos } from './edificios'
+import { hayValla } from './vallas-estado'
 import {
   CARACTER_ARADA,
   CARACTER_REGADA,
@@ -27,7 +29,7 @@ export type ErrorLabranza =
   | 'agua'
   /** La casilla tiene un árbol o una roca. */
   | 'obstaculo'
-  /** La casilla tiene un edificio, una obra o (al sembrar) ya una planta. */
+  /** La casilla tiene un edificio, una obra, una valla o puerta o (al sembrar) ya una planta. */
   | 'ocupada'
   /** Azada: la casilla no es de zona cultivo ni huerto (o el cultivo no admite su zona). */
   | 'zona'
@@ -69,7 +71,7 @@ function estadoValido(estado: EstadoJuego): boolean {
 
 /**
  * Por qué no se puede arar (x, y), o `undefined` si se puede. Orden: `no-propia`, `agua`,
- * `obstaculo`, `ocupada` (edificio u obra), `zona` (no es cultivo ni huerto), `ya-arada`.
+ * `obstaculo`, `ocupada` (edificio, obra o camino), `zona` (no es cultivo ni huerto), `ya-arada`.
  */
 export function motivoNoArar(estado: EstadoJuego, x: number, y: number): ErrorLabranza | undefined {
   if (!estadoValido(estado)) return 'estado-invalido'
@@ -82,6 +84,10 @@ export function motivoNoArar(estado: EstadoJuego, x: number, y: number): ErrorLa
   if (aguaDe(valle, estado.cauce.ancho, lado).has(i)) return 'agua'
   if (obstaculosDe(estado, lado).has(i)) return 'obstaculo'
   if (casillaConEdificio(estado, x, y)) return 'ocupada'
+  // M6-T04: no se ara sobre un camino (hay que quitarlo antes).
+  if (hayCamino(estado, x, y)) return 'ocupada'
+  // Una valla o puerta ocupa la casilla (M6-T01).
+  if (hayValla(estado.vallas, i)) return 'ocupada'
   const zona = zonaEn(estado, x, y)
   if (zona !== 'cultivo' && zona !== 'huerto') return 'zona'
   if (esCaracterArada(estado.tierra[i])) return 'ya-arada'

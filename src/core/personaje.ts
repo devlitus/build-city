@@ -41,6 +41,9 @@ export function personajeEnAparicion(aparicion: DatosMapa['aparicion']): Persona
  * (componentes en [-1, 1], `ms` finito y ≥ 0). Se normaliza si su módulo supera 1 para que la
  * diagonal no sea más rápida. Velocidad de andar o de correr según `corre`. Colisión círculo contra
  * cajas (`colision.ts`): al chocar se empuja por la normal y se desliza a lo largo de la pared.
+ * `factorVelocidad` (por defecto 1) multiplica la velocidad de todo el paso; quien llama lo calcula
+ * con `factorVelocidadEn` (camino bajo el centro del personaje al INICIO del paso). El camino no
+ * entra en la colisión.
  */
 export function moverPersonaje(
   datos: DatosMapa,
@@ -50,6 +53,7 @@ export function moverPersonaje(
   ms: number,
   config = CONFIG_PERSONAJE,
   corre = false,
+  factorVelocidad = 1,
 ): Personaje {
   const largo = Math.sqrt(dx * dx + dy * dy)
   if (largo === 0) return personaje
@@ -59,7 +63,7 @@ export function moverPersonaje(
     Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'este' : 'oeste') : dy > 0 ? 'sur' : 'norte'
   const mapa = mapaTransitabilidad(datos)
   const enMs = Math.min(ms, config.maxMsPorComando)
-  const velocidad = corre ? config.velocidadCorrer : config.velocidadAndar
+  const velocidad = (corre ? config.velocidadCorrer : config.velocidadAndar) * factorVelocidad
   const distancia = (velocidad * enMs) / 1000
   const { x, y } = moverCirculo(
     mapa,

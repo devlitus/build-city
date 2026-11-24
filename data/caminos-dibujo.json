@@ -1,0 +1,25 @@
+{
+  "losa": {
+    "lado": 0.98,
+    "grosor": 0.2,
+    "altura": 0.03,
+    "puntosPorLado": 4,
+    "irregularidad": 0.05,
+    "semilla": 7,
+    "escalaMin": 0.96,
+    "escalaMax": 1,
+    "colorA": "caminoGrava",
+    "colorB": "caminoGravaClara"
+  },
+  "piedras": {
+    "porCasilla": 3,
+    "radio": 0.07,
+    "variacionRadio": 0.5,
+    "aplastado": 0.6,
+    "margen": 0.12,
+    "colorA": "piedra",
+    "colorB": "mojon"
+  },
+  "rugosidad": 0.95,
+  "capacidadInicial": 512
+}

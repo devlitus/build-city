@@ -110,6 +110,20 @@ export const EsquemaConfigPersonaje = v.strictObject({
 
 export type ConfigPersonaje = v.InferOutput<typeof EsquemaConfigPersonaje>
 
+export const EsquemaConfigCaminos = v.pipe(
+  v.strictObject({
+    /** Piedra que cuesta cada casilla de camino. */
+    costePiedra: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+    /** Piedra que se devuelve por cada casilla de camino que se quita (no mayor que el coste). */
+    reembolsoPiedra: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1000)),
+    /** Factor de la velocidad (andar y correr) sobre un camino; 1.3 = +30 %. */
+    multiplicadorVelocidad: v.pipe(v.number(), v.finite(), v.minValue(1), v.maxValue(3)),
+  }),
+  v.check((c) => c.reembolsoPiedra <= c.costePiedra, 'El reembolso no puede superar el coste'),
+)
+
+export type ConfigCaminos = v.InferOutput<typeof EsquemaConfigCaminos>
+
 export const EsquemaConfigHerramientas = v.strictObject({
   /** Distancia máxima, en casillas, del personaje al centro de un obstáculo para apuntarlo. */
   alcance: v.pipe(v.number(), v.finite(), v.minValue(0.5), v.maxValue(3)),
@@ -185,6 +199,22 @@ export const EsquemaConfigEconomia = v.strictObject({
 })
 
 export type ConfigEconomia = v.InferOutput<typeof EsquemaConfigEconomia>
+
+const maderaPorCasilla = v.strictObject({
+  /** Madera que cuesta cada casilla de este tipo. */
+  madera: v.pipe(v.number(), v.safeInteger(), v.minValue(0), v.maxValue(1_000_000)),
+})
+
+/** Vallas y puertas (`data/vallas.json`): coste por casilla y reembolso al quitarlas. */
+export const EsquemaConfigVallas = v.strictObject({
+  coste: v.strictObject({ valla: maderaPorCasilla, puerta: maderaPorCasilla }),
+  /** Fracción de lo pagado que se devuelve al quitar una casilla (0..1). */
+  reembolsoQuitar: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(1)),
+  /** Redondeo de la fracción (hoy solo `abajo`, como `redondeoReembolso` de los edificios). */
+  redondeoReembolso: v.literal('abajo'),
+})
+
+export type ConfigVallas = v.InferOutput<typeof EsquemaConfigVallas>
 
 const diasDeObra = v.pipe(v.number(), v.safeInteger(), v.minValue(1))
 

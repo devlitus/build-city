@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   comandoDeZona,
+  esHerramientaTrazo,
   esTeclaGirar,
   crearCanalHerramientaPlano,
   herramientaDeTecla,
@@ -86,6 +87,49 @@ describe('instalarTeclasHerramientaPlano', () => {
     quitar()
     expect(oyente).toBeUndefined()
     expect(suscriptores.size).toBe(0)
+  })
+})
+
+describe('herramientas de trazo (V, P, C)', () => {
+  it('V, P y C activan vallas, puertas y caminos solo en Modo Plano', () => {
+    expect(herramientaDeTecla(tecla('KeyV'), { modo: 'plano' })).toBe('vallas')
+    expect(herramientaDeTecla(tecla('KeyP'), { modo: 'plano' })).toBe('puertas')
+    expect(herramientaDeTecla(tecla('KeyC'), { modo: 'plano' })).toBe('caminos')
+    for (const code of ['KeyV', 'KeyP', 'KeyC']) {
+      expect(herramientaDeTecla(tecla(code), { modo: 'vida' })).toBeUndefined()
+      expect(herramientaDeTecla(tecla(code, { ctrlKey: true }), { modo: 'plano' })).toBeUndefined()
+    }
+  })
+  it('esHerramientaTrazo distingue las de trazo', () => {
+    expect(esHerramientaTrazo('vallas')).toBe(true)
+    expect(esHerramientaTrazo('puertas')).toBe(true)
+    expect(esHerramientaTrazo('caminos')).toBe(true)
+    expect(esHerramientaTrazo('zonas')).toBe(false)
+    expect(esHerramientaTrazo('parcelas')).toBe(false)
+  })
+  it('Esc con un trazo en curso lo cancela sin cambiar de herramienta; sin trazo vuelve a parcelas', () => {
+    const estado = { modo: 'plano' as const }
+    const almacen = { estado: estado as never, suscribir: () => () => undefined }
+    let oyente: ((e: KeyboardEvent) => void) | undefined
+    const objetivo = {
+      addEventListener: (_: string, f: unknown) => {
+        oyente = f as (e: KeyboardEvent) => void
+      },
+      removeEventListener: () => undefined,
+    }
+    const canal = crearCanalHerramientaPlano()
+    instalarTeclasHerramientaPlano(almacen as never, canal, objetivo)
+    let cancelados = 0
+    canal.alCancelarTrazo(() => cancelados++)
+    canal.elegirHerramienta('vallas')
+    canal.fijarTrazoEnCurso(true)
+    oyente?.({ ...tecla('Escape'), target: null } as unknown as KeyboardEvent)
+    expect(cancelados).toBe(1)
+    expect(canal.trazoEnCurso).toBe(false)
+    expect(canal.herramienta).toBe('vallas')
+    oyente?.({ ...tecla('Escape'), target: null } as unknown as KeyboardEvent)
+    expect(cancelados).toBe(1)
+    expect(canal.herramienta).toBe('parcelas')
   })
 })
 

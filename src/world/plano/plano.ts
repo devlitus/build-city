@@ -8,7 +8,14 @@ import {
   type Comando,
 } from '../../core'
 import type { LectorEstado } from '../../juego/almacen'
-import { comandoDeZona, herramientaPlano } from '../../juego/herramienta-plano'
+import { comandoDeZona, esHerramientaTrazo, herramientaPlano } from '../../juego/herramienta-plano'
+import {
+  comandoDeTrazo,
+  resumenTrazo,
+  trazoEnviable,
+  trazoPlano,
+  type ResumenTrazo,
+} from '../../juego/trazo-plano'
 import { colocacion } from '../../juego/colocacion'
 import { edificioElegido } from '../../juego/edificio-elegido'
 import { edicionPlano } from '../../juego/edicion-plano'
@@ -23,6 +30,8 @@ import { crearRejilla } from './rejilla'
 import { crearResaltadoParcela } from './resaltado'
 import { rectanguloDeArrastre, type Casilla } from './rectangulo'
 import { crearSeleccion, type BajoCursor } from './seleccion'
+import { cancelaTrazoPuntero, casillasTrazo } from './trazo'
+import { crearVistaPreviaTrazo } from './trazo-vista'
 import { crearCapaZonas } from './zonas'
 
 export interface CapaPlano {
@@ -60,8 +69,61 @@ export function crearCapaPlano(
     const c = metrosACasilla(bajo.punto.x, bajo.punto.z, lector.estado.valle)
     return { x: Math.min(lado - 1, Math.max(0, c.x)), y: Math.min(lado - 1, Math.max(0, c.y)) }
   }
+  // Herramientas Vallas, Puertas y Caminos: arrastrar traza una L de A a B (con Mayús, quita).
+  let trazo: { desde: Casilla; hasta: Casilla } | null = null
+  let mayus = false
+  let cacheResumen: { clave: string; estado: unknown; resumen: ResumenTrazo } | null = null
+  const resumenActual = (t: { desde: Casilla; hasta: Casilla }): ResumenTrazo | null => {
+    const h = herramientaPlano.herramienta
+    if (!esHerramientaTrazo(h)) return null
+    const clave = `${h}|${mayus}|${t.desde.x},${t.desde.y}|${t.hasta.x},${t.hasta.y}`
+    if (cacheResumen?.clave === clave && cacheResumen.estado === lector.estado) {
+      return cacheResumen.resumen
+    }
+    const resumen = resumenTrazo(lector.estado, h, casillasTrazo(t.desde, t.hasta), mayus)
+    cacheResumen = { clave, estado: lector.estado, resumen }
+    return resumen
+  }
+  let idPuntero: number | null = null
+  const soltarPuntero = (): void => {
+    if (idPuntero !== null && lienzo.hasPointerCapture?.(idPuntero)) {
+      lienzo.releasePointerCapture(idPuntero)
+    }
+    idPuntero = null
+  }
+  const cancelarTrazo = (): void => {
+    soltarPuntero()
+    trazo = null
+    herramientaPlano.fijarTrazoEnCurso(false)
+    vistaTrazo.mostrar(null)
+    trazoPlano.fijar(null)
+  }
+  herramientaPlano.alCancelarTrazo(cancelarTrazo)
+  const alTeclaMayus = (e: KeyboardEvent): void => {
+    if (e.key === 'Shift') mayus = e.type === 'keydown'
+  }
   const alPulsar = (e: PointerEvent): void => {
+    mayus = e.shiftKey
+    if (trazo && cancelaTrazoPuntero(e)) {
+      cancelarTrazo()
+      return
+    }
     inicio = e.button === 0 ? { x: e.clientX, y: e.clientY } : null
+    if (
+      e.button === 0 &&
+      lector.estado.modo === 'plano' &&
+      esHerramientaTrazo(herramientaPlano.herramienta)
+    ) {
+      const c = casillaBajoCursor()
+      trazo = c ? { desde: c, hasta: c } : null
+      herramientaPlano.fijarTrazoEnCurso(trazo !== null)
+      if (trazo) {
+        // Captura el puntero: soltar fuera del lienzo o sobre un panel también cierra el trazo.
+        idPuntero = e.pointerId
+        lienzo.setPointerCapture?.(e.pointerId)
+      }
+      return
+    }
     if (
       e.button !== 0 ||
       lector.estado.modo !== 'plano' ||
@@ -71,9 +133,33 @@ export function crearCapaPlano(
     const c = casillaBajoCursor()
     arrastre = c ? { desde: c, hasta: c } : null
   }
+  // Con el izquierdo pulsado, el derecho llega como `pointermove` (no `pointerdown`) o `contextmenu`.
+  const alMover = (e: PointerEvent): void => {
+    if (trazo && cancelaTrazoPuntero(e)) cancelarTrazo()
+  }
+  const alMenuContextual = (e: Event): void => {
+    if (trazo) cancelarTrazo()
+    if (esHerramientaTrazo(herramientaPlano.herramienta)) e.preventDefault()
+  }
+  const alPerderFoco = (): void => {
+    mayus = false
+  }
   const alSoltar = (e: PointerEvent): void => {
     const desde = inicio
     inicio = null
+    if (e.button === 0 && trazo) {
+      const a = trazo
+      mayus = e.shiftKey
+      const fin = casillaBajoCursor() ?? a.hasta
+      cancelarTrazo()
+      const h = herramientaPlano.herramienta
+      if (lector.estado.modo === 'plano' && esHerramientaTrazo(h)) {
+        // Se recalcula con el estado de ahora mismo; en rojo (nada válido, sin material) no se envía.
+        const r = resumenTrazo(lector.estado, h, casillasTrazo(a.desde, fin), mayus)
+        if (trazoEnviable(r)) lector.despachar(comandoDeTrazo(r))
+      }
+      return
+    }
     if (e.button === 0 && arrastre) {
       const a = arrastre
       arrastre = null
@@ -145,13 +231,26 @@ export function crearCapaPlano(
   }
   lienzo.addEventListener('pointerdown', alPulsar)
   lienzo.addEventListener('pointerup', alSoltar)
+  window.addEventListener('keydown', alTeclaMayus)
+  window.addEventListener('keyup', alTeclaMayus)
+  window.addEventListener('blur', alPerderFoco)
+  lienzo.addEventListener('pointermove', alMover)
+  lienzo.addEventListener('contextmenu', alMenuContextual)
 
+  const vistaTrazo = crearVistaPreviaTrazo(valle, altura)
   const zonas = crearCapaZonas(valle, altura)
   const rejilla = crearRejilla(altura)
   const grupo = new Group()
   grupo.name = 'plano'
   const lindes = crearLindes(altura)
-  grupo.add(zonas.objeto, resaltado.objeto, rejilla.objeto, lindes.objeto, fantasma.objeto)
+  grupo.add(
+    zonas.objeto,
+    resaltado.objeto,
+    rejilla.objeto,
+    lindes.objeto,
+    fantasma.objeto,
+    vistaTrazo.objeto,
+  )
   // Desaturación: filtro CSS del lienzo (sin coste en la escena; se quita al salir del plano).
   lienzo.style.transition = `filter ${DATOS_PLANO.desaturacion.duracionTransicion}s ease`
   let desaturado = false
@@ -179,6 +278,7 @@ export function crearCapaPlano(
       }
       if (!enPlano) {
         arrastre = null
+        if (trazo) cancelarTrazo()
         seleccion.olvidar()
         resaltado.mostrar(null)
         fantasma.actualizar(lector.estado, null, null, 0)
@@ -188,6 +288,13 @@ export function crearCapaPlano(
       sincronizar()
       zonas.actualizar(lector.estado.zonas)
       if (herramientaPlano.herramienta !== 'zonas') arrastre = null
+      if (trazo && !esHerramientaTrazo(herramientaPlano.herramienta)) cancelarTrazo()
+      if (trazo) {
+        trazo = { desde: trazo.desde, hasta: casillaBajoCursor() ?? trazo.hasta }
+        const resumen = resumenActual(trazo)
+        vistaTrazo.mostrar(resumen)
+        trazoPlano.fijar(resumen)
+      }
       if (arrastre) {
         arrastre = { desde: arrastre.desde, hasta: casillaBajoCursor() ?? arrastre.hasta }
         zonas.vistaPrevia(
@@ -197,7 +304,7 @@ export function crearCapaPlano(
       } else {
         zonas.vistaPrevia(null, herramientaPlano.zona)
       }
-      const bajo = arrastre ? seleccion.actual : seleccion.actualizar()
+      const bajo = arrastre || trazo ? seleccion.actual : seleccion.actualizar()
       // Herramienta Construir: el fantasma sigue al cursor y publica su veredicto a la UI.
       const construyendo = herramientaPlano.herramienta === 'construir'
       // Herramienta Mover: con un edificio cogido, el fantasma es de su tipo y lleva su id para
@@ -224,6 +331,14 @@ export function crearCapaPlano(
     destruir() {
       lienzo.removeEventListener('pointerdown', alPulsar)
       lienzo.removeEventListener('pointerup', alSoltar)
+      window.removeEventListener('keydown', alTeclaMayus)
+      window.removeEventListener('keyup', alTeclaMayus)
+      window.removeEventListener('blur', alPerderFoco)
+      lienzo.removeEventListener('pointermove', alMover)
+      lienzo.removeEventListener('contextmenu', alMenuContextual)
+      herramientaPlano.alCancelarTrazo(null)
+      cancelarTrazo()
+      vistaTrazo.destruir()
       seleccion.destruir()
       resaltado.destruir()
       fantasma.destruir()

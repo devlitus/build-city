@@ -3,6 +3,7 @@ import { CONFIG_TIEMPO } from './datos/tiempo'
 import { parcelaComprable } from './parcelas'
 import { aplicarZonas, CARACTER_SIN_ZONA, CARACTER_ZONA, ZONAS, type Zona } from './zonas'
 import { moverPersonaje } from './personaje'
+import { colocarCaminos, factorVelocidadEn, quitarCaminos, type CasillaCamino } from './caminos'
 import { nivelRegaderaDe, type EventoPlantaMarchita } from './riego'
 import { empezarDiaSiguiente, type ObraTerminada } from './obras'
 import { comprobarDormir, type ErrorDormir } from './dormir'
@@ -30,6 +31,14 @@ import {
   type Herramienta,
   type ObjetoId,
 } from './inventario'
+import {
+  escribirVallas,
+  TIPOS_VALLA,
+  validarQuitarVallas,
+  validarVallas,
+  vallasValidas,
+  type TipoValla,
+} from './vallas'
 import { usarHerramienta, type ErrorUsoHerramienta, type EventoHerramienta } from './herramientas'
 
 /**
@@ -130,6 +139,28 @@ export type Comando =
    * solo lo lanza el atajo de depuración F8.
    */
   | { readonly tipo: 'MejorarRegadera' }
+  /**
+   * Coloca camino en las casillas válidas (`validarCaminos`) y cobra su piedra solo por esas;
+   * sin piedra para todas, no coloca ni cobra. Solo en Modo Plano; no depende del reloj.
+   */
+  | { readonly tipo: 'ColocarCamino'; readonly casillas: readonly CasillaCamino[] }
+  /** Quita el camino de las casillas que lo tienen y devuelve su reembolso en piedra. Solo en Modo Plano. */
+  | { readonly tipo: 'QuitarCamino'; readonly casillas: readonly CasillaCamino[] }
+  /**
+   * Coloca vallas o puertas (`tipo`) en las casillas dadas (M6-T01; reglas en `vallas.ts`). Solo en
+   * Modo Plano. Se colocan solo las casillas válidas y se cobra solo por ellas; sin madera para
+   * todas, o si las vallas encerrarían una zona alcanzable (`bloquea-paso`), no se hace nada.
+   */
+  | {
+      readonly tipo: 'ColocarVallas'
+      readonly casillas: readonly { readonly x: number; readonly y: number }[]
+      readonly tipoValla: TipoValla
+    }
+  /** Quita las vallas y puertas de las casillas dadas y devuelve parte de la madera (`vallas.json`). Solo en Modo Plano. */
+  | {
+      readonly tipo: 'QuitarVallas'
+      readonly casillas: readonly { readonly x: number; readonly y: number }[]
+    }
 
 /**
  * Hechos ocurridos al aplicar un comando, para que la capa de juego reaccione (avisos, efectos).
@@ -181,10 +212,26 @@ export type EventoJuego =
       readonly reembolso: Coste
     }
 
+  /** Se colocaron `casillas` vallas o puertas (`tipoValla`) por `madera` de madera. */
+  | {
+      readonly tipo: 'vallas-colocadas'
+      readonly tipoValla: TipoValla
+      readonly casillas: number
+      readonly madera: number
+    }
+  /** Se quitaron `casillas` vallas o puertas y se devolvió `madera` de madera. */
+  | { readonly tipo: 'vallas-quitadas'; readonly casillas: number; readonly madera: number }
+
   /** La herramienta activa se aceptó sobre la casilla (x, y); sus efectos traen sus propios eventos (`tierra-arada`, `planta-sembrada`, `tierra-regada`). */
   | EventoHerramienta
   /** El personaje durmió: empieza el día siguiente (las obras que tocan traen su `obra-terminada`). */
   | { readonly tipo: 'dormido' }
+  /** Camino colocado (`piedra` cobrada) o quitado (`piedra` devuelta) en `casillas` casillas. */
+  | {
+      readonly tipo: 'caminos-colocados' | 'caminos-quitados'
+      readonly casillas: number
+      readonly piedra: number
+    }
 
 export type ResultadoComando =
   | { readonly ok: true; readonly estado: EstadoJuego; readonly eventos: readonly EventoJuego[] }
@@ -351,6 +398,80 @@ function conRotacion(rotacion: Rotacion): { rotacion?: Rotacion } {
 
 const SIN_EVENTOS: readonly EventoJuego[] = Object.freeze([])
 
+/** Comandos de vallas (M6-T01); la lógica está en `vallas.ts`. */
+function aplicarVallas(
+  estado: EstadoJuego,
+  comando: Extract<Comando, { tipo: 'ColocarVallas' | 'QuitarVallas' }>,
+): ResultadoComando {
+  const no = (error: ErrorComando): ResultadoComando => ({ ok: false, estado, error })
+  const { casillas } = comando
+  const colocar = comando.tipo === 'ColocarVallas'
+  if (
+    !Array.isArray(casillas) ||
+    (colocar && !TIPOS_VALLA.includes(comando.tipoValla)) ||
+    !casillas.every(
+      (q: unknown) =>
+        typeof q === 'object' &&
+        q !== null &&
+        Number.isSafeInteger((q as { x?: unknown }).x) &&
+        Number.isSafeInteger((q as { y?: unknown }).y),
+    )
+  ) {
+    return no('parametro-invalido')
+  }
+  if (estado.modo !== 'plano') return no('solo-en-plano')
+  if (
+    !estadoDeEdificiosValido(estado) ||
+    !vallasValidas(estado) ||
+    !Array.isArray(estado.plantas) ||
+    typeof estado.tierra !== 'string'
+  ) {
+    return no('estado-invalido')
+  }
+  const lado = ladoValle(estado.valle)
+  if (!colocar) {
+    const q = validarQuitarVallas(estado, casillas)
+    if (q.casillas.length === 0) return no('sin-casillas-validas')
+    if (!Number.isSafeInteger(estado.materiales.madera + q.reembolsoMadera)) {
+      return no('limite-de-recursos')
+    }
+    return {
+      ok: true,
+      eventos: [
+        { tipo: 'vallas-quitadas', casillas: q.casillas.length, madera: q.reembolsoMadera },
+      ],
+      estado: {
+        ...estado,
+        vallas: escribirVallas(estado.vallas, lado, q.casillas, undefined),
+        materiales: {
+          ...estado.materiales,
+          madera: estado.materiales.madera + q.reembolsoMadera,
+        },
+      },
+    }
+  }
+  const r = validarVallas(estado, casillas, comando.tipoValla)
+  if (r.validas.length === 0) return no('sin-casillas-validas')
+  if (r.bloqueaPaso) return no('bloquea-paso')
+  if (r.sinMadera) return no('materiales-insuficientes')
+  return {
+    ok: true,
+    eventos: [
+      {
+        tipo: 'vallas-colocadas',
+        tipoValla: comando.tipoValla,
+        casillas: r.validas.length,
+        madera: r.costeMadera,
+      },
+    ],
+    estado: {
+      ...estado,
+      vallas: escribirVallas(estado.vallas, lado, r.validas, comando.tipoValla),
+      materiales: { ...estado.materiales, madera: estado.materiales.madera - r.costeMadera },
+    },
+  }
+}
+
 /** Función pura: mismo estado + mismo comando ⇒ mismo resultado. Nunca muta `estado`. */
 export function aplicarComando(estado: EstadoJuego, comando: Comando): ResultadoComando {
   switch (comando.tipo) {
@@ -399,6 +520,8 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
         ms,
         undefined,
         corre === true,
+        // Camino bajo el centro al inicio del paso (M6-T04): un paso es corto (≤ maxMsPorComando).
+        factorVelocidadEn(estado, estado.personaje.x, estado.personaje.y),
       )
       const antes = estado.personaje
       // Contra un muro no cambia nada: se devuelve el mismo estado (sin avisos por fotograma).
@@ -626,6 +749,26 @@ export function aplicarComando(estado: EstadoJuego, comando: Comando): Resultado
       if (estado.nivelRegadera === 2) return { ok: true, estado, eventos: SIN_EVENTOS }
       return { ok: true, eventos: SIN_EVENTOS, estado: { ...estado, nivelRegadera: 2 } }
     }
+    case 'ColocarCamino':
+    case 'QuitarCamino': {
+      const colocar = comando.tipo === 'ColocarCamino'
+      const r = (colocar ? colocarCaminos : quitarCaminos)(estado, comando.casillas)
+      if (!r.ok) return { ok: false, estado, error: r.error }
+      return {
+        ok: true,
+        estado: r.estado,
+        eventos: [
+          {
+            tipo: colocar ? 'caminos-colocados' : 'caminos-quitados',
+            casillas: r.casillas.length,
+            piedra: r.piedra,
+          },
+        ],
+      }
+    }
+    case 'ColocarVallas':
+    case 'QuitarVallas':
+      return aplicarVallas(estado, comando)
     case 'Dormir': {
       const error = comprobarDormir(estado)
       if (error) return { ok: false, estado, error }

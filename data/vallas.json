@@ -1,0 +1,8 @@
+{
+  "coste": {
+    "valla": { "madera": 2 },
+    "puerta": { "madera": 4 }
+  },
+  "reembolsoQuitar": 0.5,
+  "redondeoReembolso": "abajo"
+}

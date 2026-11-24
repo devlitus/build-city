@@ -8,5 +8,6 @@
   },
   "desaturacion": { "cantidad": 0.3, "duracionTransicion": 0.4 },
   "fantasma": { "opacidad": 0.5, "altura": 2.5, "separacion": 0.05 },
-  "zonas": { "opacidad": 0.45, "opacidadVistaPrevia": 0.6, "separacion": 0.1 }
+  "zonas": { "opacidad": 0.45, "opacidadVistaPrevia": 0.6, "separacion": 0.1 },
+  "trazo": { "opacidad": 0.7, "separacion": 0.14 }
 }

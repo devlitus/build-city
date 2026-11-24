@@ -15,6 +15,8 @@ import { claveCasilla } from './rio'
 import { siguienteAleatorio } from './rng'
 import type { Terreno } from './valle'
 import { casillaConEdificio, zonaEn } from './zonas'
+import { hayCamino } from './caminos-estado'
+import { hayValla } from './vallas-estado'
 
 /*
  * Talar, picar y replantar (M5-06). Los obstáculos del estado (`estado.obstaculos`) son los árboles,
@@ -231,7 +233,7 @@ function cierraElPaso(estado: EstadoJuego, x: number, y: number): boolean {
 
 /**
  * ¿Se puede plantar un plantón en (x, y)? Casilla de una parcela propia que no sea de cultivo ni
- * huerto, libre (sin río, edificio u obra, obstáculo, aparición ni el personaje encima) y que no
+ * huerto, libre (sin río, edificio u obra, obstáculo, camino, valla ni puerta, aparición ni el personaje encima) y que no
  * cierre el paso (ni deje casillas aisladas).
  */
 export function puedePlantarPlanton(estado: EstadoJuego, x: number, y: number): boolean {
@@ -244,6 +246,8 @@ export function puedePlantarPlanton(estado: EstadoJuego, x: number, y: number): 
   if (personajeEnCasilla(estado.personaje, x, y)) return false
   if (Math.floor(estado.aparicion.x) === x && Math.floor(estado.aparicion.y) === y) return false
   if (obstaculoEn(estado, x, y)) return false
+  // M6: un camino, una valla o una puerta ocupan la casilla.
+  if (hayCamino(estado, x, y) || hayValla(estado.vallas, y * lado + x)) return false
   if (casillaBloqueada(mapaTransitabilidad(estado), x, y)) return false
   return !cierraElPaso(estado, x, y)
 }

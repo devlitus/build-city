@@ -33,6 +33,8 @@ import { crearParcelasMundo } from './parcelas/parcelas-mundo'
 import { crearSueloCultivo } from './cultivos/suelo'
 import { crearIndicador } from './cultivos/indicador'
 import { crearEdificios } from './edificios/edificios'
+import { crearVallasMundo } from './vallas/vallas'
+import { crearCaminosMundo } from './caminos'
 import { crearEfectos, type FuenteEventos } from './efectos/efectos'
 
 export interface Escena {
@@ -136,6 +138,10 @@ export function crearEscena(
   escena.add(indicador.objeto)
   const edificios = crearEdificios(lector, altura)
   escena.add(edificios.objeto)
+  const caminos = crearCaminosMundo(lector, altura)
+  escena.add(caminos.objeto)
+  const vallas = crearVallasMundo(lector, altura)
+  escena.add(vallas.objeto)
 
   const ajustar = (ancho: number, alto: number): void => {
     if (ancho === 0 || alto === 0) return
@@ -175,6 +181,8 @@ export function crearEscena(
       plantas.actualizar(dt)
       indicador.actualizar()
       edificios.actualizar(dt)
+      caminos.actualizar()
+      vallas.actualizar(dt)
       instanteAnterior = ahora
       luzEscena.actualizar(lector.estado.minutoDelDia)
       // Las sombras siguen al punto que mira la cámara.
@@ -190,6 +198,8 @@ export function crearEscena(
       plantas.destruir()
       indicador.destruir()
       edificios.destruir()
+      caminos.destruir()
+      vallas.destruir()
       observador.disconnect()
       horizonte.destruir()
       cielo.destruir()
