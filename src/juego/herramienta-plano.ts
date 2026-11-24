@@ -10,14 +10,7 @@ import type { TeclaEntrada } from './tiempo'
  * demoler (M5-T06).
  */
 export type HerramientaPlano =
-  | 'parcelas'
-  | 'zonas'
-  | 'construir'
-  | 'mover'
-  | 'demoler'
-  | 'vallas'
-  | 'puertas'
-  | 'caminos'
+  'parcelas' | 'zonas' | 'construir' | 'mover' | 'demoler' | 'vallas' | 'puertas' | 'caminos'
 
 /** Herramientas que se usan arrastrando un trazo en L de vallas, puertas o caminos (M6-T03). */
 export const HERRAMIENTAS_TRAZO = ['vallas', 'puertas', 'caminos'] as const

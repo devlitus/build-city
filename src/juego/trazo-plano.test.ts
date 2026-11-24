@@ -134,7 +134,11 @@ describe('comandoDeTrazo', () => {
     })
   })
   it('con Mayús, los comandos de quitar', () => {
-    const v = ok(e, { tipo: 'ColocarVallas', casillas: fila(px + 1, py + 1, 2), tipoValla: 'valla' })
+    const v = ok(e, {
+      tipo: 'ColocarVallas',
+      casillas: fila(px + 1, py + 1, 2),
+      tipoValla: 'valla',
+    })
     expect(comandoDeTrazo(resumenTrazo(v, 'vallas', casillas, true)).tipo).toBe('QuitarVallas')
     expect(comandoDeTrazo(resumenTrazo(v, 'puertas', casillas, true)).tipo).toBe('QuitarVallas')
     expect(comandoDeTrazo(resumenTrazo(v, 'caminos', casillas, true)).tipo).toBe('QuitarCamino')

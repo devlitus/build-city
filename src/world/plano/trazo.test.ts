@@ -57,8 +57,8 @@ describe('casillasTrazo', () => {
         expect(c).toHaveLength(Math.abs(bx - ax) + Math.abs(by - ay) + 1)
         expect(new Set(c.map((q) => `${q.x},${q.y}`)).size).toBe(c.length)
         for (let i = 1; i < c.length; i++) {
-          const p = c[i - 1]!
-          const q = c[i]!
+          const p = c[i - 1] as { x: number; y: number }
+          const q = c[i] as { x: number; y: number }
           expect(Math.abs(q.x - p.x) + Math.abs(q.y - p.y)).toBe(1)
         }
       }),

@@ -49,7 +49,7 @@ export function resumenTrazo(
 ): ResumenTrazo {
   const recurso = herramienta === 'caminos' ? 'piedra' : 'madera'
   let vista: CasillaTrazoVista[]
-  let cantidad = 0
+  let cantidad: number
   let sinFondos = false
   let bloqueaPaso = false
   if (quitar) {
@@ -73,7 +73,9 @@ export function resumenTrazo(
   } else if (herramienta === 'caminos') {
     const v = validarCaminos(estado, casillas)
     vista = v.casillas.map((c) =>
-      c.valida ? { x: c.x, y: c.y, valida: true } : { x: c.x, y: c.y, valida: false, motivo: c.motivo },
+      c.valida
+        ? { x: c.x, y: c.y, valida: true }
+        : { x: c.x, y: c.y, valida: false, motivo: c.motivo ?? 'desconocido' },
     )
     cantidad = v.coste
     sinFondos = !(estado.materiales.piedra >= v.coste)
@@ -82,7 +84,7 @@ export function resumenTrazo(
     vista = v.casillas.map((c) =>
       c.motivo === undefined
         ? { x: c.x, y: c.y, valida: true }
-        : { x: c.x, y: c.y, valida: false, motivo: c.motivo },
+        : { x: c.x, y: c.y, valida: false, motivo: c.motivo ?? 'desconocido' },
     )
     cantidad = v.costeMadera
     sinFondos = v.sinMadera

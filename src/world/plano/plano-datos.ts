@@ -40,6 +40,12 @@ export const esquemaPlano = v.object({
     /** Altura (m) de la capa sobre el suelo. */
     separacion: v.pipe(v.number(), v.minValue(0)),
   }),
+  trazo: v.object({
+    /** Opacidad de las casillas de la vista previa del trazo de vallas y caminos. */
+    opacidad,
+    /** Altura (m) de las casillas sobre el suelo. */
+    separacion: v.pipe(v.number(), v.minValue(0)),
+  }),
 })
 
 export type DatosPlano = v.InferOutput<typeof esquemaPlano>
